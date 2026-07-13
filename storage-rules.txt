@@ -1,0 +1,30 @@
+// Firebase Storage rules prepared for future use.
+// Storage is currently disabled and model files are handled locally only.
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isCurrentUser(userId) {
+      return isAuthenticated()
+        && request.auth.uid == userId;
+    }
+
+    match /users/{userId}/projects/{projectId}/model/{fileName} {
+      allow read: if isCurrentUser(userId);
+
+      allow create: if isCurrentUser(userId)
+        && request.resource.size > 0
+        && request.resource.size <= 50 * 1024 * 1024
+        && fileName == "model.glb";
+
+      allow update: if false;
+
+      allow delete: if isCurrentUser(userId);
+    }
+  }
+}

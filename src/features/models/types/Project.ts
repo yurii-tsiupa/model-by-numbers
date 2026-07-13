@@ -1,19 +1,14 @@
 import type { ProjectStatus } from "./ProjectStatus";
 
-export type PrinterType =
-  | "fdm"
-  | "resin"
-  | "other"
-  | "unknown";
+export type PrinterType = "fdm" | "resin" | "other";
 
 export type ProjectMaterial =
   | "pla"
-  | "abs"
   | "petg"
+  | "abs"
   | "tpu"
   | "resin"
-  | "other"
-  | "unknown";
+  | "other";
 
 export type Project = {
   id: string;
@@ -22,9 +17,11 @@ export type Project = {
   name: string;
   description: string;
 
-  modelUrl: string;
-  modelStoragePath: string;
+  modelUrl: string | null;
+  modelStoragePath: string | null;
   originalFileName: string;
+  originalFileSize: number;
+  originalFileType: string;
 
   thumbnailUrl: string | null;
 

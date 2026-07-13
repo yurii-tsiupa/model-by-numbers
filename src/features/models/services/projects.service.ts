@@ -2,7 +2,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  DocumentSnapshot,
   getDoc,
   getDocs,
   orderBy,
@@ -12,7 +11,7 @@ import {
   Timestamp,
   where,
   type DocumentData,
-  type QueryDocumentSnapshot,
+  type DocumentSnapshot,
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase/client";
@@ -43,9 +42,11 @@ function mapProjectDocument(
     name: data.name,
     description: data.description ?? "",
 
-    modelUrl: data.modelUrl,
-    modelStoragePath: data.modelStoragePath,
-    originalFileName: data.originalFileName,
+    modelUrl: data.modelUrl ?? null,
+    modelStoragePath: data.modelStoragePath ?? null,
+    originalFileName: data.originalFileName ?? "",
+    originalFileSize: data.originalFileSize ?? 0,
+    originalFileType: data.originalFileType ?? "",
 
     thumbnailUrl: data.thumbnailUrl ?? null,
 
@@ -95,60 +96,55 @@ export async function createProject({
   baseColor,
   onUploadProgress,
 }: CreateProjectParams): Promise<Project> {
+  const trimmedName = name.trim();
+
+  if (!trimmedName) {
+    throw new Error("Project name is required.");
+  }
+
   const projectReference = doc(collection(db, "projects"));
   const projectId = projectReference.id;
 
-  let uploadedStoragePath: string | null = null;
+  const localModel = await uploadModel({
+    userId,
+    projectId,
+    file,
+    onProgress: onUploadProgress,
+  });
 
-  try {
-    const uploadedModel = await uploadModel({
-      userId,
-      projectId,
-      file,
-      onProgress: onUploadProgress,
-    });
+  await setDoc(projectReference, {
+    id: projectId,
+    userId,
 
-    uploadedStoragePath = uploadedModel.storagePath;
+    name: trimmedName,
+    description: description.trim(),
 
-    await setDoc(projectReference, {
-      id: projectId,
-      userId,
+    modelUrl: null,
+    modelStoragePath: null,
+    originalFileName: localModel.originalFileName,
+    originalFileSize: localModel.originalFileSize,
+    originalFileType: localModel.originalFileType,
 
-      name: name.trim(),
-      description: description.trim(),
+    thumbnailUrl: null,
 
-      modelUrl: uploadedModel.downloadUrl,
-      modelStoragePath: uploadedModel.storagePath,
-      originalFileName: file.name,
+    status: "draft",
 
-      thumbnailUrl: null,
+    printerType,
+    material,
+    baseColor,
 
-      status: "ready",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
 
-      printerType,
-      material,
-      baseColor,
+  const createdDocument = await getDoc(projectReference);
 
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-
-    const createdDocument = await getDoc(projectReference);
-
-    return mapProjectDocument(createdDocument);
-  } catch (error) {
-    if (uploadedStoragePath) {
-      await deleteModelFile(uploadedStoragePath).catch(() => undefined);
-    }
-
-    throw error;
-  }
+  return mapProjectDocument(createdDocument);
 }
 
 export async function deleteProject(
   project: Project,
 ): Promise<void> {
   await deleteModelFile(project.modelStoragePath);
-
   await deleteDoc(doc(db, "projects", project.id));
 }
