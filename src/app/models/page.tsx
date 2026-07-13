@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { Loader } from "@/components/ui/Loader";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { DeleteProjectModal } from "@/features/models/components/DeleteProjectModal";
 import { ModelsEmptyState } from "@/features/models/components/ModelsEmptyState";
 import { ModelsErrorState } from "@/features/models/components/ModelsErrorState";
 import { ModelsGrid } from "@/features/models/components/ModelsGrid";
@@ -15,15 +16,31 @@ import { useDeleteProject } from "@/features/models/hooks/useDeleteProject";
 import { useProjects } from "@/features/models/hooks/useProjects";
 import type { Project } from "@/features/models/types/Project";
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Unable to delete the project. Please try again.";
+}
+
 export default function ModelsPage() {
   const router = useRouter();
   const { user, isLoading: isAuthLoading } = useAuth();
 
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] =
     useState(false);
+
+  const [projectToDelete, setProjectToDelete] =
+    useState<Project | null>(null);
+
   const [deletingProjectId, setDeletingProjectId] = useState<
     string | null
   >(null);
+
+  const [deleteError, setDeleteError] = useState<string | null>(
+    null,
+  );
 
   const projectsQuery = useProjects(user?.uid);
   const deleteProjectMutation = useDeleteProject(user?.uid);
@@ -34,12 +51,35 @@ export default function ModelsPage() {
     }
   }, [isAuthLoading, router, user]);
 
-  async function handleDeleteProject(project: Project) {
+  function handleRequestDelete(project: Project) {
+    setDeleteError(null);
+    setProjectToDelete(project);
+  }
+
+  function handleCloseDeleteModal() {
+    if (deleteProjectMutation.isPending) {
+      return;
+    }
+
+    setProjectToDelete(null);
+    setDeleteError(null);
+  }
+
+  async function handleConfirmDelete() {
+    if (!projectToDelete) {
+      return;
+    }
+
     try {
-      setDeletingProjectId(project.id);
-      await deleteProjectMutation.mutateAsync(project);
+      setDeleteError(null);
+      setDeletingProjectId(projectToDelete.id);
+
+      await deleteProjectMutation.mutateAsync(projectToDelete);
+
+      setProjectToDelete(null);
     } catch (error) {
       console.error("Failed to delete project:", error);
+      setDeleteError(getErrorMessage(error));
     } finally {
       setDeletingProjectId(null);
     }
@@ -82,7 +122,7 @@ export default function ModelsPage() {
             <ModelsGrid
               projects={projects}
               deletingProjectId={deletingProjectId}
-              onDelete={handleDeleteProject}
+              onDelete={handleRequestDelete}
             />
           )}
         </section>
@@ -92,6 +132,16 @@ export default function ModelsPage() {
         userId={user.uid}
         isOpen={isNewProjectModalOpen}
         onClose={() => setIsNewProjectModalOpen(false)}
+      />
+
+      <DeleteProjectModal
+        project={projectToDelete}
+        isDeleting={deleteProjectMutation.isPending}
+        error={deleteError}
+        onClose={handleCloseDeleteModal}
+        onConfirm={() => {
+          void handleConfirmDelete();
+        }}
       />
     </>
   );
