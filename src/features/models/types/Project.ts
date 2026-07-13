@@ -10,6 +10,7 @@ export type ProjectMaterial =
   | "pla"
   | "abs"
   | "petg"
+  | "tpu"
   | "resin"
   | "other"
   | "unknown";

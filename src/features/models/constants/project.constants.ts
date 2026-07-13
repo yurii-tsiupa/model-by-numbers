@@ -8,11 +8,10 @@ export const PROJECT_PLACEHOLDER_THUMBNAIL =
 
 export const DEFAULT_PROJECT_COLOR = "#d4d4d8";
 
-export const ACCEPTED_MODEL_EXTENSIONS = [".glb", ".gltf"] as const;
+export const ACCEPTED_MODEL_EXTENSIONS = [".glb"] as const;
 
 export const ACCEPTED_MODEL_MIME_TYPES = [
   "model/gltf-binary",
-  "model/gltf+json",
   "application/octet-stream",
 ] as const;
 
@@ -65,3 +64,10 @@ export const MATERIAL_OPTIONS: Array<{
     label: "Other",
   },
 ];
+
+export const projectQueryKeys = {
+  all: ["projects"] as const,
+
+  list: (userId: string) =>
+    [...projectQueryKeys.all, "list", userId] as const,
+};
