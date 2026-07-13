@@ -1,7 +1,32 @@
-import Link from "next/link";
+"use client";
+
 import { ArrowLeft, Box } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { Loader } from "@/components/ui/Loader";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { user, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.replace("/models");
+    }
+  }, [isLoading, router, user]);
+
+  if (isLoading || user) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-white">
+        <Loader label="Checking your session..." />
+      </main>
+    );
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-white">
       <div className="w-full max-w-md">
@@ -26,16 +51,11 @@ export default function LoginPage() {
             Sign in to manage your models and painting guides.
           </p>
 
-          <button
-            type="button"
-            disabled
-            className="mt-8 flex w-full cursor-not-allowed items-center justify-center rounded-full bg-white px-5 py-3 font-medium text-neutral-950 opacity-70"
-          >
-            Continue with Google
-          </button>
+          <GoogleSignInButton />
 
-          <p className="mt-4 text-center text-xs text-neutral-600">
-            Google authentication will be connected next.
+          <p className="mt-5 text-center text-xs leading-5 text-neutral-600">
+            By continuing, you agree to use the platform according to
+            its terms and privacy policy.
           </p>
         </div>
       </div>

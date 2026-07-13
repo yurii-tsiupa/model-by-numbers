@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { AuthProvider } from "@/providers/AuthProvider";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,20 +17,23 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Model by Numbers",
-  description: "Create professional painting guides for physical 3D models.",
+  description:
+    "Create professional painting guides for physical 3D models.",
 };
 
 type RootLayoutProps = Readonly<{
   children: React.ReactNode;
 }>;
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function RootLayout({
+  children,
+}: RootLayoutProps) {
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
