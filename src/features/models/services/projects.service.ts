@@ -78,12 +78,17 @@ export async function getProjects(
   const projectsQuery = query(
     collection(db, "projects"),
     where("userId", "==", userId),
-    orderBy("createdAt", "desc"),
   );
 
   const snapshot = await getDocs(projectsQuery);
 
-  return snapshot.docs.map(mapProjectDocument);
+  return snapshot.docs
+    .map(mapProjectDocument)
+    .sort(
+      (firstProject, secondProject) =>
+        secondProject.createdAt.getTime() -
+        firstProject.createdAt.getTime(),
+    );
 }
 
 export async function createProject({

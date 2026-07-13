@@ -7,7 +7,10 @@ import {
 
 import { projectQueryKeys } from "../constants/project.constants";
 import { createProject } from "../services/projects.service";
-import type { CreateProjectInput } from "../types/Project";
+import type {
+  CreateProjectInput,
+  Project,
+} from "../types/Project";
 
 export type CreateProjectVariables = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -20,13 +23,30 @@ export function useCreateProject(userId: string | undefined) {
     mutationFn: (variables: CreateProjectVariables) =>
       createProject(variables),
 
-    onSuccess: async () => {
+    onSuccess: async (createdProject) => {
       if (!userId) {
         return;
       }
 
+      const queryKey = projectQueryKeys.list(userId);
+
+      queryClient.setQueryData<Project[]>(
+        queryKey,
+        (currentProjects = []) => {
+          const projectAlreadyExists = currentProjects.some(
+            (project) => project.id === createdProject.id,
+          );
+
+          if (projectAlreadyExists) {
+            return currentProjects;
+          }
+
+          return [createdProject, ...currentProjects];
+        },
+      );
+
       await queryClient.invalidateQueries({
-        queryKey: projectQueryKeys.list(userId),
+        queryKey,
       });
     },
   });
