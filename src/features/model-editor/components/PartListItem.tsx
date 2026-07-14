@@ -1,4 +1,14 @@
-import { Eye } from "lucide-react";
+"use client";
+
+import {
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import {
+  type MouseEvent,
+  useEffect,
+  useRef,
+} from "react";
 
 type PartListItemProps = {
   index: number;
@@ -17,8 +27,31 @@ export function PartListItem({
   onSelect,
   onToggleVisibility,
 }: PartListItemProps) {
+  const itemRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isSelected) {
+      return;
+    }
+
+    itemRef.current?.scrollIntoView({
+      block: "nearest",
+      behavior: "smooth",
+    });
+  }, [isSelected]);
+
+  function handleToggleVisibility(
+    event: MouseEvent<HTMLButtonElement>,
+  ) {
+    event.stopPropagation();
+    onToggleVisibility?.();
+  }
+
+  const VisibilityIcon = isVisible ? Eye : EyeOff;
+
   return (
     <div
+      ref={itemRef}
       className={`group flex items-center gap-3 rounded-xl border px-3 py-2.5 transition ${
         isSelected
           ? "border-orange-400/30 bg-orange-400/10"
@@ -44,8 +77,11 @@ export function PartListItem({
           className={`truncate text-sm ${
             isSelected
               ? "text-white"
-              : "text-neutral-400"
+              : isVisible
+                ? "text-neutral-400"
+                : "text-neutral-700"
           }`}
+          title={name}
         >
           {name}
         </span>
@@ -53,7 +89,7 @@ export function PartListItem({
 
       <button
         type="button"
-        onClick={onToggleVisibility}
+        onClick={handleToggleVisibility}
         aria-label={
           isVisible ? `Hide ${name}` : `Show ${name}`
         }
@@ -63,7 +99,7 @@ export function PartListItem({
             : "text-neutral-700 hover:bg-white/[0.05] hover:text-neutral-400"
         }`}
       >
-        <Eye className="h-4 w-4" />
+        <VisibilityIcon className="h-4 w-4" />
       </button>
     </div>
   );

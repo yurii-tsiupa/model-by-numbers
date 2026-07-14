@@ -23,6 +23,7 @@ import { ViewerError } from "./ViewerError";
 import { ViewerErrorBoundary } from "./ViewerErrorBoundary";
 import { ViewerLoading } from "./ViewerLoading";
 import { ViewerToolbar } from "./ViewerToolbar";
+import { useModelEditorStore } from "../store/modelEditorStore";
 
 type ModelViewerProps = {
   project: Project;
@@ -136,6 +137,10 @@ export function ModelViewer({
 
   const [retryKey, setRetryKey] = useState(0);
 
+  const selectPart = useModelEditorStore(
+    (state) => state.selectPart,
+  );
+
   const localModel = useLocalModelUrl({
     projectId: project.id,
     userId,
@@ -221,7 +226,7 @@ export function ModelViewer({
               powerPreference: "high-performance",
             }}
             onPointerMissed={() => {
-              // Пізніше тут очищатимемо selected part.
+              selectPart(null);
             }}
           >
             <Scene
