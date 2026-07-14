@@ -6,7 +6,10 @@ import {
   useEffect,
   useMemo,
 } from "react";
-import { Mesh } from "three";
+import {
+  Mesh,
+  type Object3D,
+} from "three";
 import type { GLTF } from "three-stdlib";
 
 import { extractModelParts } from "../lib/extractModelParts";
@@ -20,10 +23,12 @@ import { useModelEditorStore } from "../store/modelEditorStore";
 
 type LoadedModelProps = {
   modelUrl: string;
+  onModelReady?: (model: Object3D) => void;
 };
 
 export function LoadedModel({
   modelUrl,
+  onModelReady,
 }: LoadedModelProps) {
   const gltf = useGLTF(modelUrl) as GLTF;
 
@@ -59,6 +64,10 @@ export function LoadedModel({
 
     setParts(extractedParts);
   }, [model, setParts]);
+
+  useEffect(() => {
+    onModelReady?.(model);
+  }, [model, onModelReady]);
 
   useEffect(() => {
     syncModelParts({

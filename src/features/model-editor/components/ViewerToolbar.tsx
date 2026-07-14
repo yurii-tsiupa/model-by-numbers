@@ -18,6 +18,7 @@ type ViewerToolbarProps = {
   onHideSelected: () => void;
   onIsolateSelected: () => void;
   onToggleGrid: () => void;
+  onFitModel: () => void;
 };
 
 type ToolbarItem = {
@@ -37,6 +38,7 @@ export function ViewerToolbar({
   onHideSelected,
   onIsolateSelected,
   onToggleGrid,
+  onFitModel
 }: ViewerToolbarProps) {
   const toolbarItems: ToolbarItem[] = [
     {
@@ -48,7 +50,8 @@ export function ViewerToolbar({
     {
       label: "Fit model",
       icon: Focus,
-      disabled: true,
+      disabled: !hasParts,
+      onClick: onFitModel,
     },
     {
       label: "Show all",

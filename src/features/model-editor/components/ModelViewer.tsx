@@ -14,6 +14,11 @@ import {
   useState,
 } from "react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import {
+  PerspectiveCamera,
+  Vector3,
+  type Object3D,
+} from "three";
 
 import type { Project } from "@/features/models/types/Project";
 
@@ -24,6 +29,8 @@ import { ViewerErrorBoundary } from "./ViewerErrorBoundary";
 import { ViewerLoading } from "./ViewerLoading";
 import { ViewerToolbar } from "./ViewerToolbar";
 import { useModelEditorStore } from "../store/modelEditorStore";
+import { fitCameraToBounds } from "../lib/fitCameraToBounds";
+import { getModelBounds } from "../lib/getModelBounds";
 
 type ModelViewerProps = {
   project: Project;
@@ -42,12 +49,14 @@ type SceneProps = {
   modelUrl: string;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
   isGridVisible: boolean;
+  onModelReady: (model: Object3D) => void;
 };
 
 function Scene({
   modelUrl,
   controlsRef,
   isGridVisible,
+  onModelReady,
 }: SceneProps) {
   return (
     <>
@@ -76,7 +85,10 @@ function Scene({
       />
 
       <Suspense fallback={null}>
-        <LoadedModel modelUrl={modelUrl} />
+        <LoadedModel
+          modelUrl={modelUrl}
+          onModelReady={onModelReady}
+        />
 
         <Environment preset="studio" />
 
@@ -129,6 +141,8 @@ export function ModelViewer({
   const controlsRef =
     useRef<OrbitControlsImpl | null>(null);
 
+  const modelRef = useRef<Object3D | null>(null);
+
   const [isGridVisible, setIsGridVisible] =
     useState(true);
 
@@ -171,21 +185,77 @@ export function ModelViewer({
     progress: loadingProgress,
   } = useProgress();
 
-  function handleResetCamera() {
+    function handleModelReady(model: Object3D) {
+    modelRef.current = model;
+
     const controls = controlsRef.current;
 
     if (!controls) {
       return;
     }
 
-    controls.object.position.set(
-      ...INITIAL_CAMERA_POSITION,
-    );
+    const camera = controls.object;
 
-    controls.target.set(...INITIAL_CAMERA_TARGET);
+    if (!(camera instanceof PerspectiveCamera)) {
+      return;
+    }
 
-    controls.object.updateProjectionMatrix();
-    controls.update();
+    const bounds = getModelBounds(model);
+
+    fitCameraToBounds({
+      camera,
+      controls,
+      bounds,
+    });
+  }
+
+  function handleFitModel() {
+    const model = modelRef.current;
+    const controls = controlsRef.current;
+
+    if (!model || !controls) {
+      return;
+    }
+
+    const camera = controls.object;
+
+    if (!(camera instanceof PerspectiveCamera)) {
+      return;
+    }
+
+    const bounds = getModelBounds(model);
+
+    fitCameraToBounds({
+      camera,
+      controls,
+      bounds,
+    });
+  }
+
+  function handleResetCamera() {
+    const model = modelRef.current;
+    const controls = controlsRef.current;
+
+    if (!model || !controls) {
+      return;
+    }
+
+    const camera = controls.object;
+
+    if (!(camera instanceof PerspectiveCamera)) {
+      return;
+    }
+
+    const bounds = getModelBounds(model);
+
+    fitCameraToBounds({
+      camera,
+      controls,
+      bounds,
+      direction: new Vector3(
+        ...INITIAL_CAMERA_POSITION,
+      ).normalize(),
+    });
   }
 
   function handleRetry() {
@@ -253,6 +323,7 @@ export function ModelViewer({
               modelUrl={localModel.modelUrl}
               controlsRef={controlsRef}
               isGridVisible={isGridVisible}
+              onModelReady={handleModelReady}
             />
           </Canvas>
         </ViewerErrorBoundary>
@@ -273,6 +344,7 @@ export function ModelViewer({
         hasParts={parts.length > 0}
         hasSelectedPart={Boolean(selectedPartId)}
         onResetCamera={handleResetCamera}
+        onFitModel={handleFitModel}
         onShowAll={showAllParts}
         onHideSelected={hideSelectedPart}
         onIsolateSelected={isolateSelectedPart}

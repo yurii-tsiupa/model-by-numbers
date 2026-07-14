@@ -1,8 +1,6 @@
-import {
-  Box3,
-  type Object3D,
-  Vector3,
-} from "three";
+import type { Object3D } from "three";
+
+import { getModelBounds } from "./getModelBounds";
 
 const TARGET_MODEL_SIZE = 4;
 
@@ -11,27 +9,12 @@ export function normalizeModel(
 ): Object3D {
   const model = sourceScene.clone(true);
 
-  model.updateWorldMatrix(true, true);
-
-  const initialBoundingBox = new Box3().setFromObject(
-    model,
-    true,
-  );
-
-  if (initialBoundingBox.isEmpty()) {
-    throw new Error(
-      "No visible geometry was found in this model.",
-    );
-  }
-
-  const initialSize = initialBoundingBox.getSize(
-    new Vector3(),
-  );
+  const initialBounds = getModelBounds(model);
 
   const largestDimension = Math.max(
-    initialSize.x,
-    initialSize.y,
-    initialSize.z,
+    initialBounds.size.x,
+    initialBounds.size.y,
+    initialBounds.size.z,
   );
 
   if (
@@ -47,21 +30,13 @@ export function normalizeModel(
     TARGET_MODEL_SIZE / largestDimension;
 
   model.scale.setScalar(normalizedScale);
-  model.updateWorldMatrix(true, true);
 
-  const normalizedBoundingBox = new Box3().setFromObject(
-    model,
-    true,
-  );
-
-  const normalizedCenter = normalizedBoundingBox.getCenter(
-    new Vector3(),
-  );
+  const normalizedBounds = getModelBounds(model);
 
   model.position.set(
-    -normalizedCenter.x,
-    -normalizedBoundingBox.min.y,
-    -normalizedCenter.z,
+    -normalizedBounds.center.x,
+    -normalizedBounds.box.min.y,
+    -normalizedBounds.center.z,
   );
 
   model.updateWorldMatrix(true, true);
