@@ -1,9 +1,42 @@
 import {
+  Color,
   Mesh,
+  type Material,
   type Object3D,
 } from "three";
 
 import type { ModelPart } from "../types/ModelPart";
+
+type MaterialWithColor = Material & {
+  color: Color;
+};
+
+function hasMaterialColor(
+  material: Material,
+): material is MaterialWithColor {
+  return (
+    "color" in material &&
+    material.color instanceof Color
+  );
+}
+
+function getMeshOriginalColor(
+  mesh: Mesh,
+): string | null {
+  const materials = Array.isArray(mesh.material)
+    ? mesh.material
+    : [mesh.material];
+
+  const materialWithColor = materials.find(
+    hasMaterialColor,
+  );
+
+  if (!materialWithColor) {
+    return null;
+  }
+
+  return `#${materialWithColor.color.getHexString()}`;
+}
 
 function createFallbackPartName(
   index: number,
@@ -32,6 +65,8 @@ export function extractModelParts(
         createFallbackPartName(index),
       index,
       visible: object.visible,
+      color: null,
+      originalColor: getMeshOriginalColor(object),
     });
   });
 

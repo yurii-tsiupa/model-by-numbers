@@ -4,4 +4,7 @@ export type ModelPart = {
   name: string;
   index: number;
   visible: boolean;
+
+  color: string | null;
+  originalColor: string | null;
 };

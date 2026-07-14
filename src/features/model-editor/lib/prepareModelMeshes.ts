@@ -1,9 +1,13 @@
 import {
+  Color,
   Mesh,
   MeshStandardMaterial,
   type Material,
   type Object3D,
 } from "three";
+
+const ORIGINAL_COLOR_KEY =
+  "modelByNumbersOriginalColor";
 
 const ORIGINAL_EMISSIVE_KEY =
   "modelByNumbersOriginalEmissive";
@@ -11,12 +15,36 @@ const ORIGINAL_EMISSIVE_KEY =
 const ORIGINAL_EMISSIVE_INTENSITY_KEY =
   "modelByNumbersOriginalEmissiveIntensity";
 
-function cloneMaterial(material: Material): Material {
+type MaterialWithColor = Material & {
+  color: Color;
+};
+
+function hasMaterialColor(
+  material: Material,
+): material is MaterialWithColor {
+  return (
+    "color" in material &&
+    material.color instanceof Color
+  );
+}
+
+function cloneMaterial(
+  material: Material,
+): Material {
   const clonedMaterial = material.clone();
 
-  if (clonedMaterial instanceof MeshStandardMaterial) {
-    clonedMaterial.userData[ORIGINAL_EMISSIVE_KEY] =
-      clonedMaterial.emissive.getHex();
+  if (hasMaterialColor(clonedMaterial)) {
+    clonedMaterial.userData[ORIGINAL_COLOR_KEY] =
+      clonedMaterial.color.getHex();
+  }
+
+  if (
+    clonedMaterial instanceof
+    MeshStandardMaterial
+  ) {
+    clonedMaterial.userData[
+      ORIGINAL_EMISSIVE_KEY
+    ] = clonedMaterial.emissive.getHex();
 
     clonedMaterial.userData[
       ORIGINAL_EMISSIVE_INTENSITY_KEY
@@ -34,7 +62,9 @@ export function prepareModelMeshes(
       return;
     }
 
-    object.material = Array.isArray(object.material)
+    object.material = Array.isArray(
+      object.material,
+    )
       ? object.material.map(cloneMaterial)
       : cloneMaterial(object.material);
 
@@ -51,7 +81,9 @@ export function disposeModelMaterials(
       return;
     }
 
-    const materials = Array.isArray(object.material)
+    const materials = Array.isArray(
+      object.material,
+    )
       ? object.material
       : [object.material];
 
@@ -59,6 +91,17 @@ export function disposeModelMaterials(
       material.dispose();
     });
   });
+}
+
+export function getOriginalMaterialColor(
+  material: Material,
+): number | null {
+  const storedValue =
+    material.userData[ORIGINAL_COLOR_KEY];
+
+  return typeof storedValue === "number"
+    ? storedValue
+    : null;
 }
 
 export function getOriginalEmissive(

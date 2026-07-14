@@ -121,6 +121,7 @@ export function PartsSidebar() {
                 name={part.name}
                 isSelected={selectedPartId === part.id}
                 isVisible={part.visible}
+                color={part.color}
                 onSelect={() => selectPart(part.id)}
                 onToggleVisibility={() =>
                   togglePartVisibility(part.id)

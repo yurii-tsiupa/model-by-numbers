@@ -8,7 +8,19 @@ type ModelEditorState = {
 
   setParts: (parts: ModelPart[]) => void;
   selectPart: (partId: string | null) => void;
-  togglePartVisibility: (partId: string) => void;
+
+  togglePartVisibility: (
+    partId: string,
+  ) => void;
+
+  assignPartColor: (
+    partId: string,
+    color: string,
+  ) => void;
+
+  resetPartColor: (
+    partId: string,
+  ) => void;
 
   showAllParts: () => void;
   hideSelectedPart: () => void;
@@ -42,6 +54,35 @@ export const useModelEditorStore =
             ? {
                 ...part,
                 visible: !part.visible,
+              }
+            : part,
+        ),
+      }));
+    },
+
+    assignPartColor: (
+      partId,
+      color,
+    ) => {
+      set((state) => ({
+        parts: state.parts.map((part) =>
+          part.id === partId
+            ? {
+                ...part,
+                color,
+              }
+            : part,
+        ),
+      }));
+    },
+
+    resetPartColor: (partId) => {
+      set((state) => ({
+        parts: state.parts.map((part) =>
+          part.id === partId
+            ? {
+                ...part,
+                color: null,
               }
             : part,
         ),
@@ -86,7 +127,9 @@ export const useModelEditorStore =
         return {
           parts: state.parts.map((part) => ({
             ...part,
-            visible: part.id === state.selectedPartId,
+            visible:
+              part.id ===
+              state.selectedPartId,
           })),
         };
       });

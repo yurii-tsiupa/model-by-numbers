@@ -8,6 +8,7 @@ import { useModelEditorStore } from "../store/modelEditorStore";
 import { EditorHeader } from "./EditorHeader";
 import { ModelViewer } from "./ModelViewer";
 import { PartsSidebar } from "./PartsSidebar";
+import { PropertiesPanel } from "./PropertiesPanel";
 
 type ModelEditorProps = {
   project: Project;
@@ -41,6 +42,8 @@ export function ModelEditor({
           project={project}
           userId={userId}
         />
+
+        <PropertiesPanel />
       </div>
     </main>
   );

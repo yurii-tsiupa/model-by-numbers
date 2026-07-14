@@ -15,6 +15,7 @@ type PartListItemProps = {
   name: string;
   isSelected?: boolean;
   isVisible?: boolean;
+  color?: string | null;
   onSelect?: () => void;
   onToggleVisibility?: () => void;
 };
@@ -24,6 +25,7 @@ export function PartListItem({
   name,
   isSelected = false,
   isVisible = true,
+  color = null,
   onSelect,
   onToggleVisibility,
 }: PartListItemProps) {
@@ -73,17 +75,28 @@ export function PartListItem({
           {String(index + 1).padStart(2, "0")}
         </span>
 
-        <span
-          className={`truncate text-sm ${
-            isSelected
-              ? "text-white"
-              : isVisible
-                ? "text-neutral-400"
-                : "text-neutral-700"
-          }`}
-          title={name}
-        >
-          {name}
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          {color ? (
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full border border-white/20"
+              style={{
+                backgroundColor: color,
+              }}
+            />
+          ) : null}
+
+          <span
+            className={`truncate text-sm ${
+              isSelected
+                ? "text-white"
+                : isVisible
+                  ? "text-neutral-400"
+                  : "text-neutral-700"
+            }`}
+            title={name}
+          >
+            {name}
+          </span>
         </span>
       </button>
 
