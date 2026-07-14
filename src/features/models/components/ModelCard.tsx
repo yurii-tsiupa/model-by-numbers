@@ -6,10 +6,14 @@ import {
   FileBox,
   History,
   LoaderCircle,
-  LockKeyhole,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  type KeyboardEvent,
+  type MouseEvent,
+  useState,
+} from "react";
 
 import type { Project } from "../types/Project";
 
@@ -55,13 +59,52 @@ export function ModelCard({
   isDeleting,
   onDelete,
 }: ModelCardProps) {
+  const router = useRouter();
+
   const [hasThumbnailError, setHasThumbnailError] = useState(false);
 
   const shouldShowThumbnail =
     Boolean(project.thumbnailUrl) && !hasThumbnailError;
 
+  function openProject() {
+    if (isDeleting) {
+      return;
+    }
+
+    router.push(`/models/${project.id}`);
+  }
+
+  function handleCardKeyDown(
+    event: KeyboardEvent<HTMLElement>,
+  ) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    openProject();
+  }
+
+  function handleDelete(
+    event: MouseEvent<HTMLButtonElement>,
+  ) {
+    event.stopPropagation();
+    onDelete(project);
+  }
+
   return (
-    <article className="group overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.025] transition duration-300 hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.04]">
+    <article
+      role="link"
+      tabIndex={isDeleting ? -1 : 0}
+      aria-label={`Open ${project.name}`}
+      onClick={openProject}
+      onKeyDown={handleCardKeyDown}
+      className={`group overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.025] transition duration-300 ${
+        isDeleting
+          ? "cursor-wait opacity-70"
+          : "cursor-pointer hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+      }`}
+    >
       <div className="relative aspect-[16/10] overflow-hidden border-b border-white/10 bg-neutral-900">
         {shouldShowThumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -142,17 +185,21 @@ export function ModelCard({
         <div className="mt-5 flex items-center gap-2">
           <button
             type="button"
-            disabled
-            className="flex flex-1 cursor-not-allowed items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-600"
+            disabled={isDeleting}
+            onClick={(event) => {
+              event.stopPropagation();
+              openProject();
+            }}
+            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <LockKeyhole className="h-4 w-4" />
+            <Box className="h-4 w-4" />
             Open
           </button>
 
           <button
             type="button"
             disabled={isDeleting}
-            onClick={() => onDelete(project)}
+            onClick={handleDelete}
             aria-label={`Delete ${project.name}`}
             className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/10 text-neutral-500 transition hover:border-red-400/30 hover:bg-red-400/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
           >

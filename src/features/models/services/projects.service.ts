@@ -4,7 +4,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  orderBy,
   query,
   serverTimestamp,
   setDoc,
@@ -91,6 +90,36 @@ export async function getProjects(
     );
 }
 
+export async function getProjectById(
+  projectId: string,
+  userId: string,
+): Promise<Project> {
+  if (!projectId) {
+    throw new Error("Project ID is required.");
+  }
+
+  if (!userId) {
+    throw new Error("Authentication is required.");
+  }
+
+  const projectReference = doc(db, "projects", projectId);
+  const projectDocument = await getDoc(projectReference);
+
+  if (!projectDocument.exists()) {
+    throw new Error("Project not found.");
+  }
+
+  const project = mapProjectDocument(projectDocument);
+
+  if (project.userId !== userId) {
+    throw new Error(
+      "You do not have permission to open this project.",
+    );
+  }
+
+  return project;
+}
+
 export async function createProject({
   userId,
   name,
@@ -124,8 +153,8 @@ export async function createProject({
     name: trimmedName,
     description: description.trim(),
 
-    modelUrl: null,
-    modelStoragePath: null,
+    modelUrl: localModel.modelUrl,
+    modelStoragePath: localModel.modelStoragePath,
     originalFileName: localModel.originalFileName,
     originalFileSize: localModel.originalFileSize,
     originalFileType: localModel.originalFileType,
@@ -150,6 +179,6 @@ export async function createProject({
 export async function deleteProject(
   project: Project,
 ): Promise<void> {
-  await deleteModelFile(project.modelStoragePath);
+  await deleteModelFile(project.id);
   await deleteDoc(doc(db, "projects", project.id));
 }

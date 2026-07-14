@@ -1,7 +1,4 @@
-import {
-  ACCEPTED_MODEL_EXTENSIONS,
-  MAX_MODEL_FILE_SIZE,
-} from "../constants/project.constants";
+import { deleteLocalModelFile, getModelFile, saveModelFile } from "@/features/model-editor/services/model-file.service";
 
 type UploadModelParams = {
   userId: string;
@@ -10,66 +7,70 @@ type UploadModelParams = {
   onProgress?: (progress: number) => void;
 };
 
-export type UploadedModel = {
-  downloadUrl: null;
-  storagePath: null;
+type UploadModelResult = {
+  modelUrl: null;
+  modelStoragePath: null;
+
   originalFileName: string;
   originalFileSize: number;
   originalFileType: string;
 };
 
-function validateModelFile(file: File): void {
-  const extension = `.${file.name.split(".").pop()?.toLowerCase()}`;
+const FAKE_UPLOAD_STEPS = [12, 28, 46, 68, 84, 100];
 
-  if (
-    !ACCEPTED_MODEL_EXTENSIONS.includes(
-      extension as (typeof ACCEPTED_MODEL_EXTENSIONS)[number],
-    )
-  ) {
-    throw new Error("Only .glb files are currently supported.");
-  }
-
-  if (file.size === 0) {
-    throw new Error("The selected file is empty.");
-  }
-
-  if (file.size > MAX_MODEL_FILE_SIZE) {
-    throw new Error("The model file must not exceed 50 MB.");
-  }
-}
-
-function wait(duration: number): Promise<void> {
+function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
-    window.setTimeout(resolve, duration);
+    window.setTimeout(resolve, milliseconds);
   });
 }
 
 export async function uploadModel({
+  userId,
+  projectId,
   file,
   onProgress,
-}: UploadModelParams): Promise<UploadedModel> {
-  validateModelFile(file);
+}: UploadModelParams): Promise<UploadModelResult> {
+  onProgress?.(0);
 
-  // Temporary local-only upload simulation.
-  // The file is not sent to Firebase Storage.
-  const progressSteps = [10, 25, 45, 70, 90, 100];
-
-  for (const progress of progressSteps) {
-    await wait(120);
+  for (const progress of FAKE_UPLOAD_STEPS.slice(0, -1)) {
+    await wait(90);
     onProgress?.(progress);
   }
 
+  await saveModelFile({
+    projectId,
+    userId,
+    file,
+  });
+
+  onProgress?.(100);
+
   return {
-    downloadUrl: null,
-    storagePath: null,
+    modelUrl: null,
+    modelStoragePath: null,
+
     originalFileName: file.name,
     originalFileSize: file.size,
-    originalFileType: file.type || "model/gltf-binary",
+    originalFileType:
+      file.type || "model/gltf-binary",
   };
 }
 
+export async function loadLocalModelFile({
+  projectId,
+  userId,
+}: {
+  projectId: string;
+  userId: string;
+}): Promise<File | null> {
+  return getModelFile({
+    projectId,
+    userId,
+  });
+}
+
 export async function deleteModelFile(
-  _storagePath: string | null,
+  projectId: string,
 ): Promise<void> {
-  // Temporary no-op until Firebase Storage is enabled.
+  await deleteLocalModelFile(projectId);
 }
