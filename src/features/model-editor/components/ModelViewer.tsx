@@ -137,8 +137,28 @@ export function ModelViewer({
 
   const [retryKey, setRetryKey] = useState(0);
 
+  const parts = useModelEditorStore(
+    (state) => state.parts,
+  );
+
+  const selectedPartId = useModelEditorStore(
+    (state) => state.selectedPartId,
+  );
+
   const selectPart = useModelEditorStore(
     (state) => state.selectPart,
+  );
+
+  const showAllParts = useModelEditorStore(
+    (state) => state.showAllParts,
+  );
+
+  const hideSelectedPart = useModelEditorStore(
+    (state) => state.hideSelectedPart,
+  );
+
+  const isolateSelectedPart = useModelEditorStore(
+    (state) => state.isolateSelectedPart,
   );
 
   const localModel = useLocalModelUrl({
@@ -250,7 +270,12 @@ export function ModelViewer({
 
       <ViewerToolbar
         isGridVisible={isGridVisible}
+        hasParts={parts.length > 0}
+        hasSelectedPart={Boolean(selectedPartId)}
         onResetCamera={handleResetCamera}
+        onShowAll={showAllParts}
+        onHideSelected={hideSelectedPart}
+        onIsolateSelected={isolateSelectedPart}
         onToggleGrid={() =>
           setIsGridVisible((currentValue) => !currentValue)
         }

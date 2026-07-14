@@ -1,5 +1,6 @@
 import {
   Eye,
+  EyeOff,
   Focus,
   Grid3X3,
   Maximize,
@@ -9,7 +10,13 @@ import {
 
 type ViewerToolbarProps = {
   isGridVisible: boolean;
+  hasParts: boolean;
+  hasSelectedPart: boolean;
+
   onResetCamera: () => void;
+  onShowAll: () => void;
+  onHideSelected: () => void;
+  onIsolateSelected: () => void;
   onToggleGrid: () => void;
 };
 
@@ -23,7 +30,12 @@ type ToolbarItem = {
 
 export function ViewerToolbar({
   isGridVisible,
+  hasParts,
+  hasSelectedPart,
   onResetCamera,
+  onShowAll,
+  onHideSelected,
+  onIsolateSelected,
   onToggleGrid,
 }: ViewerToolbarProps) {
   const toolbarItems: ToolbarItem[] = [
@@ -41,12 +53,20 @@ export function ViewerToolbar({
     {
       label: "Show all",
       icon: Eye,
-      disabled: true,
+      disabled: !hasParts,
+      onClick: onShowAll,
+    },
+    {
+      label: "Hide selected",
+      icon: EyeOff,
+      disabled: !hasSelectedPart,
+      onClick: onHideSelected,
     },
     {
       label: "Isolate selected",
       icon: Scan,
-      disabled: true,
+      disabled: !hasSelectedPart,
+      onClick: onIsolateSelected,
     },
     {
       label: "Toggle grid",

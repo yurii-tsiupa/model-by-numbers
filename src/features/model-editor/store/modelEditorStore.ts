@@ -9,7 +9,11 @@ type ModelEditorState = {
   setParts: (parts: ModelPart[]) => void;
   selectPart: (partId: string | null) => void;
   togglePartVisibility: (partId: string) => void;
+
   showAllParts: () => void;
+  hideSelectedPart: () => void;
+  isolateSelectedPart: () => void;
+
   resetEditor: () => void;
 };
 
@@ -51,6 +55,41 @@ export const useModelEditorStore =
           visible: true,
         })),
       }));
+    },
+
+    hideSelectedPart: () => {
+      set((state) => {
+        if (!state.selectedPartId) {
+          return state;
+        }
+
+        return {
+          parts: state.parts.map((part) =>
+            part.id === state.selectedPartId
+              ? {
+                  ...part,
+                  visible: false,
+                }
+              : part,
+          ),
+          selectedPartId: null,
+        };
+      });
+    },
+
+    isolateSelectedPart: () => {
+      set((state) => {
+        if (!state.selectedPartId) {
+          return state;
+        }
+
+        return {
+          parts: state.parts.map((part) => ({
+            ...part,
+            visible: part.id === state.selectedPartId,
+          })),
+        };
+      });
     },
 
     resetEditor: () => {
