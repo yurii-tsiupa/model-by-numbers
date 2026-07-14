@@ -3,14 +3,21 @@
 import {
   ArrowLeft,
   BookOpen,
+  LoaderCircle,
   Save,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import type { Project } from "@/features/models/types/Project";
 
+import {
+  type EditorSaveStatus,
+  useModelEditorStore,
+} from "../store/modelEditorStore";
+
 type EditorHeaderProps = {
   project: Project;
+  onSave: () => void;
 };
 
 const statusLabels: Record<Project["status"], string> = {
@@ -21,10 +28,26 @@ const statusLabels: Record<Project["status"], string> = {
   archived: "Archived",
 };
 
+const saveStatusLabels: Record<EditorSaveStatus, string> = {
+  saved: "Saved",
+  dirty: "Unsaved changes",
+  saving: "Saving...",
+  error: "Save failed",
+};
+
 export function EditorHeader({
   project,
+  onSave,
 }: EditorHeaderProps) {
   const router = useRouter();
+
+  const isDirty = useModelEditorStore(
+    (state) => state.isDirty,
+  );
+
+  const saveStatus = useModelEditorStore(
+    (state) => state.saveStatus,
+  );
 
   return (
     <header className="shrink-0 border-b border-white/10 bg-neutral-950/90 backdrop-blur-xl">
@@ -51,7 +74,7 @@ export function EditorHeader({
             </div>
 
             <p className="mt-0.5 truncate text-xs text-neutral-500">
-              {project.originalFileName || "Model project"}
+              {saveStatusLabels[saveStatus]}
             </p>
           </div>
         </div>
@@ -59,11 +82,17 @@ export function EditorHeader({
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            disabled
-            className="hidden cursor-not-allowed items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-600 sm:flex"
+            disabled={!isDirty || saveStatus === "saving"}
+            onClick={onSave}
+            className="hidden cursor-pointer items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:text-neutral-600 sm:flex"
           >
-            <Save className="h-4 w-4" />
-            Save
+            {saveStatus === "saving" ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+
+            {saveStatus === "saving" ? "Saving" : "Save"}
           </button>
 
           <button

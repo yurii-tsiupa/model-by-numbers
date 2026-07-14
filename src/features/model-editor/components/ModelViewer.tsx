@@ -50,10 +50,12 @@ type SceneProps = {
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
   isGridVisible: boolean;
   onModelReady: (model: Object3D) => void;
+  savedParts: Project["parts"];
 };
 
 function Scene({
   modelUrl,
+  savedParts,
   controlsRef,
   isGridVisible,
   onModelReady,
@@ -87,6 +89,7 @@ function Scene({
       <Suspense fallback={null}>
         <LoadedModel
           modelUrl={modelUrl}
+          savedParts={savedParts}
           onModelReady={onModelReady}
         />
 
@@ -321,6 +324,7 @@ export function ModelViewer({
           >
             <Scene
               modelUrl={localModel.modelUrl}
+              savedParts={project.parts}
               controlsRef={controlsRef}
               isGridVisible={isGridVisible}
               onModelReady={handleModelReady}

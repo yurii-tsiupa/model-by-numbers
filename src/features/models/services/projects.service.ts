@@ -8,6 +8,7 @@ import {
   serverTimestamp,
   setDoc,
   Timestamp,
+  updateDoc,
   where,
   type DocumentData,
   type DocumentSnapshot,
@@ -17,9 +18,10 @@ import { db } from "@/lib/firebase/client";
 
 import type {
   CreateProjectInput,
-  Project,
+  Project
 } from "../types/Project";
 import { deleteModelFile, uploadModel } from "./storage.service";
+import { ProjectPart } from "../types/ProjectPart";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -54,6 +56,18 @@ function mapProjectDocument(
     printerType: data.printerType,
     material: data.material,
     baseColor: data.baseColor,
+
+    parts: Array.isArray(data.parts)
+      ? data.parts.map((part: Partial<ProjectPart>) => ({
+          id: String(part.id ?? ""),
+          name: String(part.name ?? "Unnamed part"),
+          visible: part.visible !== false,
+          color:
+            typeof part.color === "string"
+              ? part.color
+              : null,
+        }))
+      : [],
 
     createdAt:
       data.createdAt instanceof Timestamp
@@ -167,6 +181,8 @@ export async function createProject({
     material,
     baseColor,
 
+    parts: [],
+
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -181,4 +197,47 @@ export async function deleteProject(
 ): Promise<void> {
   await deleteModelFile(project.id);
   await deleteDoc(doc(db, "projects", project.id));
+}
+
+export async function saveProjectParts({
+  projectId,
+  userId,
+  parts,
+}: {
+  projectId: string;
+  userId: string;
+  parts: ProjectPart[];
+}): Promise<void> {
+  if (!projectId || !userId) {
+    throw new Error(
+      "Project ID and authenticated user are required.",
+    );
+  }
+
+  const projectReference = doc(
+    db,
+    "projects",
+    projectId,
+  );
+
+  const projectDocument = await getDoc(
+    projectReference,
+  );
+
+  if (!projectDocument.exists()) {
+    throw new Error("Project not found.");
+  }
+
+  const projectData = projectDocument.data();
+
+  if (projectData.userId !== userId) {
+    throw new Error(
+      "You do not have permission to update this project.",
+    );
+  }
+
+  await updateDoc(projectReference, {
+    parts,
+    updatedAt: serverTimestamp(),
+  });
 }

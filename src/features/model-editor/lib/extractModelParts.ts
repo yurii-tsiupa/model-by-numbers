@@ -58,7 +58,7 @@ export function extractModelParts(
     const trimmedName = object.name.trim();
 
     parts.push({
-      id: object.uuid,
+      id: `part-${index}`,
       meshUuid: object.uuid,
       name:
         trimmedName ||

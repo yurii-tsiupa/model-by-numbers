@@ -1,4 +1,5 @@
 import type { ProjectStatus } from "./ProjectStatus";
+import type { ProjectPart } from "./ProjectPart";
 
 export type PrinterType = "fdm" | "resin" | "other";
 
@@ -30,6 +31,8 @@ export type Project = {
   printerType: PrinterType;
   material: ProjectMaterial;
   baseColor: string;
+
+  parts: ProjectPart[];
 
   createdAt: Date;
   updatedAt: Date;

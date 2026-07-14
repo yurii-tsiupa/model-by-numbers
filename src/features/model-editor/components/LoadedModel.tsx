@@ -5,6 +5,7 @@ import type { ThreeEvent } from "@react-three/fiber";
 import {
   useEffect,
   useMemo,
+  useRef,
 } from "react";
 import {
   Mesh,
@@ -20,17 +21,23 @@ import {
 } from "../lib/prepareModelMeshes";
 import { syncModelParts } from "../lib/syncModelParts";
 import { useModelEditorStore } from "../store/modelEditorStore";
+import { ProjectPart } from "@/features/models/types/ProjectPart";
+import { mergeModelParts } from "../lib/mergeModelParts";
 
 type LoadedModelProps = {
   modelUrl: string;
+  savedParts: ProjectPart[];
   onModelReady?: (model: Object3D) => void;
 };
 
 export function LoadedModel({
   modelUrl,
+  savedParts,
   onModelReady,
 }: LoadedModelProps) {
   const gltf = useGLTF(modelUrl) as GLTF;
+
+  const hasInitializedPartsRef = useRef(false);
 
   const parts = useModelEditorStore(
     (state) => state.parts,
@@ -59,11 +66,21 @@ export function LoadedModel({
   }, [gltf.scene]);
 
   useEffect(() => {
+    if (hasInitializedPartsRef.current) {
+      return;
+    }
+
     const extractedParts =
       extractModelParts(model);
 
-    setParts(extractedParts);
-  }, [model, setParts]);
+    const mergedParts = mergeModelParts(
+      extractedParts,
+      savedParts,
+    );
+
+    setParts(mergedParts);
+    hasInitializedPartsRef.current = true;
+  }, [model, savedParts, setParts]);
 
   useEffect(() => {
     onModelReady?.(model);
