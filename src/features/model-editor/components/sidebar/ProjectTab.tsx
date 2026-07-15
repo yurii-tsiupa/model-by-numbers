@@ -6,6 +6,8 @@ import {
 
 import type { Project } from "@/features/models/types/Project";
 
+import { GuideReadinessPanel } from "./GuideReadinessPanel";
+
 type ProjectTabProps = {
   project: Project;
 };
@@ -48,9 +50,7 @@ export function ProjectTab({
           </div>
 
           <p className="mt-2 text-sm text-neutral-300">
-            {printerLabels[
-              project.printerType
-            ]}
+            {printerLabels[project.printerType]}
           </p>
         </div>
 
@@ -61,9 +61,7 @@ export function ProjectTab({
           </div>
 
           <p className="mt-2 text-sm text-neutral-300">
-            {materialLabels[
-              project.material
-            ]}
+            {materialLabels[project.material]}
           </p>
         </div>
 
@@ -77,8 +75,7 @@ export function ProjectTab({
             <span
               className="h-5 w-5 rounded-full border border-white/20"
               style={{
-                backgroundColor:
-                  project.baseColor,
+                backgroundColor: project.baseColor,
               }}
             />
 
@@ -88,6 +85,8 @@ export function ProjectTab({
           </div>
         </div>
       </div>
+
+      <GuideReadinessPanel project={project} />
     </div>
   );
 }
