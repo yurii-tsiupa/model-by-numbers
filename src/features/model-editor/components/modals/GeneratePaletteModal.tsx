@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type {
   GeneratePaletteOptions,
@@ -9,10 +9,13 @@ import type {
 } from "../../types/PaletteGeneration";
 import { optimizationOptions } from "../../constants/paletteGeneration";
 import { DEFAULT_PALETTE_GENERATION_OPTIONS } from "../../constants/defaultPaletteGenerationOptions";
+import { getPaletteGenerationPreview } from "../../utils/getPaletteGenerationPreview";
+import { ModelPart } from "../../types/ModelPart";
 
 type GeneratePaletteModalProps = {
   isOpen: boolean;
   hasPalette: boolean;
+  parts: ModelPart[];
   isLoading?: boolean;
 
   onClose: () => void;
@@ -25,6 +28,7 @@ type GeneratePaletteModalProps = {
 export function GeneratePaletteModal({
   isOpen,
   hasPalette,
+  parts,
   isLoading = false,
   onClose,
   onGenerate,
@@ -45,6 +49,21 @@ export function GeneratePaletteModal({
       DEFAULT_PALETTE_GENERATION_OPTIONS.optimization,
     );
   }, []);
+
+  const preview = useMemo(
+    () =>
+      getPaletteGenerationPreview(
+        parts,
+        {
+          source,
+          optimization,
+        },
+      ),
+    [optimization, parts, source],
+  );
+
+  const canGenerate =
+    parts.length > 0 && !isLoading;
 
   const handleClose = useCallback(() => {
     resetOptions();
@@ -182,6 +201,57 @@ export function GeneratePaletteModal({
               )}
             </div>
           </section>
+
+          <section>
+            <h3 className="text-sm font-medium text-white">
+              Estimated result
+            </h3>
+
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-3">
+                <p className="text-xs text-neutral-600">
+                  Original
+                </p>
+
+                <p className="mt-2 text-xl font-semibold text-white">
+                  {preview.originalColorCount}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-3">
+                <p className="text-xs text-neutral-600">
+                  Generated
+                </p>
+
+                <p className="mt-2 text-xl font-semibold text-white">
+                  {preview.generatedColorCount}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-3">
+                <p className="text-xs text-neutral-600">
+                  Merged
+                </p>
+
+                <p className="mt-2 text-xl font-semibold text-orange-300">
+                  {preview.mergedColorCount}
+                </p>
+              </div>
+            </div>
+
+            {parts.length === 0 ? (
+              <p className="mt-3 text-xs leading-5 text-red-400">
+                No model parts are available for palette
+                generation.
+              </p>
+            ) : preview.mergedColorCount === 0 &&
+              optimization !== "none" ? (
+              <p className="mt-3 text-xs leading-5 text-neutral-500">
+                The model colors are already sufficiently
+                different for this optimization level.
+              </p>
+            ) : null}
+          </section>
         </div>
 
         <div className="flex justify-end gap-3 border-t border-white/10 p-6">
@@ -196,14 +266,18 @@ export function GeneratePaletteModal({
 
           <button
             type="button"
-            disabled={isLoading}
-            onClick={() =>
+            disabled={!canGenerate}
+            onClick={() => {
+              if (!canGenerate) {
+                return;
+              }
+
               onGenerate({
                 source,
                 optimization,
-              })
-            }
-            className="rounded-xl bg-orange-500 px-5 py-2 text-sm font-medium text-white transition hover:bg-orange-400 disabled:opacity-50"
+              });
+            }}
+            className="rounded-xl bg-orange-500 px-5 py-2 text-sm font-medium text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Generate
           </button>

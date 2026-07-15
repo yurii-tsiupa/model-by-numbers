@@ -1,7 +1,9 @@
 import type { ModelPart } from "../types/ModelPart";
 import type { GeneratePaletteOptions } from "../types/PaletteGeneration";
 
+import { PALETTE_THRESHOLDS } from "../constants/paletteThresholds";
 import { generatePaletteFromModel } from "./generatePaletteFromModel";
+import { generateReducedPalette } from "./generateReducedPalette";
 
 export function generatePalette(
   parts: ModelPart[],
@@ -25,13 +27,22 @@ function generateOriginalPalette(
       return generatePaletteFromModel(parts);
 
     case "low":
-      return generatePaletteFromModel(parts);
+      return generateReducedPalette(
+        parts,
+        PALETTE_THRESHOLDS.low,
+      );
 
     case "medium":
-      return generatePaletteFromModel(parts);
+      return generateReducedPalette(
+        parts,
+        PALETTE_THRESHOLDS.medium,
+      );
 
     case "high":
-      return generatePaletteFromModel(parts);
+      return generateReducedPalette(
+        parts,
+        PALETTE_THRESHOLDS.high,
+      );
 
     default:
       return generatePaletteFromModel(parts);

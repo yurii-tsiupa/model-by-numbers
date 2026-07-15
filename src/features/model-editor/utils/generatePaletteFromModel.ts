@@ -1,53 +1,17 @@
-import { PaletteColor } from "@/features/models/types/PaletteColor";
 import type { ModelPart } from "../types/ModelPart";
+import {
+  buildPalette,
+  type GeneratePaletteResult,
+} from "./buildPalette";
 
-type GeneratePaletteResult = {
-  palette: PaletteColor[];
-  parts: ModelPart[];
-};
+const FALLBACK_COLOR = "#808080";
 
 export function generatePaletteFromModel(
   parts: ModelPart[],
 ): GeneratePaletteResult {
-  const palette: PaletteColor[] = [];
-  const paletteMap = new Map<string, string>();
-
-  let colorNumber = 1;
-
-  const updatedParts = parts.map((part) => {
-    const hex =
-      part.originalColor?.toUpperCase() ??
-      "#808080";
-
-    let paletteColorId =
-      paletteMap.get(hex);
-
-    if (!paletteColorId) {
-      paletteColorId = crypto.randomUUID();
-
-      paletteMap.set(hex, paletteColorId);
-
-      palette.push({
-        id: paletteColorId,
-        number: colorNumber,
-        name: `Color ${colorNumber}`,
-        hex,
-      });
-
-      colorNumber++;
-    }
-
-    return {
-      ...part,
-
-      color: hex,
-
-      paletteColorId,
-    };
+  return buildPalette({
+    parts,
+    resolveColor: (part) =>
+      part.originalColor ?? FALLBACK_COLOR,
   });
-
-  return {
-    palette,
-    parts: updatedParts,
-  };
 }

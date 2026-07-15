@@ -519,12 +519,12 @@ export function PaletteTab() {
       <GeneratePaletteModal
         isOpen={isGeneratePaletteModalOpen}
         hasPalette={palette.length > 0}
+        parts={parts}
         onClose={() =>
           setIsGeneratePaletteModalOpen(false)
         }
         onGenerate={(options) => {
           generatePalette(options);
-
           setIsGeneratePaletteModalOpen(false);
         }}
       />
