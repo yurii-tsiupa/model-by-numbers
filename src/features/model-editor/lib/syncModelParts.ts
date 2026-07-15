@@ -1,3 +1,5 @@
+import type { PaletteColor } from "@/features/models/types/PaletteColor";
+
 import {
   Color,
   Mesh,
@@ -7,12 +9,12 @@ import {
 } from "three";
 
 import type { ModelPart } from "../types/ModelPart";
+import type { ViewerMode } from "../types/ViewerMode";
 import {
   getOriginalEmissive,
   getOriginalEmissiveIntensity,
   getOriginalMaterialColor,
 } from "./prepareModelMeshes";
-import { PaletteColor } from "@/features/models/types/PaletteColor";
 
 const SELECTED_EMISSIVE_COLOR = new Color(
   "#f97316",
@@ -24,6 +26,14 @@ type MaterialWithColor = Material & {
   color: Color;
 };
 
+type SyncMeshMaterialsParams = {
+  mesh: Mesh;
+  viewerMode: ViewerMode;
+  baseColor: string;
+  paintedColor: string | null;
+  isSelected: boolean;
+};
+
 function hasMaterialColor(
   material: Material,
 ): material is MaterialWithColor {
@@ -33,26 +43,63 @@ function hasMaterialColor(
   );
 }
 
-function updateMaterialColor(
+function restoreOriginalMaterialColor(
   material: Material,
-  assignedColor: string | null,
 ): void {
   if (!hasMaterialColor(material)) {
     return;
   }
 
-  if (assignedColor) {
-    material.color.set(assignedColor);
-  } else {
-    const originalColor =
-      getOriginalMaterialColor(material);
+  const originalColor =
+    getOriginalMaterialColor(material);
 
-    if (originalColor !== null) {
-      material.color.setHex(originalColor);
-    }
+  if (originalColor !== null) {
+    material.color.setHex(originalColor);
   }
 
   material.needsUpdate = true;
+}
+
+function updateMaterialDisplayColor({
+  material,
+  viewerMode,
+  baseColor,
+  paintedColor,
+}: {
+  material: Material;
+  viewerMode: ViewerMode;
+  baseColor: string;
+  paintedColor: string | null;
+}): void {
+  if (!hasMaterialColor(material)) {
+    return;
+  }
+
+  switch (viewerMode) {
+    case "original": {
+      restoreOriginalMaterialColor(material);
+      return;
+    }
+
+    case "base": {
+      material.color.set(baseColor);
+      material.needsUpdate = true;
+      return;
+    }
+
+    case "painted": {
+      material.color.set(
+        paintedColor ?? baseColor,
+      );
+
+      material.needsUpdate = true;
+      return;
+    }
+
+    default: {
+      restoreOriginalMaterialColor(material);
+    }
+  }
 }
 
 function updateMaterialSelection(
@@ -89,13 +136,11 @@ function updateMaterialSelection(
 
 function syncMeshMaterials({
   mesh,
-  assignedColor,
+  viewerMode,
+  baseColor,
+  paintedColor,
   isSelected,
-}: {
-  mesh: Mesh;
-  assignedColor: string | null;
-  isSelected: boolean;
-}): void {
+}: SyncMeshMaterialsParams): void {
   const materials = Array.isArray(
     mesh.material,
   )
@@ -103,10 +148,12 @@ function syncMeshMaterials({
     : [mesh.material];
 
   materials.forEach((material) => {
-    updateMaterialColor(
+    updateMaterialDisplayColor({
       material,
-      assignedColor,
-    );
+      viewerMode,
+      baseColor,
+      paintedColor,
+    });
 
     updateMaterialSelection(
       material,
@@ -119,6 +166,8 @@ export function syncModelParts({
   model,
   parts,
   palette,
+  viewerMode,
+  baseColor,
   selectedPartId,
   selectedPartIds,
   highlightedPaletteColorId,
@@ -126,13 +175,17 @@ export function syncModelParts({
   model: Object3D;
   parts: ModelPart[];
   palette: PaletteColor[];
+  viewerMode: ViewerMode;
+  baseColor: string;
   selectedPartId: string | null;
   selectedPartIds: string[];
   highlightedPaletteColorId: string | null;
 }): void {
-
   const paletteById = new Map(
-    palette.map((color) => [color.id, color]),
+    palette.map((color) => [
+      color.id,
+      color,
+    ]),
   );
 
   const partsByMeshUuid = new Map(
@@ -157,12 +210,17 @@ export function syncModelParts({
 
     object.visible = part.visible;
 
-    const paletteColor = part.paletteColorId
-      ? paletteById.get(part.paletteColorId)
-      : null;
+    const paletteColor =
+      part.paletteColorId
+        ? paletteById.get(
+            part.paletteColorId,
+          )
+        : null;
 
-    const assignedColor =
-      paletteColor?.hex ?? part.color;
+    const paintedColor =
+      paletteColor?.hex ??
+      part.color ??
+      null;
 
     const isSingleSelected =
       selectedPartId === part.id;
@@ -171,17 +229,21 @@ export function syncModelParts({
       selectedPartIds.includes(part.id);
 
     const isPaletteHighlighted =
-      Boolean(highlightedPaletteColorId) &&
+      Boolean(
+        highlightedPaletteColorId,
+      ) &&
       part.paletteColorId ===
         highlightedPaletteColorId;
 
     syncMeshMaterials({
       mesh: object,
-      assignedColor,
+      viewerMode,
+      baseColor,
+      paintedColor,
       isSelected:
-          isSingleSelected ||
-          isBatchSelected ||
-          isPaletteHighlighted
-          });
+        isSingleSelected ||
+        isBatchSelected ||
+        isPaletteHighlighted,
+    });
   });
 }

@@ -7,6 +7,7 @@ import { normalizeHexColor } from "../lib/normalizeHexColor";
 import { EditorSidebarTab } from "../types/EditorSidebarTab";
 import { GeneratePaletteOptions } from "../types/PaletteGeneration";
 import { generatePalette } from "../utils/generatePalette";
+import { ViewerMode } from "../types/ViewerMode";
 
 export type EditorSaveStatus =
   | "saved"
@@ -35,6 +36,12 @@ type ModelEditorState = {
   selectionMode: SelectionMode;
 
   selectedPartIds: string[];
+
+  viewerMode: ViewerMode;
+
+  setViewerMode: (
+    mode: ViewerMode,
+  ) => void;
 
   setActiveSidebarTab: (
     tab: EditorSidebarTab,
@@ -182,6 +189,8 @@ export const useModelEditorStore =
     selectionMode: "single",
 
     selectedPartIds: [],
+
+    viewerMode: "painted",
 
     isDirty: false,
     saveStatus: "saved",
@@ -727,6 +736,12 @@ export const useModelEditorStore =
       });
     },
 
+    setViewerMode: (viewerMode) => {
+      set({
+        viewerMode,
+      });
+    },
+
     resetEditor: () => {
       set({
         parts: [],
@@ -736,6 +751,7 @@ export const useModelEditorStore =
         highlightedPaletteColorId: null,
         selectionMode: "single",
         selectedPartIds: [],
+        viewerMode: "painted",
         isDirty: false,
         saveStatus: "saved",
         changeVersion: 0,

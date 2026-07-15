@@ -31,6 +31,8 @@ import { ViewerToolbar } from "./ViewerToolbar";
 import { useModelEditorStore } from "../store/modelEditorStore";
 import { fitCameraToBounds } from "../lib/fitCameraToBounds";
 import { getModelBounds } from "../lib/getModelBounds";
+import { ViewerModeSwitcher } from "./ViewerModeSwitcher";
+import type { ViewerMode } from "../types/ViewerMode";
 
 type ModelViewerProps = {
   project: Project;
@@ -51,6 +53,8 @@ type SceneProps = {
   isGridVisible: boolean;
   onModelReady: (model: Object3D) => void;
   savedParts: Project["parts"];
+  baseColor: string;
+  viewerMode: ViewerMode;
 };
 
 function Scene({
@@ -59,6 +63,8 @@ function Scene({
   controlsRef,
   isGridVisible,
   onModelReady,
+  baseColor,
+  viewerMode
 }: SceneProps) {
   return (
     <>
@@ -90,6 +96,8 @@ function Scene({
         <LoadedModel
           modelUrl={modelUrl}
           savedParts={savedParts}
+          viewerMode={viewerMode}
+          baseColor={baseColor}
           onModelReady={onModelReady}
         />
 
@@ -176,6 +184,10 @@ export function ModelViewer({
 
   const isolateSelectedPart = useModelEditorStore(
     (state) => state.isolateSelectedPart,
+  );
+
+  const viewerMode = useModelEditorStore(
+    (state) => state.viewerMode,
   );
 
   const localModel = useLocalModelUrl({
@@ -325,6 +337,8 @@ export function ModelViewer({
             <Scene
               modelUrl={localModel.modelUrl}
               savedParts={project.parts}
+              viewerMode={viewerMode}
+              baseColor={project.baseColor}
               controlsRef={controlsRef}
               isGridVisible={isGridVisible}
               onModelReady={handleModelReady}
@@ -332,6 +346,10 @@ export function ModelViewer({
           </Canvas>
         </ViewerErrorBoundary>
       ) : null}
+
+      <div className="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center px-4">
+        <ViewerModeSwitcher />
+      </div>
 
       <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[calc(100%-2rem)] rounded-2xl border border-white/10 bg-black/45 px-4 py-3 backdrop-blur-xl">
         <p className="truncate text-sm font-medium text-white">

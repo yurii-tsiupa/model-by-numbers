@@ -23,16 +23,23 @@ import { syncModelParts } from "../lib/syncModelParts";
 import { useModelEditorStore } from "../store/modelEditorStore";
 import { ProjectPart } from "@/features/models/types/ProjectPart";
 import { mergeModelParts } from "../lib/mergeModelParts";
+import { ViewerMode } from "../types/ViewerMode";
 
 type LoadedModelProps = {
   modelUrl: string;
   savedParts: ProjectPart[];
-  onModelReady?: (model: Object3D) => void;
+  viewerMode: ViewerMode;
+  baseColor: string;
+  onModelReady?: (
+    model: Object3D,
+  ) => void;
 };
 
 export function LoadedModel({
   modelUrl,
   savedParts,
+  viewerMode,
+  baseColor,
   onModelReady,
 }: LoadedModelProps) {
   const gltf = useGLTF(modelUrl) as GLTF;
@@ -116,6 +123,8 @@ export function LoadedModel({
       model,
       parts,
       palette,
+      viewerMode,
+      baseColor,
       selectedPartId,
       selectedPartIds,
       highlightedPaletteColorId,
@@ -124,6 +133,8 @@ export function LoadedModel({
     model,
     parts,
     palette,
+    viewerMode,
+    baseColor,
     selectedPartId,
     selectedPartIds,
     highlightedPaletteColorId,
