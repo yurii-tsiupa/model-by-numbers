@@ -21,6 +21,7 @@ export function mergeModelParts(
       ...part,
       name: savedPart.name || part.name,
       visible: savedPart.visible,
+      includeInGuide: savedPart.includeInGuide !== false,
 
       // Legacy projects may still contain direct HEX values.
       color: savedPart.paletteColorId

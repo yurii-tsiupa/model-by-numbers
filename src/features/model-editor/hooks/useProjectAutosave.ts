@@ -22,6 +22,7 @@ function serializeParts(): ProjectPart[] {
       id: part.id,
       name: part.name,
       visible: part.visible,
+      includeInGuide: part.includeInGuide,
       color: part.color,
       paletteColorId: part.paletteColorId,
     }));

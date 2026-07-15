@@ -63,6 +63,7 @@ function mapProjectDocument(
           id: String(part.id ?? ""),
           name: String(part.name ?? "Unnamed part"),
           visible: part.visible !== false,
+          includeInGuide: part.includeInGuide !== false,
 
           color:
             typeof part.color === "string"

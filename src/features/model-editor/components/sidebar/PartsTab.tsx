@@ -8,6 +8,7 @@ import { PartListItem } from "../PartListItem";
 
 export function PartsTab() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "painted" | "unpainted" | "hidden" | "included" | "excluded">("all");
 
   const parts = useModelEditorStore(
     (state) => state.parts,
@@ -30,6 +31,8 @@ export function PartsTab() {
       (state) =>
         state.togglePartVisibility,
     );
+  const setPartIncludedInGuide = useModelEditorStore((state) => state.setPartIncludedInGuide);
+  const setPartsIncludedInGuide = useModelEditorStore((state) => state.setPartsIncludedInGuide);
 
   const paletteById = useMemo(
     () =>
@@ -47,16 +50,18 @@ export function PartsTab() {
       .trim()
       .toLowerCase();
 
-    if (!normalizedQuery) {
-      return parts;
-    }
-
-    return parts.filter((part) =>
-      part.name
-        .toLowerCase()
-        .includes(normalizedQuery),
-    );
-  }, [parts, searchQuery]);
+    return parts.filter((part) => {
+      const matchesSearch = !normalizedQuery || part.name.toLowerCase().includes(normalizedQuery);
+      const hasValidColor = Boolean(part.paletteColorId && paletteById.has(part.paletteColorId));
+      const matchesFilter = filter === "all" ||
+        (filter === "painted" && hasValidColor) ||
+        (filter === "unpainted" && !hasValidColor) ||
+        (filter === "hidden" && !part.visible) ||
+        (filter === "included" && part.includeInGuide) ||
+        (filter === "excluded" && !part.includeInGuide);
+      return matchesSearch && matchesFilter;
+    });
+  }, [filter, paletteById, parts, searchQuery]);
 
   const hasParts = parts.length > 0;
 
@@ -93,6 +98,13 @@ export function PartsTab() {
             className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.025] pl-9 pr-3 text-sm text-neutral-300 outline-none transition placeholder:text-neutral-700 focus:border-white/20 disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {(["all", "painted", "unpainted", "hidden", "included", "excluded"] as const).map((option) => <button key={option} type="button" onClick={() => setFilter(option)} className={`cursor-pointer rounded-full border px-2.5 py-1 text-[11px] capitalize transition ${filter === option ? "border-orange-400/30 bg-orange-400/10 text-orange-300" : "border-white/10 text-neutral-500 hover:text-neutral-300"}`}>{option}</button>)}
+        </div>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <span className="text-xs text-neutral-600">{filteredParts.length} of {parts.length} results</span>
+          {filteredParts.length > 0 ? <div className="flex gap-2"><button type="button" onClick={() => setPartsIncludedInGuide(filteredParts.map((part) => part.id), true)} className="cursor-pointer text-[11px] text-neutral-500 hover:text-orange-300">Include filtered</button><button type="button" onClick={() => setPartsIncludedInGuide(filteredParts.map((part) => part.id), false)} className="cursor-pointer text-[11px] text-neutral-500 hover:text-red-300">Exclude filtered</button></div> : null}
+        </div>
       </div>
 
       {!hasParts ? (
@@ -115,7 +127,7 @@ export function PartsTab() {
             </p>
 
             <p className="mt-1 text-xs text-neutral-600">
-              Try another search term.
+              Try another search term or filter.
             </p>
           </div>
         </div>
@@ -141,6 +153,7 @@ export function PartsTab() {
                     part.id
                   }
                   isVisible={part.visible}
+                  isIncludedInGuide={part.includeInGuide}
                   onSelect={() =>
                     selectPart(part.id)
                   }
@@ -149,6 +162,7 @@ export function PartsTab() {
                       part.id,
                     )
                   }
+                  onToggleGuideInclusion={() => setPartIncludedInGuide(part.id, !part.includeInGuide)}
                 />
               );
             })}

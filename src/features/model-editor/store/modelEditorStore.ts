@@ -77,6 +77,16 @@ type ModelEditorState = {
     partId: string,
   ) => void;
 
+  setPartIncludedInGuide: (
+    partId: string,
+    included: boolean,
+  ) => void;
+
+  setPartsIncludedInGuide: (
+    partIds: string[],
+    included: boolean,
+  ) => void;
+
   assignPaletteColor: (
     partId: string,
     paletteColorId: string,
@@ -281,6 +291,29 @@ export const useModelEditorStore =
         ),
         ...markStateDirty(state),
       }));
+    },
+
+    setPartIncludedInGuide: (partId, included) => {
+      set((state) => {
+        const part = state.parts.find((item) => item.id === partId);
+        if (!part || part.includeInGuide === included) return state;
+        return {
+          parts: state.parts.map((item) => item.id === partId ? { ...item, includeInGuide: included } : item),
+          ...markStateDirty(state),
+        };
+      });
+    },
+
+    setPartsIncludedInGuide: (partIds, included) => {
+      set((state) => {
+        const ids = new Set(partIds);
+        const hasChanges = state.parts.some((part) => ids.has(part.id) && part.includeInGuide !== included);
+        if (!hasChanges) return state;
+        return {
+          parts: state.parts.map((part) => ids.has(part.id) && part.includeInGuide !== included ? { ...part, includeInGuide: included } : part),
+          ...markStateDirty(state),
+        };
+      });
     },
 
     assignPaletteColor: (

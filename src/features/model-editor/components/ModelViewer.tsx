@@ -342,7 +342,7 @@ export const ModelViewer = forwardRef<
     setRetryKey((currentValue) => currentValue + 1);
   }
 
-  useImperativeHandle(
+  useImperativeHandle (
     ref,
     () => ({
       captureView: async (mode) => {
@@ -413,7 +413,7 @@ export const ModelViewer = forwardRef<
 
           await waitForAnimationFrames(3);
           model.updateWorldMatrix(true, true);
-          fitFullModel();
+          fitCameraToBounds({ camera, controls, bounds: getModelBounds(model), direction: new Vector3(...INITIAL_CAMERA_POSITION).normalize() });
           await waitForAnimationFrames(3);
 
           const image = canvas.toDataURL("image/png");
@@ -456,7 +456,6 @@ export const ModelViewer = forwardRef<
       },
     }),
     [
-      fitFullModel,
       isAssetLoading,
       isGridVisible,
       localModel.isLoading,

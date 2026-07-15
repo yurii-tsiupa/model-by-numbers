@@ -5,6 +5,7 @@ export type ModelPart = {
   name: string;
   index: number;
   visible: boolean;
+  includeInGuide: boolean;
 
   originalColor: string | null;
 

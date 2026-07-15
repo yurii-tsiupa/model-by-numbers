@@ -3,6 +3,7 @@
 import {
   Eye,
   EyeOff,
+  FileCheck2,
 } from "lucide-react";
 import {
   type MouseEvent,
@@ -15,9 +16,11 @@ type PartListItemProps = {
   name: string;
   isSelected?: boolean;
   isVisible?: boolean;
+  isIncludedInGuide?: boolean;
   color?: string | null;
   onSelect?: () => void;
   onToggleVisibility?: () => void;
+  onToggleGuideInclusion?: () => void;
 };
 
 export function PartListItem({
@@ -25,9 +28,11 @@ export function PartListItem({
   name,
   isSelected = false,
   isVisible = true,
+  isIncludedInGuide = true,
   color = null,
   onSelect,
   onToggleVisibility,
+  onToggleGuideInclusion,
 }: PartListItemProps) {
   const itemRef = useRef<HTMLDivElement | null>(null);
 
@@ -49,6 +54,11 @@ export function PartListItem({
     onToggleVisibility?.();
   }
 
+  function handleToggleGuideInclusion(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    onToggleGuideInclusion?.();
+  }
+
   const VisibilityIcon = isVisible ? Eye : EyeOff;
 
   return (
@@ -60,6 +70,16 @@ export function PartListItem({
           : "border-transparent hover:border-white/10 hover:bg-white/[0.035]"
       }`}
     >
+      <button
+        type="button"
+        onClick={handleToggleGuideInclusion}
+        aria-label={isIncludedInGuide ? `Exclude ${name} from guide` : `Include ${name} in guide`}
+        title={isIncludedInGuide ? "Exclude from guide" : "Include in guide"}
+        className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg transition ${isIncludedInGuide ? "text-orange-400 hover:bg-orange-400/10" : "text-neutral-700 hover:bg-white/[0.05] hover:text-neutral-400"}`}
+      >
+        <FileCheck2 className="h-4 w-4" />
+      </button>
+
       <button
         type="button"
         onClick={onSelect}

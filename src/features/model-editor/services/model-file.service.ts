@@ -1,6 +1,8 @@
 const DATABASE_NAME = "model-by-numbers";
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 3;
 const MODEL_FILES_STORE = "model-files";
+const GENERATED_GUIDES_STORE = "generated-guides";
+const PROJECT_THUMBNAILS_STORE = "project-thumbnails";
 
 type StoredModelFile = {
   projectId: string;
@@ -53,6 +55,28 @@ function openDatabase(): Promise<IDBDatabase> {
         store.createIndex("userId", "userId", {
           unique: false,
         });
+      }
+
+      if (!database.objectStoreNames.contains(GENERATED_GUIDES_STORE)) {
+        const guideStore = database.createObjectStore(
+          GENERATED_GUIDES_STORE,
+          { keyPath: "id" },
+        );
+        guideStore.createIndex("projectId", "projectId", {
+          unique: false,
+        });
+        guideStore.createIndex(
+          "projectId-version",
+          ["projectId", "version"],
+          { unique: true },
+        );
+        guideStore.createIndex("createdAt", "createdAt", {
+          unique: false,
+        });
+      }
+
+      if (!database.objectStoreNames.contains(PROJECT_THUMBNAILS_STORE)) {
+        database.createObjectStore(PROJECT_THUMBNAILS_STORE, { keyPath: "projectId" });
       }
     };
 

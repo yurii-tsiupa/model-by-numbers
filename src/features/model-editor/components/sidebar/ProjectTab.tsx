@@ -2,14 +2,20 @@ import {
   Box,
   Layers3,
   Printer,
+  ImagePlus,
+  LoaderCircle,
 } from "lucide-react";
 
 import type { Project } from "@/features/models/types/Project";
+import { GeneratedGuidesSection } from "@/features/guides/components/GeneratedGuidesSection";
 
 import { GuideReadinessPanel } from "./GuideReadinessPanel";
 
 type ProjectTabProps = {
   project: Project;
+  isGeneratingThumbnail: boolean;
+  thumbnailError: string | null;
+  onRegenerateThumbnail: () => void;
 };
 
 const printerLabels = {
@@ -29,6 +35,9 @@ const materialLabels = {
 
 export function ProjectTab({
   project,
+  isGeneratingThumbnail,
+  thumbnailError,
+  onRegenerateThumbnail,
 }: ProjectTabProps) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -87,6 +96,8 @@ export function ProjectTab({
       </div>
 
       <GuideReadinessPanel project={project} />
+      <div className="mt-5 border-t border-white/10 pt-5"><button type="button" disabled={isGeneratingThumbnail} onClick={onRegenerateThumbnail} className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2.5 text-sm text-neutral-300 hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50">{isGeneratingThumbnail ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}{isGeneratingThumbnail ? "Generating thumbnail..." : "Regenerate Thumbnail"}</button>{thumbnailError ? <p role="alert" className="mt-2 text-xs leading-5 text-red-300">{thumbnailError}</p> : null}</div>
+      <GeneratedGuidesSection projectId={project.id} />
     </div>
   );
 }

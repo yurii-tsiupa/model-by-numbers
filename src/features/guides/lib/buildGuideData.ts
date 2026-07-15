@@ -8,6 +8,7 @@ import type {
   ModelGuide,
 } from "../types/ModelGuide";
 import { getGuidePalette } from "./getGuidePalette";
+import { isPartIncludedInGuide } from "./isPartIncludedInGuide";
 
 type BuildGuideDataParams = {
   project: Project;
@@ -33,7 +34,7 @@ export function buildGuideData({
       part,
       guideIndex: part.index ?? savedIndex,
     }))
-    .filter(({ part }) => part.visible)
+    .filter(({ part }) => isPartIncludedInGuide(part))
     .sort((firstPart, secondPart) =>
       firstPart.guideIndex - secondPart.guideIndex,
     )

@@ -107,7 +107,7 @@ export function LoadedModel({
       showAllPartsForCapture
         ? parts.map((part) => ({
             ...part,
-            visible: true,
+            visible: part.includeInGuide,
           }))
         : parts,
     [parts, showAllPartsForCapture],

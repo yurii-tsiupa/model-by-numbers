@@ -8,12 +8,20 @@ import {
 import { projectQueryKeys } from "../constants/project.constants";
 import { deleteProject } from "../services/projects.service";
 import type { Project } from "../types/Project";
+import { projectThumbnailService } from "../services/projectThumbnail.service";
+import { generatedGuidesService } from "@/features/guides/services/generatedGuides.service";
 
 export function useDeleteProject(userId: string | undefined) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (project: Project) => deleteProject(project),
+    mutationFn: async (project: Project) => {
+      await deleteProject(project);
+      await Promise.allSettled([
+        projectThumbnailService.deleteProjectThumbnail(project.id),
+        generatedGuidesService.deleteByProjectId(project.id),
+      ]);
+    },
 
     onSuccess: async () => {
       if (!userId) {

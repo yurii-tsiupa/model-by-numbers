@@ -2,6 +2,7 @@ export type ProjectPart = {
   id: string;
   name: string;
   visible: boolean;
+  includeInGuide: boolean;
 
   /**
    * Temporary legacy field.

@@ -273,7 +273,8 @@ export function ModelNumberLabels({
 
       if (
         !part ||
-        !part.visible ||
+        (!showAllForCapture && !part.visible) ||
+        (showAllForCapture && !part.includeInGuide) ||
         !part.paletteColorId ||
         !shouldShowPartCallout({
           part,

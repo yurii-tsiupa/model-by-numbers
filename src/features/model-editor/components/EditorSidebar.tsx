@@ -16,6 +16,9 @@ import { ProjectTab } from "./sidebar/ProjectTab";
 
 type EditorSidebarProps = {
   project: Project;
+  isGeneratingThumbnail: boolean;
+  thumbnailError: string | null;
+  onRegenerateThumbnail: () => void;
 };
 
 const tabs: Array<{
@@ -42,6 +45,9 @@ const tabs: Array<{
 
 export function EditorSidebar({
   project,
+  isGeneratingThumbnail,
+  thumbnailError,
+  onRegenerateThumbnail,
 }: EditorSidebarProps) {
   const activeTab = useModelEditorStore(
     (state) => state.activeSidebarTab,
@@ -89,7 +95,7 @@ export function EditorSidebar({
       ) : null}
 
       {activeTab === "project" ? (
-        <ProjectTab project={project} />
+        <ProjectTab project={project} isGeneratingThumbnail={isGeneratingThumbnail} thumbnailError={thumbnailError} onRegenerateThumbnail={onRegenerateThumbnail} />
       ) : null}
     </aside>
   );

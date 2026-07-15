@@ -13,14 +13,23 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   useState,
+  useEffect,
+  useMemo,
 } from "react";
 
 import type { Project } from "../types/Project";
+import type { ProjectThumbnail } from "../types/ProjectThumbnail";
+import type { GeneratedGuide } from "@/features/guides/types/GeneratedGuide";
+import { getGuideParts } from "@/features/guides/lib/isPartIncludedInGuide";
+import { getGuidePalette } from "@/features/guides/lib/getGuidePalette";
 
 type ModelCardProps = {
   project: Project;
   isDeleting: boolean;
   onDelete: (project: Project) => void;
+  thumbnail: ProjectThumbnail | null;
+  latestGuide: GeneratedGuide | null;
+  isLocalDataLoading: boolean;
 };
 
 const statusLabels: Record<Project["status"], string> = {
@@ -58,13 +67,19 @@ export function ModelCard({
   project,
   isDeleting,
   onDelete,
+  thumbnail,
+  latestGuide,
+  isLocalDataLoading,
 }: ModelCardProps) {
   const router = useRouter();
 
-  const [hasThumbnailError, setHasThumbnailError] = useState(false);
-
-  const shouldShowThumbnail =
-    Boolean(project.thumbnailUrl) && !hasThumbnailError;
+  const [failedThumbnailUrl, setFailedThumbnailUrl] = useState<string | null>(null);
+  const localThumbnailUrl = useMemo(() => thumbnail ? URL.createObjectURL(thumbnail.blob) : null, [thumbnail]);
+  useEffect(() => () => { if (localThumbnailUrl) URL.revokeObjectURL(localThumbnailUrl); }, [localThumbnailUrl]);
+  const thumbnailUrl = localThumbnailUrl ?? project.thumbnailUrl ?? "";
+  const shouldShowThumbnail = Boolean(thumbnailUrl) && failedThumbnailUrl !== thumbnailUrl;
+  const includedParts = getGuideParts(project.parts);
+  const usedColors = getGuidePalette(project.parts, project.palette);
 
   function openProject() {
     if (isDeleting) {
@@ -106,12 +121,13 @@ export function ModelCard({
       }`}
     >
       <div className="relative aspect-[16/10] overflow-hidden border-b border-white/10 bg-neutral-900">
+        {isLocalDataLoading ? <div className="absolute inset-0 animate-pulse bg-white/[0.035]" /> : null}
         {shouldShowThumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={project.thumbnailUrl ?? ""}
+            src={thumbnailUrl}
             alt={project.name}
-            onError={() => setHasThumbnailError(true)}
+            onError={() => setFailedThumbnailUrl(thumbnailUrl)}
             className="h-full w-full object-cover opacity-85 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
           />
         ) : (
@@ -149,6 +165,7 @@ export function ModelCard({
         </div>
 
         <div className="mt-5 space-y-2.5 border-t border-white/10 pt-4 text-xs text-neutral-500">
+          <div className="flex items-center justify-between gap-3"><span>{includedParts.length} {includedParts.length === 1 ? "part" : "parts"}</span><span>{usedColors.length} {usedColors.length === 1 ? "color" : "colors"}</span>{latestGuide ? <span>Guide v{latestGuide.version} {latestGuide.status}</span> : null}</div>
           <div className="flex items-center justify-between gap-3">
             <span className="flex min-w-0 items-center gap-2">
               <FileBox className="h-3.5 w-3.5 shrink-0" />

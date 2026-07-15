@@ -65,6 +65,7 @@ export function extractModelParts(
         createFallbackPartName(index),
       index,
       visible: object.visible,
+      includeInGuide: true,
       color: null,
       paletteColorId: null,
       originalColor: getMeshOriginalColor(object),

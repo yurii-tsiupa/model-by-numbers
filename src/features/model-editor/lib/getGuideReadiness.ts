@@ -3,6 +3,7 @@ import type { Project } from "@/features/models/types/Project";
 import type { GuidePartInput } from "@/features/guides/types/GuidePartInput";
 
 import type { GuideReadiness } from "../types/GuideReadiness";
+import { getGuideParts } from "@/features/guides/lib/isPartIncludedInGuide";
 
 type GetGuideReadinessParams = {
   project: Project;
@@ -18,9 +19,7 @@ export function getGuideReadiness({
   parts,
   palette,
 }: GetGuideReadinessParams): GuideReadiness {
-  const visibleParts = parts.filter(
-    (part) => part.visible,
-  );
+  const includedParts = getGuideParts(parts);
 
   const paletteColorIds = new Set(
     palette.map((color) => color.id),
@@ -34,16 +33,11 @@ export function getGuideReadiness({
         paletteColorIds.has(part.paletteColorId),
     );
 
-  const paintedParts = parts.filter(
+  const paintedIncludedParts = includedParts.filter(
     hasValidPaletteColor,
   );
-
-  const paintedVisibleParts =
-    visibleParts.filter(hasValidPaletteColor);
-
-  const unpaintedVisiblePartsCount =
-    visibleParts.length -
-    paintedVisibleParts.length;
+  const unpaintedIncludedPartsCount =
+    includedParts.length - paintedIncludedParts.length;
 
   const checks = [
     {
@@ -60,14 +54,10 @@ export function getGuideReadiness({
       id: "parts" as const,
       label: "Model parts",
       description:
-        parts.length > 0
-          ? `${parts.length} ${
-              parts.length === 1
-                ? "part"
-                : "parts"
-            } detected.`
-          : "No model parts were detected.",
-      isComplete: parts.length > 0,
+        includedParts.length > 0
+          ? `${includedParts.length} ${includedParts.length === 1 ? "part" : "parts"} included in guide.`
+          : "No parts are included in the guide.",
+      isComplete: includedParts.length > 0,
     },
     {
       id: "palette" as const,
@@ -86,27 +76,27 @@ export function getGuideReadiness({
       id: "painted-parts" as const,
       label: "Painted parts",
       description:
-        paintedParts.length > 0
-          ? `${paintedParts.length} of ${parts.length} parts use palette colors.`
-          : "No parts have palette colors.",
-      isComplete: paintedParts.length > 0,
+        paintedIncludedParts.length > 0
+          ? `${paintedIncludedParts.length} of ${includedParts.length} included parts use palette colors.`
+          : "No included parts have palette colors.",
+      isComplete: paintedIncludedParts.length > 0,
     },
     {
       id: "visible-parts-painted" as const,
-      label: "Visible parts completed",
+      label: "Included parts completed",
       description:
-        visibleParts.length === 0
-          ? "No visible parts are available."
-          : unpaintedVisiblePartsCount === 0
-            ? "All visible parts have colors."
-            : `${unpaintedVisiblePartsCount} visible ${
-                unpaintedVisiblePartsCount === 1
+        includedParts.length === 0
+          ? "No parts are included in the guide."
+          : unpaintedIncludedPartsCount === 0
+            ? "All included parts have colors."
+            : `${unpaintedIncludedPartsCount} included ${
+                unpaintedIncludedPartsCount === 1
                   ? "part is"
                   : "parts are"
               } still unpainted.`,
       isComplete:
-        visibleParts.length > 0 &&
-        unpaintedVisiblePartsCount === 0,
+        includedParts.length > 0 &&
+        unpaintedIncludedPartsCount === 0,
     },
     {
       id: "base-color" as const,
