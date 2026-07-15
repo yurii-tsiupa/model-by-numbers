@@ -10,10 +10,12 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { GuideNotReadyState } from "@/features/guides/components/GuideNotReadyState";
 import { GuidePreview } from "@/features/guides/components/GuidePreview";
 import { buildGuideData } from "@/features/guides/lib/buildGuideData";
+import { useGuideGenerationStore } from "@/features/guides/store/guideGenerationStore";
+import type { GuideImages } from "@/features/guides/types/ModelGuide";
 import { getGuideReadiness } from "@/features/model-editor/lib/getGuideReadiness";
 import { useProject } from "@/features/models/hooks/useProject";
 
-const EMPTY_GUIDE_IMAGES = {
+const EMPTY_GUIDE_IMAGES: GuideImages = {
   original: null,
   base: null,
   painted: null,
@@ -49,6 +51,12 @@ export default function GuidePage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const projectId = params.projectId;
   const projectQuery = useProject(projectId, user?.uid);
+  const capturedProjectId = useGuideGenerationStore(
+    (state) => state.projectId,
+  );
+  const capturedImages = useGuideGenerationStore(
+    (state) => state.images,
+  );
 
   useEffect(() => {
     if (!isAuthLoading && !user) {
@@ -152,7 +160,10 @@ export default function GuidePage() {
     project,
     parts: project.parts,
     palette: project.palette,
-    images: EMPTY_GUIDE_IMAGES,
+    images:
+      capturedProjectId === projectId && capturedImages
+        ? capturedImages
+        : EMPTY_GUIDE_IMAGES,
     author: user.displayName?.trim() || "Model by Numbers User",
   });
 
