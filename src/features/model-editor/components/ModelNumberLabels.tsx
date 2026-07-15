@@ -4,9 +4,11 @@ import {
   Html,
   Line,
 } from "@react-three/drei";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Box3,
+  CanvasTexture,
+  LinearFilter,
   Mesh,
   Vector3,
   type Object3D,
@@ -24,6 +26,7 @@ type ModelNumberLabelsProps = {
   selectedPartId: string | null;
   selectedPartIds: string[];
   highlightedPaletteColorId: string | null;
+  showAllForCapture: boolean;
 };
 
 type NumberCallout = {
@@ -75,12 +78,18 @@ function shouldShowPartCallout({
   selectedPartId,
   selectedPartIds,
   highlightedPaletteColorId,
+  showAllForCapture,
 }: {
   part: ModelPart;
   selectedPartId: string | null;
   selectedPartIds: string[];
   highlightedPaletteColorId: string | null;
+  showAllForCapture: boolean;
 }): boolean {
+  if (showAllForCapture) {
+    return true;
+  }
+
   if (selectedPartIds.includes(part.id)) {
     return true;
   }
@@ -144,6 +153,74 @@ function getMeshSurfaceAnchor({
   return bestPosition;
 }
 
+function CaptureNumberBadge({
+  position,
+  value,
+  color,
+}: {
+  position: [number, number, number];
+  value: string;
+  color: string;
+}) {
+  const texture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 112;
+
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error(
+        "Unable to create number label texture.",
+      );
+    }
+
+    context.fillStyle = "rgba(10, 10, 10, 0.92)";
+    context.beginPath();
+    context.roundRect(4, 4, 248, 104, 22);
+    context.fill();
+    context.strokeStyle = "rgba(255, 255, 255, 0.25)";
+    context.lineWidth = 3;
+    context.stroke();
+
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(58, 56, 15, 0, Math.PI * 2);
+    context.fill();
+    context.strokeStyle = "rgba(255, 255, 255, 0.45)";
+    context.lineWidth = 2;
+    context.stroke();
+
+    context.fillStyle = "#ffffff";
+    context.font = "600 38px Arial, sans-serif";
+    context.textAlign = "left";
+    context.textBaseline = "middle";
+    context.fillText(value, 88, 58);
+
+    const nextTexture = new CanvasTexture(canvas);
+    nextTexture.minFilter = LinearFilter;
+    nextTexture.magFilter = LinearFilter;
+    nextTexture.needsUpdate = true;
+
+    return nextTexture;
+  }, [color, value]);
+
+  useEffect(() => {
+    return () => texture.dispose();
+  }, [texture]);
+
+  return (
+    <sprite position={position} scale={[0.72, 0.315, 1]}>
+      <spriteMaterial
+        map={texture}
+        transparent
+        depthTest={false}
+        depthWrite={false}
+      />
+    </sprite>
+  );
+}
+
 export function ModelNumberLabels({
   model,
   parts,
@@ -151,6 +228,7 @@ export function ModelNumberLabels({
   selectedPartId,
   selectedPartIds,
   highlightedPaletteColorId,
+  showAllForCapture,
 }: ModelNumberLabelsProps) {
   const callouts = useMemo<NumberCallout[]>(() => {
     const paletteById = new Map(
@@ -202,6 +280,7 @@ export function ModelNumberLabels({
           selectedPartId,
           selectedPartIds,
           highlightedPaletteColorId,
+          showAllForCapture,
         })
       ) {
         return;
@@ -310,6 +389,7 @@ export function ModelNumberLabels({
     parts,
     selectedPartId,
     selectedPartIds,
+    showAllForCapture,
   ]);
 
   return (
@@ -342,30 +422,30 @@ export function ModelNumberLabels({
             />
           </mesh>
 
-          <Html
-            position={
-              callout.labelPosition
-            }
-            center
-            zIndexRange={[20, 0]}
-            style={{
-              pointerEvents: "none",
-            }}
-          >
-            <div className="select-none whitespace-nowrap rounded-lg border border-white/15 bg-black/85 px-2.5 py-1.5 text-[10px] font-semibold tracking-[0.08em] text-white shadow-xl backdrop-blur-md">
-              <span className="flex items-center gap-1.5">
-                <span
-                  className="h-2 w-2 shrink-0 rounded-full border border-white/30"
-                  style={{
-                    backgroundColor:
-                      callout.color,
-                  }}
-                />
-
-                {callout.value}
-              </span>
-            </div>
-          </Html>
+          {showAllForCapture ? (
+            <CaptureNumberBadge
+              position={callout.labelPosition}
+              value={callout.value}
+              color={callout.color}
+            />
+          ) : (
+            <Html
+              position={callout.labelPosition}
+              center
+              zIndexRange={[20, 0]}
+              style={{ pointerEvents: "none" }}
+            >
+              <div className="select-none whitespace-nowrap rounded-lg border border-white/15 bg-black/85 px-2.5 py-1.5 text-[10px] font-semibold tracking-[0.08em] text-white shadow-xl backdrop-blur-md">
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full border border-white/30"
+                    style={{ backgroundColor: callout.color }}
+                  />
+                  {callout.value}
+                </span>
+              </div>
+            </Html>
+          )}
         </group>
       ))}
     </>

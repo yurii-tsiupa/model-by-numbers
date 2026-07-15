@@ -37,6 +37,14 @@ type ModelEditorState = {
 
   selectedPartIds: string[];
 
+  setSelectedPartIds: (
+    partIds: string[],
+  ) => void;
+
+  setHighlightedPaletteColorId: (
+    colorId: string | null,
+  ) => void;
+
   viewerMode: ViewerMode;
 
   setViewerMode: (
@@ -191,6 +199,18 @@ export const useModelEditorStore =
     selectedPartIds: [],
 
     viewerMode: "painted",
+
+    setSelectedPartIds: (selectedPartIds) => {
+      set({
+        selectedPartIds: [...selectedPartIds],
+      });
+    },
+
+    setHighlightedPaletteColorId: (
+      highlightedPaletteColorId,
+    ) => {
+      set({ highlightedPaletteColorId });
+    },
 
     isDirty: false,
     saveStatus: "saved",

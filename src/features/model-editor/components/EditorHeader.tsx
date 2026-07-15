@@ -18,6 +18,7 @@ import {
 type EditorHeaderProps = {
   project: Project;
   onSave: () => void;
+  isGuideReady: boolean;
 };
 
 const statusLabels: Record<Project["status"], string> = {
@@ -38,6 +39,7 @@ const saveStatusLabels: Record<EditorSaveStatus, string> = {
 export function EditorHeader({
   project,
   onSave,
+  isGuideReady,
 }: EditorHeaderProps) {
   const router = useRouter();
 
@@ -97,8 +99,11 @@ export function EditorHeader({
 
           <button
             type="button"
-            disabled
-            className="flex cursor-not-allowed items-center justify-center gap-2 rounded-full border border-white/10 px-3 py-2.5 text-sm font-medium text-neutral-600 sm:px-4"
+            disabled={!isGuideReady}
+            onClick={() =>
+              router.push(`/models/${project.id}/guide`)
+            }
+            className="flex cursor-pointer items-center justify-center gap-2 rounded-full border border-orange-400/25 bg-orange-400/10 px-3 py-2.5 text-sm font-medium text-orange-300 transition hover:bg-orange-400/15 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-transparent disabled:text-neutral-600 sm:px-4"
           >
             <BookOpen className="h-4 w-4" />
 

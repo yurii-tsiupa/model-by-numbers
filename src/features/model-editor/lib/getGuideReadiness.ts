@@ -1,12 +1,12 @@
 import type { PaletteColor } from "@/features/models/types/PaletteColor";
 import type { Project } from "@/features/models/types/Project";
+import type { GuidePartInput } from "@/features/guides/types/GuidePartInput";
 
 import type { GuideReadiness } from "../types/GuideReadiness";
-import type { ModelPart } from "../types/ModelPart";
 
 type GetGuideReadinessParams = {
   project: Project;
-  parts: ModelPart[];
+  parts: readonly GuidePartInput[];
   palette: PaletteColor[];
 };
 
@@ -22,15 +22,24 @@ export function getGuideReadiness({
     (part) => part.visible,
   );
 
+  const paletteColorIds = new Set(
+    palette.map((color) => color.id),
+  );
+
+  const hasValidPaletteColor = (
+    part: GuidePartInput,
+  ) =>
+    Boolean(
+      part.paletteColorId &&
+        paletteColorIds.has(part.paletteColorId),
+    );
+
   const paintedParts = parts.filter(
-    (part) =>
-      Boolean(part.paletteColorId),
+    hasValidPaletteColor,
   );
 
   const paintedVisibleParts =
-    visibleParts.filter((part) =>
-      Boolean(part.paletteColorId),
-    );
+    visibleParts.filter(hasValidPaletteColor);
 
   const unpaintedVisiblePartsCount =
     visibleParts.length -

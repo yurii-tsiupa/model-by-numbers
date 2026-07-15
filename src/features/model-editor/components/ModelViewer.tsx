@@ -9,7 +9,10 @@ import {
 } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import {
+  forwardRef,
   Suspense,
+  useCallback,
+  useImperativeHandle,
   useRef,
   useState,
 } from "react";
@@ -33,10 +36,15 @@ import { fitCameraToBounds } from "../lib/fitCameraToBounds";
 import { getModelBounds } from "../lib/getModelBounds";
 import { ViewerModeSwitcher } from "./ViewerModeSwitcher";
 import type { ViewerMode } from "../types/ViewerMode";
+import { waitForAnimationFrames } from "../lib/waitForAnimationFrames";
 
 type ModelViewerProps = {
   project: Project;
   userId: string;
+};
+
+export type ModelViewerHandle = {
+  captureView: (mode: ViewerMode) => Promise<string>;
 };
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
@@ -55,6 +63,8 @@ type SceneProps = {
   savedParts: Project["parts"];
   baseColor: string;
   viewerMode: ViewerMode;
+  showAllNumberCalloutsForCapture: boolean;
+  showAllPartsForCapture: boolean;
 };
 
 function Scene({
@@ -64,7 +74,9 @@ function Scene({
   isGridVisible,
   onModelReady,
   baseColor,
-  viewerMode
+  viewerMode,
+  showAllNumberCalloutsForCapture,
+  showAllPartsForCapture,
 }: SceneProps) {
   return (
     <>
@@ -99,6 +111,10 @@ function Scene({
           viewerMode={viewerMode}
           baseColor={baseColor}
           onModelReady={onModelReady}
+          showAllNumberCalloutsForCapture={
+            showAllNumberCalloutsForCapture
+          }
+          showAllPartsForCapture={showAllPartsForCapture}
         />
 
         <Environment preset="studio" />
@@ -145,17 +161,30 @@ function Scene({
   );
 }
 
-export function ModelViewer({
-  project,
-  userId,
-}: ModelViewerProps) {
+export const ModelViewer = forwardRef<
+  ModelViewerHandle,
+  ModelViewerProps
+>(function ModelViewer(
+  { project, userId },
+  ref,
+) {
   const controlsRef =
     useRef<OrbitControlsImpl | null>(null);
 
   const modelRef = useRef<Object3D | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isCaptureInProgressRef = useRef(false);
 
   const [isGridVisible, setIsGridVisible] =
     useState(true);
+
+  const [
+    showAllNumberCalloutsForCapture,
+    setShowAllNumberCalloutsForCapture,
+  ] = useState(false);
+
+  const [showAllPartsForCapture, setShowAllPartsForCapture] =
+    useState(false);
 
   const [viewerError, setViewerError] =
     useState<Error | null>(null);
@@ -200,6 +229,19 @@ export function ModelViewer({
         state.highlightedPaletteColorId,
     );
 
+  const setViewerMode = useModelEditorStore(
+    (state) => state.setViewerMode,
+  );
+
+  const setSelectedPartIds = useModelEditorStore(
+    (state) => state.setSelectedPartIds,
+  );
+
+  const setHighlightedPaletteColorId =
+    useModelEditorStore(
+      (state) => state.setHighlightedPaletteColorId,
+    );
+
   const localModel = useLocalModelUrl({
     projectId: project.id,
     userId,
@@ -210,44 +252,29 @@ export function ModelViewer({
     progress: loadingProgress,
   } = useProgress();
 
-    function handleModelReady(model: Object3D) {
-    modelRef.current = model;
-
-    const controls = controlsRef.current;
-
-    if (!controls) {
-      return;
-    }
-
-    const camera = controls.object;
-
-    if (!(camera instanceof PerspectiveCamera)) {
-      return;
-    }
-
-    const bounds = getModelBounds(model);
-
-    fitCameraToBounds({
-      camera,
-      controls,
-      bounds,
-    });
-  }
-
-  function handleFitModel() {
+  const fitFullModel = useCallback(() => {
     const model = modelRef.current;
     const controls = controlsRef.current;
 
-    if (!model || !controls) {
-      return;
+    if (!model) {
+      throw new Error("Model is not ready for capture.");
+    }
+
+    if (!controls) {
+      throw new Error(
+        "Camera controls are unavailable for capture.",
+      );
     }
 
     const camera = controls.object;
 
     if (!(camera instanceof PerspectiveCamera)) {
-      return;
+      throw new Error(
+        "A perspective camera is required for capture.",
+      );
     }
 
+    model.updateWorldMatrix(true, true);
     const bounds = getModelBounds(model);
 
     fitCameraToBounds({
@@ -255,6 +282,33 @@ export function ModelViewer({
       controls,
       bounds,
     });
+  }, []);
+
+  const handleModelReady = useCallback(
+    (model: Object3D) => {
+      modelRef.current = model;
+
+      try {
+        fitFullModel();
+      } catch {
+        requestAnimationFrame(() => {
+          try {
+            fitFullModel();
+          } catch {
+            // The viewer remains available while controls initialize.
+          }
+        });
+      }
+    },
+    [fitFullModel],
+  );
+
+  function handleFitModel() {
+    try {
+      fitFullModel();
+    } catch {
+      // Toolbar fitting is unavailable until the model is ready.
+    }
   }
 
   function handleResetCamera() {
@@ -287,6 +341,131 @@ export function ModelViewer({
     setViewerError(null);
     setRetryKey((currentValue) => currentValue + 1);
   }
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      captureView: async (mode) => {
+        if (isCaptureInProgressRef.current) {
+          throw new Error(
+            "A model capture is already in progress.",
+          );
+        }
+
+        const model = modelRef.current;
+        const canvas = canvasRef.current;
+        const controls = controlsRef.current;
+
+        if (!model || localModel.isLoading || isAssetLoading) {
+          throw new Error("Model is not ready for capture.");
+        }
+
+        if (!canvas) {
+          throw new Error(
+            "The model canvas is unavailable for capture.",
+          );
+        }
+
+        if (!controls) {
+          throw new Error(
+            "Camera controls are unavailable for capture.",
+          );
+        }
+
+        const camera = controls.object;
+
+        if (!(camera instanceof PerspectiveCamera)) {
+          throw new Error(
+            "A perspective camera is required for capture.",
+          );
+        }
+
+        const editorState = useModelEditorStore.getState();
+        const savedEditorState = {
+          viewerMode: editorState.viewerMode,
+          selectedPartId: editorState.selectedPartId,
+          selectedPartIds: [...editorState.selectedPartIds],
+          highlightedPaletteColorId:
+            editorState.highlightedPaletteColorId,
+        };
+        const savedCameraState = {
+          position: camera.position.clone(),
+          quaternion: camera.quaternion.clone(),
+          up: camera.up.clone(),
+          near: camera.near,
+          far: camera.far,
+          zoom: camera.zoom,
+          target: controls.target.clone(),
+          controlsEnabled: controls.enabled,
+        };
+        const savedGridVisibility = isGridVisible;
+        isCaptureInProgressRef.current = true;
+
+        try {
+          controls.enabled = false;
+          setViewerMode(mode);
+          selectPart(null);
+          setSelectedPartIds([]);
+          setHighlightedPaletteColorId(null);
+          setShowAllPartsForCapture(true);
+          setIsGridVisible(false);
+          setShowAllNumberCalloutsForCapture(mode === "numbers");
+
+          await waitForAnimationFrames(3);
+          model.updateWorldMatrix(true, true);
+          fitFullModel();
+          await waitForAnimationFrames(3);
+
+          const image = canvas.toDataURL("image/png");
+
+          if (
+            !image.startsWith("data:image/png;base64,") ||
+            image.length <= "data:image/png;base64,".length
+          ) {
+            throw new Error(
+              "The model canvas returned an invalid PNG capture.",
+            );
+          }
+
+          return image;
+        } finally {
+          setViewerMode(savedEditorState.viewerMode);
+          selectPart(savedEditorState.selectedPartId);
+          setSelectedPartIds(savedEditorState.selectedPartIds);
+          setHighlightedPaletteColorId(
+            savedEditorState.highlightedPaletteColorId,
+          );
+          setShowAllPartsForCapture(false);
+          setIsGridVisible(savedGridVisibility);
+          setShowAllNumberCalloutsForCapture(false);
+
+          camera.position.copy(savedCameraState.position);
+          camera.quaternion.copy(savedCameraState.quaternion);
+          camera.up.copy(savedCameraState.up);
+          camera.near = savedCameraState.near;
+          camera.far = savedCameraState.far;
+          camera.zoom = savedCameraState.zoom;
+          camera.updateProjectionMatrix();
+          controls.target.copy(savedCameraState.target);
+          controls.enabled = savedCameraState.controlsEnabled;
+          controls.update();
+
+          await waitForAnimationFrames(2);
+          isCaptureInProgressRef.current = false;
+        }
+      },
+    }),
+    [
+      fitFullModel,
+      isAssetLoading,
+      isGridVisible,
+      localModel.isLoading,
+      selectPart,
+      setHighlightedPaletteColorId,
+      setSelectedPartIds,
+      setViewerMode,
+    ],
+  );
 
   const shouldShowNumbersHint =
     viewerMode === "numbers" &&
@@ -342,9 +521,13 @@ export function ModelViewer({
               far: 100,
             }}
             gl={{
+              preserveDrawingBuffer: true,
               antialias: true,
               alpha: false,
               powerPreference: "high-performance",
+            }}
+            onCreated={({ gl }) => {
+              canvasRef.current = gl.domElement;
             }}
             onPointerMissed={() => {
               selectPart(null);
@@ -358,6 +541,10 @@ export function ModelViewer({
               controlsRef={controlsRef}
               isGridVisible={isGridVisible}
               onModelReady={handleModelReady}
+              showAllNumberCalloutsForCapture={
+                showAllNumberCalloutsForCapture
+              }
+              showAllPartsForCapture={showAllPartsForCapture}
             />
           </Canvas>
         </ViewerErrorBoundary>
@@ -400,4 +587,4 @@ export function ModelViewer({
       />
     </section>
   );
-}
+});

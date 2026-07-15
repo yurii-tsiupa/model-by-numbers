@@ -21,9 +21,9 @@ import {
 } from "../lib/prepareModelMeshes";
 import { syncModelParts } from "../lib/syncModelParts";
 import { useModelEditorStore } from "../store/modelEditorStore";
-import { ProjectPart } from "@/features/models/types/ProjectPart";
+import type { ProjectPart } from "@/features/models/types/ProjectPart";
 import { mergeModelParts } from "../lib/mergeModelParts";
-import { ViewerMode } from "../types/ViewerMode";
+import type { ViewerMode } from "../types/ViewerMode";
 import { ModelNumberLabels } from "./ModelNumberLabels";
 
 type LoadedModelProps = {
@@ -31,6 +31,8 @@ type LoadedModelProps = {
   savedParts: ProjectPart[];
   viewerMode: ViewerMode;
   baseColor: string;
+  showAllNumberCalloutsForCapture: boolean;
+  showAllPartsForCapture: boolean;
   onModelReady?: (
     model: Object3D,
   ) => void;
@@ -41,6 +43,8 @@ export function LoadedModel({
   savedParts,
   viewerMode,
   baseColor,
+  showAllNumberCalloutsForCapture,
+  showAllPartsForCapture,
   onModelReady,
 }: LoadedModelProps) {
   const gltf = useGLTF(modelUrl) as GLTF;
@@ -98,6 +102,17 @@ export function LoadedModel({
     return normalizedModel;
   }, [gltf.scene]);
 
+  const presentationParts = useMemo(
+    () =>
+      showAllPartsForCapture
+        ? parts.map((part) => ({
+            ...part,
+            visible: true,
+          }))
+        : parts,
+    [parts, showAllPartsForCapture],
+  );
+
   useEffect(() => {
     if (hasInitializedPartsRef.current) {
       return;
@@ -122,7 +137,7 @@ export function LoadedModel({
   useEffect(() => {
     syncModelParts({
       model,
-      parts,
+      parts: presentationParts,
       palette,
       viewerMode,
       baseColor,
@@ -132,7 +147,7 @@ export function LoadedModel({
     });
   }, [
     model,
-    parts,
+    presentationParts,
     palette,
     viewerMode,
     baseColor,
@@ -184,12 +199,15 @@ export function LoadedModel({
     {viewerMode === "numbers" ? (
       <ModelNumberLabels
         model={model}
-        parts={parts}
+        parts={presentationParts}
         palette={palette}
         selectedPartId={selectedPartId}
         selectedPartIds={selectedPartIds}
         highlightedPaletteColorId={
           highlightedPaletteColorId
+        }
+        showAllForCapture={
+          showAllNumberCalloutsForCapture
         }
       />
     ) : null}
