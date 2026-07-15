@@ -66,6 +66,7 @@ export function extractModelParts(
       index,
       visible: object.visible,
       color: null,
+      paletteColorId: null,
       originalColor: getMeshOriginalColor(object),
     });
   });

@@ -12,6 +12,7 @@ import {
   getOriginalEmissiveIntensity,
   getOriginalMaterialColor,
 } from "./prepareModelMeshes";
+import { PaletteColor } from "@/features/models/types/PaletteColor";
 
 const SELECTED_EMISSIVE_COLOR = new Color(
   "#f97316",
@@ -117,12 +118,23 @@ function syncMeshMaterials({
 export function syncModelParts({
   model,
   parts,
+  palette,
   selectedPartId,
+  selectedPartIds,
+  highlightedPaletteColorId,
 }: {
   model: Object3D;
   parts: ModelPart[];
+  palette: PaletteColor[];
   selectedPartId: string | null;
+  selectedPartIds: string[];
+  highlightedPaletteColorId: string | null;
 }): void {
+
+  const paletteById = new Map(
+    palette.map((color) => [color.id, color]),
+  );
+
   const partsByMeshUuid = new Map(
     parts.map((part) => [
       part.meshUuid,
@@ -145,11 +157,31 @@ export function syncModelParts({
 
     object.visible = part.visible;
 
+    const paletteColor = part.paletteColorId
+      ? paletteById.get(part.paletteColorId)
+      : null;
+
+    const assignedColor =
+      paletteColor?.hex ?? part.color;
+
+    const isSingleSelected =
+      selectedPartId === part.id;
+
+    const isBatchSelected =
+      selectedPartIds.includes(part.id);
+
+    const isPaletteHighlighted =
+      Boolean(highlightedPaletteColorId) &&
+      part.paletteColorId ===
+        highlightedPaletteColorId;
+
     syncMeshMaterials({
       mesh: object,
-      assignedColor: part.color,
+      assignedColor,
       isSelected:
-        selectedPartId === part.id,
-    });
+          isSingleSelected ||
+          isBatchSelected ||
+          isPaletteHighlighted
+          });
   });
 }

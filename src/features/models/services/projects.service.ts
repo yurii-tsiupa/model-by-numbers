@@ -22,6 +22,7 @@ import type {
 } from "../types/Project";
 import { deleteModelFile, uploadModel } from "./storage.service";
 import { ProjectPart } from "../types/ProjectPart";
+import { PaletteColor } from "../types/PaletteColor";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -62,11 +63,49 @@ function mapProjectDocument(
           id: String(part.id ?? ""),
           name: String(part.name ?? "Unnamed part"),
           visible: part.visible !== false,
+
           color:
             typeof part.color === "string"
               ? part.color
               : null,
+
+          paletteColorId:
+            typeof part.paletteColorId === "string"
+              ? part.paletteColorId
+              : null,
         }))
+      : [],
+    
+    palette: Array.isArray(data.palette)
+      ? data.palette
+          .map(
+            (
+              color: Partial<PaletteColor>,
+            ): PaletteColor => ({
+              id: String(color.id ?? ""),
+              number:
+                typeof color.number === "number"
+                  ? color.number
+                  : 0,
+              name: String(
+                color.name ?? "Unnamed color",
+              ),
+              hex: String(color.hex ?? "#FFFFFF"),
+            }),
+          )
+          .filter(
+            (color: PaletteColor) =>
+              Boolean(color.id) &&
+              color.number > 0,
+          )
+          .sort(
+            (
+              firstColor: PaletteColor,
+              secondColor: PaletteColor,
+            ) =>
+              firstColor.number -
+              secondColor.number,
+          )
       : [],
 
     createdAt:
@@ -182,6 +221,7 @@ export async function createProject({
     baseColor,
 
     parts: [],
+    palette: [],
 
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -199,14 +239,16 @@ export async function deleteProject(
   await deleteDoc(doc(db, "projects", project.id));
 }
 
-export async function saveProjectParts({
+export async function saveProjectEditorState({
   projectId,
   userId,
   parts,
+  palette,
 }: {
   projectId: string;
   userId: string;
   parts: ProjectPart[];
+  palette: PaletteColor[];
 }): Promise<void> {
   if (!projectId || !userId) {
     throw new Error(
@@ -238,6 +280,7 @@ export async function saveProjectParts({
 
   await updateDoc(projectReference, {
     parts,
+    palette,
     updatedAt: serverTimestamp(),
   });
 }

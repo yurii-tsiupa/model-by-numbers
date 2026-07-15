@@ -55,6 +55,31 @@ export function LoadedModel({
     (state) => state.selectPart,
   );
 
+  const selectionMode =
+    useModelEditorStore(
+      (state) => state.selectionMode,
+    );
+
+  const toggleSelectedPart =
+    useModelEditorStore(
+      (state) => state.toggleSelectedPart,
+    );
+
+  const palette = useModelEditorStore(
+    (state) => state.palette,
+  );
+
+  const highlightedPaletteColorId =
+    useModelEditorStore(
+      (state) =>
+        state.highlightedPaletteColorId,
+    );
+
+  const selectedPartIds =
+    useModelEditorStore(
+      (state) => state.selectedPartIds,
+    );
+
   const model = useMemo(() => {
     const normalizedModel = normalizeModel(
       gltf.scene,
@@ -90,12 +115,18 @@ export function LoadedModel({
     syncModelParts({
       model,
       parts,
+      palette,
       selectedPartId,
+      selectedPartIds,
+      highlightedPaletteColorId,
     });
   }, [
     model,
     parts,
+    palette,
     selectedPartId,
+    selectedPartIds,
+    highlightedPaletteColorId,
   ]);
 
   useEffect(() => {
@@ -124,7 +155,11 @@ export function LoadedModel({
       return;
     }
 
-    selectPart(clickedPart.id);
+    if (selectionMode === "assignPalette") {
+      toggleSelectedPart(clickedPart.id);
+    } else {
+      selectPart(clickedPart.id);
+    }
   }
 
   return (

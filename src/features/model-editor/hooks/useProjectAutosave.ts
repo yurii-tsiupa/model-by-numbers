@@ -7,7 +7,7 @@ import {
   useRef,
 } from "react";
 
-import { saveProjectParts } from "@/features/models/services/projects.service";
+import { saveProjectEditorState } from "@/features/models/services/projects.service";
 import type { Project } from "@/features/models/types/Project";
 import type { ProjectPart } from "@/features/models/types/ProjectPart";
 
@@ -23,6 +23,7 @@ function serializeParts(): ProjectPart[] {
       name: part.name,
       visible: part.visible,
       color: part.color,
+      paletteColorId: part.paletteColorId,
     }));
 }
 
@@ -70,14 +71,20 @@ export function useProjectAutosave({
 
     const serializedParts = serializeParts();
 
+    const serializedPalette =
+      editorState.palette.map((color) => ({
+        ...color,
+      }));
+
     isSavingRef.current = true;
     editorState.markSaving();
 
     try {
-      await saveProjectParts({
+      await saveProjectEditorState({
         projectId,
         userId,
         parts: serializedParts,
+        palette: serializedPalette,
       });
 
       useModelEditorStore
@@ -94,6 +101,7 @@ export function useProjectAutosave({
           return {
             ...currentProject,
             parts: serializedParts,
+            palette: serializedPalette,
             updatedAt: new Date(),
           };
         },

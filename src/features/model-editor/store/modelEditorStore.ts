@@ -1,12 +1,21 @@
 import { create } from "zustand";
 
 import type { ModelPart } from "../types/ModelPart";
+import { PaletteColor } from "@/features/models/types/PaletteColor";
+import { generatePaletteFromParts } from "../lib/generatePaletteFromParts";
+import { normalizeHexColor } from "../lib/normalizeHexColor";
+import { EditorSidebarTab } from "../types/EditorSidebarTab";
+import { generatePaletteFromModel } from "../utils/generatePaletteFromModel";
 
 export type EditorSaveStatus =
   | "saved"
   | "dirty"
   | "saving"
   | "error";
+
+export type SelectionMode =
+  | "single"
+  | "assignPalette";
 
 type ModelEditorState = {
   parts: ModelPart[];
@@ -17,6 +26,34 @@ type ModelEditorState = {
   changeVersion: number;
   saveError: string | null;
 
+  palette: PaletteColor[];
+
+  activeSidebarTab: EditorSidebarTab;
+  highlightedPaletteColorId: string | null;
+
+  selectionMode: SelectionMode;
+
+  selectedPartIds: string[];
+
+  setActiveSidebarTab: (
+    tab: EditorSidebarTab,
+  ) => void;
+
+  updatePaletteColor: (
+    colorId: string,
+    changes: {
+      name?: string;
+      hex?: string;
+    },
+  ) => void;
+
+  deletePaletteColor: (
+    colorId: string,
+  ) => void;
+
+  setPalette: (palette: PaletteColor[]) => void;
+  generatePalette: () => void;
+
   setParts: (parts: ModelPart[]) => void;
   selectPart: (partId: string | null) => void;
 
@@ -24,14 +61,47 @@ type ModelEditorState = {
     partId: string,
   ) => void;
 
-  assignPartColor: (
+  assignPaletteColor: (
     partId: string,
-    color: string,
+    paletteColorId: string,
   ) => void;
 
-  resetPartColor: (
+  createAndAssignPaletteColor: (
+    partId: string,
+    hex: string,
+  ) => void;
+
+  clearPaletteColor: (partId: string) => void;
+
+  addPaletteColor: ({
+    name,
+    hex,
+  }: {
+    name: string;
+    hex: string;
+  }) => void;
+
+  highlightPaletteColor: (
+    colorId: string | null,
+  ) => void;
+
+  selectPartsByPaletteColor: (
+    colorId: string,
+  ) => void;
+
+  startAssignPaletteMode: () => void;
+
+  cancelAssignPaletteMode: () => void;
+
+  toggleSelectedPart: (
     partId: string,
   ) => void;
+
+  applyPaletteColorToSelection: (
+    paletteColorId: string,
+  ) => void;
+
+  generatePaletteFromModel: () => void;
 
   showAllParts: () => void;
   hideSelectedPart: () => void;
@@ -61,10 +131,54 @@ function markStateDirty(
   };
 }
 
+function getNextPaletteColorNumber(
+  palette: PaletteColor[],
+): number {
+  return (
+    palette.reduce(
+      (largestNumber, color) =>
+        Math.max(largestNumber, color.number),
+      0,
+    ) + 1
+  );
+}
+
+function createPaletteColorId(
+  palette: PaletteColor[],
+  number: number,
+): string {
+  let candidateId = `color-${number}`;
+  let suffix = 1;
+
+  while (
+    palette.some((color) => color.id === candidateId)
+  ) {
+    candidateId = `color-${number}-${suffix}`;
+    suffix += 1;
+  }
+
+  return candidateId;
+}
+
+function createPaletteColorName(
+  number: number,
+): string {
+  return `Color ${String(number).padStart(2, "0")}`;
+}
+
 export const useModelEditorStore =
   create<ModelEditorState>()((set) => ({
     parts: [],
     selectedPartId: null,
+
+    palette: [],
+    activeSidebarTab: "parts",
+
+    highlightedPaletteColorId: null,
+
+    selectionMode: "single",
+
+    selectedPartIds: [],
 
     isDirty: false,
     saveStatus: "saved",
@@ -82,9 +196,44 @@ export const useModelEditorStore =
       });
     },
 
+    setPalette: (palette) => {
+      set({
+        palette,
+      });
+    },
+
+    generatePalette: () => {
+      set((state) => {
+        const result = generatePaletteFromParts(
+          state.parts,
+          state.palette,
+        );
+
+        const hasChanges =
+          result.palette.length !== state.palette.length ||
+          result.parts.some(
+            (part, index) =>
+              part.paletteColorId !==
+                state.parts[index]?.paletteColorId ||
+              part.color !== state.parts[index]?.color,
+          );
+
+        if (!hasChanges) {
+          return state;
+        }
+
+        return {
+          palette: result.palette,
+          parts: result.parts,
+          ...markStateDirty(state),
+        };
+      });
+    },
+
     selectPart: (partId) => {
       set({
         selectedPartId: partId,
+        highlightedPaletteColorId: null,
       });
     },
 
@@ -102,32 +251,399 @@ export const useModelEditorStore =
       }));
     },
 
-    assignPartColor: (partId, color) => {
+    assignPaletteColor: (
+      partId,
+      paletteColorId,
+    ) => {
+      set((state) => {
+        const paletteColorExists = state.palette.some(
+          (color) => color.id === paletteColorId,
+        );
+
+        if (!paletteColorExists) {
+          return state;
+        }
+
+        const selectedPart = state.parts.find(
+          (part) => part.id === partId,
+        );
+
+        if (
+          !selectedPart ||
+          selectedPart.paletteColorId === paletteColorId
+        ) {
+          return state;
+        }
+
+        return {
+          parts: state.parts.map((part) =>
+            part.id === partId
+              ? {
+                  ...part,
+                  color: null,
+                  paletteColorId,
+                }
+              : part,
+          ),
+          ...markStateDirty(state),
+        };
+      });
+    },
+
+    createAndAssignPaletteColor: (
+      partId,
+      hex,
+    ) => {
+      set((state) => {
+        const normalizedHex = normalizeHexColor(hex);
+
+        if (!normalizedHex) {
+          return state;
+        }
+
+        const existingColor = state.palette.find(
+          (color) =>
+            normalizeHexColor(color.hex) === normalizedHex,
+        );
+
+        if (existingColor) {
+          const selectedPart = state.parts.find(
+            (part) => part.id === partId,
+          );
+
+          if (
+            !selectedPart ||
+            selectedPart.paletteColorId ===
+              existingColor.id
+          ) {
+            return state;
+          }
+
+          return {
+            parts: state.parts.map((part) =>
+              part.id === partId
+                ? {
+                    ...part,
+                    color: null,
+                    paletteColorId: existingColor.id,
+                  }
+                : part,
+            ),
+            ...markStateDirty(state),
+          };
+        }
+
+        const number = getNextPaletteColorNumber(
+          state.palette,
+        );
+
+        const newPaletteColor: PaletteColor = {
+          id: createPaletteColorId(
+            state.palette,
+            number,
+          ),
+          number,
+          name: createPaletteColorName(number),
+          hex: normalizedHex,
+        };
+
+        return {
+          palette: [...state.palette, newPaletteColor],
+          parts: state.parts.map((part) =>
+            part.id === partId
+              ? {
+                  ...part,
+                  color: null,
+                  paletteColorId: newPaletteColor.id,
+                }
+              : part,
+          ),
+          ...markStateDirty(state),
+        };
+      });
+    },
+
+    clearPaletteColor: (partId) => {
+      set((state) => {
+        const selectedPart = state.parts.find(
+          (part) => part.id === partId,
+        );
+
+        if (
+          !selectedPart ||
+          (!selectedPart.paletteColorId &&
+            !selectedPart.color)
+        ) {
+          return state;
+        }
+
+        return {
+          parts: state.parts.map((part) =>
+            part.id === partId
+              ? {
+                  ...part,
+                  color: null,
+                  paletteColorId: null,
+                }
+              : part,
+          ),
+          ...markStateDirty(state),
+        };
+      });
+    },
+
+    setActiveSidebarTab: (activeSidebarTab) => {
+      set({
+        activeSidebarTab,
+      });
+    },
+
+    updatePaletteColor: (
+      colorId,
+      changes,
+    ) => {
+      set((state) => {
+        const existingColor = state.palette.find(
+          (color) => color.id === colorId,
+        );
+
+        if (!existingColor) {
+          return state;
+        }
+
+        const normalizedHex =
+          changes.hex !== undefined
+            ? normalizeHexColor(changes.hex)
+            : existingColor.hex;
+
+        if (!normalizedHex) {
+          return state;
+        }
+
+        const nextName =
+          changes.name !== undefined
+            ? changes.name.trim()
+            : existingColor.name;
+
+        const nextColor = {
+          ...existingColor,
+          name: nextName || existingColor.name,
+          hex: normalizedHex,
+        };
+
+        if (
+          nextColor.name === existingColor.name &&
+          nextColor.hex === existingColor.hex
+        ) {
+          return state;
+        }
+
+        return {
+          palette: state.palette.map((color) =>
+            color.id === colorId
+              ? nextColor
+              : color,
+          ),
+          ...markStateDirty(state),
+        };
+      });
+    },
+
+    deletePaletteColor: (colorId) => {
+      set((state) => {
+        const usageCount = state.parts.filter(
+          (part) =>
+            part.paletteColorId === colorId,
+        ).length;
+
+        if (usageCount > 0) {
+          return state;
+        }
+
+        const colorExists = state.palette.some(
+          (color) => color.id === colorId,
+        );
+
+        if (!colorExists) {
+          return state;
+        }
+
+        return {
+          palette: state.palette.filter(
+            (color) => color.id !== colorId,
+          ),
+          ...markStateDirty(state),
+        };
+      });
+    },
+
+    addPaletteColor: ({ name, hex }) => {
+      set((state) => {
+        const normalizedHex = normalizeHexColor(hex);
+
+        if (!normalizedHex) {
+          return state;
+        }
+
+        const existingColor = state.palette.find(
+          (color) =>
+            normalizeHexColor(color.hex) === normalizedHex,
+        );
+
+        if (existingColor) {
+          return {
+            highlightedPaletteColorId: existingColor.id,
+            activeSidebarTab: "palette",
+          };
+        }
+
+        const number = getNextPaletteColorNumber(
+          state.palette,
+        );
+
+        const newColor: PaletteColor = {
+          id: createPaletteColorId(
+            state.palette,
+            number,
+          ),
+          number,
+          name:
+            name.trim() ||
+            createPaletteColorName(number),
+          hex: normalizedHex,
+        };
+
+        return {
+          palette: [...state.palette, newColor],
+          highlightedPaletteColorId: newColor.id,
+          ...markStateDirty(state),
+        };
+      });
+    },
+
+    highlightPaletteColor: (colorId) => {
       set((state) => ({
-        parts: state.parts.map((part) =>
-          part.id === partId
-            ? {
-                ...part,
-                color,
-              }
-            : part,
-        ),
-        ...markStateDirty(state),
+        highlightedPaletteColorId:
+          state.highlightedPaletteColorId === colorId
+            ? null
+            : colorId,
       }));
     },
 
-    resetPartColor: (partId) => {
-      set((state) => ({
-        parts: state.parts.map((part) =>
-          part.id === partId
-            ? {
-                ...part,
-                color: null,
-              }
-            : part,
-        ),
-        ...markStateDirty(state),
-      }));
+    selectPartsByPaletteColor: (colorId) => {
+      set((state) => {
+        const matchingPart = state.parts.find(
+          (part) =>
+            part.paletteColorId === colorId,
+        );
+
+        if (!matchingPart) {
+          return {
+            highlightedPaletteColorId: colorId,
+          };
+        }
+
+        return {
+          selectedPartId: matchingPart.id,
+          highlightedPaletteColorId: colorId,
+          activeSidebarTab: "parts",
+        };
+      });
+    },
+
+    startAssignPaletteMode: () => {
+      set({
+        selectionMode: "assignPalette",
+        selectedPartIds: [],
+      });
+    },
+
+    cancelAssignPaletteMode: () => {
+      set({
+        selectionMode: "single",
+        selectedPartIds: [],
+      });
+    },
+
+    toggleSelectedPart: (partId) => {
+      set((state) => {
+        if (
+          state.selectionMode !==
+          "assignPalette"
+        ) {
+          return state;
+        }
+
+        const exists =
+          state.selectedPartIds.includes(partId);
+
+        return {
+          selectedPartIds: exists
+            ? state.selectedPartIds.filter(
+                (id) => id !== partId,
+              )
+            : [
+                ...state.selectedPartIds,
+                partId,
+              ],
+        };
+      });
+    },
+
+    applyPaletteColorToSelection: (
+      paletteColorId,
+    ) => {
+      set((state) => {
+        if (
+          state.selectedPartIds.length === 0
+        ) {
+          return state;
+        }
+
+        const lastSelectedPartId =
+          state.selectedPartIds.at(-1) ?? null;
+
+        return {
+          parts: state.parts.map((part) =>
+            state.selectedPartIds.includes(part.id)
+              ? {
+                  ...part,
+                  paletteColorId,
+                }
+              : part,
+          ),
+
+          selectedPartId: lastSelectedPartId,
+
+          selectedPartIds: [],
+
+          highlightedPaletteColorId: null,
+
+          selectionMode: "single",
+
+          ...markStateDirty(state),
+        };
+      });
+    },
+
+    generatePaletteFromModel: () => {
+      set((state) => {
+        const generated =
+          generatePaletteFromModel(state.parts);
+
+        return {
+          palette: generated.palette,
+
+          parts: generated.parts,
+
+          highlightedPaletteColorId: null,
+
+          selectedPartId:
+            generated.parts[0]?.id ?? null,
+
+          ...markStateDirty(state),
+        };
+      });
     },
 
     showAllParts: () => {
@@ -212,6 +728,11 @@ export const useModelEditorStore =
       set({
         parts: [],
         selectedPartId: null,
+        palette: [],
+        activeSidebarTab: "parts",
+        highlightedPaletteColorId: null,
+        selectionMode: "single",
+        selectedPartIds: [],
         isDirty: false,
         saveStatus: "saved",
         changeVersion: 0,

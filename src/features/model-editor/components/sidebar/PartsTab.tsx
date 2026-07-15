@@ -1,19 +1,20 @@
 "use client";
 
-import {
-  Box,
-  Search,
-} from "lucide-react";
+import { Box, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { useModelEditorStore } from "../store/modelEditorStore";
-import { PartListItem } from "./PartListItem";
+import { useModelEditorStore } from "../../store/modelEditorStore";
+import { PartListItem } from "../PartListItem";
 
-export function PartsSidebar() {
+export function PartsTab() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const parts = useModelEditorStore(
     (state) => state.parts,
+  );
+
+  const palette = useModelEditorStore(
+    (state) => state.palette,
   );
 
   const selectedPartId = useModelEditorStore(
@@ -24,33 +25,45 @@ export function PartsSidebar() {
     (state) => state.selectPart,
   );
 
-  const togglePartVisibility = useModelEditorStore(
-    (state) => state.togglePartVisibility,
+  const togglePartVisibility =
+    useModelEditorStore(
+      (state) =>
+        state.togglePartVisibility,
+    );
+
+  const paletteById = useMemo(
+    () =>
+      new Map(
+        palette.map((color) => [
+          color.id,
+          color,
+        ]),
+      ),
+    [palette],
   );
 
   const filteredParts = useMemo(() => {
-    const normalizedSearchQuery = searchQuery
+    const normalizedQuery = searchQuery
       .trim()
       .toLowerCase();
 
-    if (!normalizedSearchQuery) {
+    if (!normalizedQuery) {
       return parts;
     }
 
     return parts.filter((part) =>
       part.name
         .toLowerCase()
-        .includes(normalizedSearchQuery),
+        .includes(normalizedQuery),
     );
   }, [parts, searchQuery]);
 
   const hasParts = parts.length > 0;
-  const hasSearchResults = filteredParts.length > 0;
 
   return (
-    <aside className="flex max-h-[20rem] min-h-0 w-full shrink-0 flex-col overflow-hidden border-b border-white/10 bg-neutral-950/70 lg:h-full lg:max-h-none lg:w-72 lg:border-b-0 lg:border-r">
-      <div className="shrink-0 border-b border-white/10 p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-4">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="shrink-0 border-b border-white/10 p-4">
+        <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-600">
               Model Structure
@@ -77,13 +90,13 @@ export function PartsSidebar() {
             }
             placeholder="Search parts"
             disabled={!hasParts}
-            className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.025] pl-9 pr-3 text-sm text-neutral-300 outline-none transition placeholder:text-neutral-700 focus:border-white/20 focus:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.025] pl-9 pr-3 text-sm text-neutral-300 outline-none transition placeholder:text-neutral-700 focus:border-white/20 disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
       </div>
 
       {!hasParts ? (
-        <div className="flex min-h-44 flex-1 items-center justify-center p-5 lg:min-h-0">
+        <div className="flex flex-1 items-center justify-center p-5">
           <div className="max-w-48 text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
               <Box className="h-5 w-5 text-neutral-600" />
@@ -92,15 +105,10 @@ export function PartsSidebar() {
             <p className="mt-4 text-sm font-medium text-neutral-400">
               No parts loaded
             </p>
-
-            <p className="mt-1 text-xs leading-5 text-neutral-600">
-              Parts will appear here after the 3D model is
-              analyzed.
-            </p>
           </div>
         </div>
-      ) : !hasSearchResults ? (
-        <div className="flex min-h-44 flex-1 items-center justify-center p-5 text-center lg:min-h-0">
+      ) : filteredParts.length === 0 ? (
+        <div className="flex flex-1 items-center justify-center p-5 text-center">
           <div>
             <p className="text-sm font-medium text-neutral-400">
               No matching parts
@@ -114,23 +122,39 @@ export function PartsSidebar() {
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="space-y-1">
-            {filteredParts.map((part) => (
-              <PartListItem
-                key={part.id}
-                index={part.index}
-                name={part.name}
-                isSelected={selectedPartId === part.id}
-                isVisible={part.visible}
-                color={part.color}
-                onSelect={() => selectPart(part.id)}
-                onToggleVisibility={() =>
-                  togglePartVisibility(part.id)
-                }
-              />
-            ))}
+            {filteredParts.map((part) => {
+              const assignedColor =
+                part.paletteColorId
+                  ? paletteById.get(
+                      part.paletteColorId,
+                    )?.hex ?? null
+                  : part.color;
+
+              return (
+                <PartListItem
+                  key={part.id}
+                  index={part.index}
+                  name={part.name}
+                  color={assignedColor}
+                  isSelected={
+                    selectedPartId ===
+                    part.id
+                  }
+                  isVisible={part.visible}
+                  onSelect={() =>
+                    selectPart(part.id)
+                  }
+                  onToggleVisibility={() =>
+                    togglePartVisibility(
+                      part.id,
+                    )
+                  }
+                />
+              );
+            })}
           </div>
         </div>
       )}
-    </aside>
+    </div>
   );
 }

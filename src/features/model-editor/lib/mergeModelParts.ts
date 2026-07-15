@@ -21,7 +21,14 @@ export function mergeModelParts(
       ...part,
       name: savedPart.name || part.name,
       visible: savedPart.visible,
-      color: savedPart.color,
+
+      // Legacy projects may still contain direct HEX values.
+      color: savedPart.paletteColorId
+        ? null
+        : savedPart.color,
+
+      paletteColorId:
+        savedPart.paletteColorId ?? null,
     };
   });
 }

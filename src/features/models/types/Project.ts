@@ -1,5 +1,6 @@
 import type { ProjectStatus } from "./ProjectStatus";
 import type { ProjectPart } from "./ProjectPart";
+import { PaletteColor } from "./PaletteColor";
 
 export type PrinterType = "fdm" | "resin" | "other";
 
@@ -33,6 +34,7 @@ export type Project = {
   baseColor: string;
 
   parts: ProjectPart[];
+  palette: PaletteColor[];
 
   createdAt: Date;
   updatedAt: Date;

@@ -1,41 +1,118 @@
 "use client";
 
 import {
+  Check,
   Paintbrush,
+  Plus,
   RotateCcw,
+  WandSparkles,
 } from "lucide-react";
-import { useMemo } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import { PAINT_COLORS } from "../constants/paintColors";
+import { normalizeHexColor } from "../lib/normalizeHexColor";
 import { useModelEditorStore } from "../store/modelEditorStore";
 
 export function PropertiesPanel() {
+  const [customColor, setCustomColor] =
+    useState("#f97316");
+
   const parts = useModelEditorStore(
     (state) => state.parts,
+  );
+
+  const palette = useModelEditorStore(
+    (state) => state.palette,
   );
 
   const selectedPartId = useModelEditorStore(
     (state) => state.selectedPartId,
   );
 
-  const assignPartColor =
+  const assignPaletteColor = useModelEditorStore(
+    (state) => state.assignPaletteColor,
+  );
+
+  const createAndAssignPaletteColor =
     useModelEditorStore(
-      (state) => state.assignPartColor,
+      (state) =>
+        state.createAndAssignPaletteColor,
     );
 
-  const resetPartColor =
-    useModelEditorStore(
-      (state) => state.resetPartColor,
-    );
+  const clearPaletteColor = useModelEditorStore(
+    (state) => state.clearPaletteColor,
+  );
+
+  const generatePalette = useModelEditorStore(
+    (state) => state.generatePalette,
+  );
 
   const selectedPart = useMemo(
     () =>
       parts.find(
-        (part) =>
-          part.id === selectedPartId,
+        (part) => part.id === selectedPartId,
       ) ?? null,
     [parts, selectedPartId],
   );
+
+  const selectedPaletteColor = useMemo(() => {
+    if (!selectedPart?.paletteColorId) {
+      return null;
+    }
+
+    return (
+      palette.find(
+        (color) =>
+          color.id ===
+          selectedPart.paletteColorId,
+      ) ?? null
+    );
+  }, [palette, selectedPart]);
+
+  const legacyPaintedPartsCount = useMemo(
+    () =>
+      parts.filter(
+        (part) =>
+          Boolean(part.color) &&
+          !part.paletteColorId,
+      ).length,
+    [parts],
+  );
+
+  useEffect(() => {
+    const nextColor =
+      selectedPaletteColor?.hex ??
+      selectedPart?.originalColor ??
+      "#f97316";
+
+    setCustomColor(nextColor);
+  }, [
+    selectedPaletteColor?.hex,
+    selectedPart?.id,
+    selectedPart?.originalColor,
+  ]);
+
+  function handleApplyCustomColor() {
+    if (!selectedPart) {
+      return;
+    }
+
+    const normalizedColor =
+      normalizeHexColor(customColor);
+
+    if (!normalizedColor) {
+      return;
+    }
+
+    createAndAssignPaletteColor(
+      selectedPart.id,
+      normalizedColor,
+    );
+  }
 
   return (
     <aside className="flex max-h-[22rem] min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-white/10 bg-neutral-950/70 lg:h-full lg:max-h-none lg:w-72 lg:border-l lg:border-t-0">
@@ -57,6 +134,17 @@ export function PropertiesPanel() {
               ).padStart(2, "0")}`
             : "Select a model part to edit it."}
         </p>
+
+        {legacyPaintedPartsCount > 0 ? (
+          <button
+            type="button"
+            onClick={generatePalette}
+            className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-orange-400/20 bg-orange-400/10 px-4 py-2.5 text-sm font-medium text-orange-300 transition hover:bg-orange-400/15"
+          >
+            <WandSparkles className="h-4 w-4" />
+            Generate Palette
+          </button>
+        ) : null}
       </div>
 
       {!selectedPart ? (
@@ -71,58 +159,143 @@ export function PropertiesPanel() {
             </p>
 
             <p className="mt-1 text-xs leading-5 text-neutral-600">
-              Choose a model part from the
-              sidebar or directly in the viewer.
+              Choose a model part from the sidebar
+              or directly in the viewer.
             </p>
           </div>
         </div>
       ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:p-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:p-5">
           <div>
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium text-white">
-                Paint color
-              </p>
+              <div>
+                <p className="text-sm font-medium text-white">
+                  Project palette
+                </p>
 
-              {selectedPart.color ? (
+                <p className="mt-1 text-xs leading-5 text-neutral-600">
+                  Assign a shared project color to
+                  this part.
+                </p>
+              </div>
+
+              {selectedPaletteColor ||
+              selectedPart.color ? (
                 <button
                   type="button"
                   onClick={() =>
-                    resetPartColor(
+                    clearPaletteColor(
                       selectedPart.id,
                     )
                   }
-                  className="flex cursor-pointer items-center gap-1.5 text-xs text-neutral-500 transition hover:text-white"
+                  className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs text-neutral-500 transition hover:text-white"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  Reset
+                  Clear
                 </button>
               ) : null}
             </div>
 
+            {palette.length > 0 ? (
+              <div className="mt-4 space-y-2">
+                {palette.map((color) => {
+                  const isSelected =
+                    selectedPart.paletteColorId ===
+                    color.id;
+
+                  return (
+                    <button
+                      key={color.id}
+                      type="button"
+                      onClick={() =>
+                        assignPaletteColor(
+                          selectedPart.id,
+                          color.id,
+                        )
+                      }
+                      className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+                        isSelected
+                          ? "border-orange-400/30 bg-orange-400/10"
+                          : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <span
+                        className="h-8 w-8 shrink-0 rounded-lg border border-white/15"
+                        style={{
+                          backgroundColor: color.hex,
+                        }}
+                      />
+
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-neutral-200">
+                          {String(
+                            color.number,
+                          ).padStart(2, "0")}
+                          {" — "}
+                          {color.name}
+                        </span>
+
+                        <span className="mt-0.5 block font-mono text-[11px] uppercase text-neutral-600">
+                          {color.hex}
+                        </span>
+                      </span>
+
+                      {isSelected ? (
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-400 text-neutral-950">
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="mt-4 rounded-xl border border-dashed border-white/10 px-4 py-5 text-center">
+                <p className="text-sm text-neutral-500">
+                  No palette colors yet.
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-neutral-700">
+                  Choose a preset or create a custom
+                  color.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 border-t border-white/10 pt-5">
+            <p className="text-sm font-medium text-white">
+              Quick colors
+            </p>
+
             <p className="mt-1 text-xs leading-5 text-neutral-600">
-              Choose a color for this model
-              part.
+              Existing colors are reused instead of
+              creating duplicates.
             </p>
 
             <div className="mt-4 grid grid-cols-4 gap-2">
               {PAINT_COLORS.map((color) => {
+                const normalizedPreset =
+                  normalizeHexColor(color.value);
+
                 const isSelected =
-                  selectedPart.color ===
-                  color.value;
+                  normalizedPreset !== null &&
+                  normalizeHexColor(
+                    selectedPaletteColor?.hex ?? "",
+                  ) === normalizedPreset;
 
                 return (
                   <button
                     key={color.value}
                     type="button"
                     onClick={() =>
-                      assignPartColor(
+                      createAndAssignPaletteColor(
                         selectedPart.id,
                         color.value,
                       )
                     }
                     title={color.name}
-                    aria-label={`Set ${color.name} color`}
+                    aria-label={`Use ${color.name}`}
                     aria-pressed={isSelected}
                     className={`relative aspect-square cursor-pointer rounded-xl border p-1 transition ${
                       isSelected
@@ -140,7 +313,7 @@ export function PropertiesPanel() {
 
                     {isSelected ? (
                       <span className="absolute inset-0 flex items-center justify-center">
-                        <span className="h-2 w-2 rounded-full bg-white shadow-[0_0_0_2px_rgba(0,0,0,0.65)]" />
+                        <Check className="h-4 w-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" />
                       </span>
                     ) : null}
                   </button>
@@ -156,8 +329,80 @@ export function PropertiesPanel() {
             >
               Custom color
             </label>
-            
-            {selectedPart.originalColor ? (
+
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                id="custom-part-color"
+                type="color"
+                value={customColor}
+                onChange={(event) =>
+                  setCustomColor(
+                    event.target.value,
+                  )
+                }
+                className="h-11 w-14 shrink-0 cursor-pointer rounded-xl border border-white/10 bg-white/[0.03] p-1"
+              />
+
+              <div className="flex h-11 min-w-0 flex-1 items-center rounded-xl border border-white/10 bg-white/[0.025] px-3">
+                <span className="truncate font-mono text-xs uppercase text-neutral-400">
+                  {normalizeHexColor(customColor) ??
+                    customColor}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleApplyCustomColor}
+                className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-white/10 text-neutral-400 transition hover:border-white/20 hover:bg-white/[0.05] hover:text-white"
+                aria-label="Add and assign custom color"
+                title="Add and assign color"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {selectedPaletteColor ? (
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <p className="text-sm font-medium text-white">
+                Assigned color
+              </p>
+
+              <div className="mt-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-3">
+                <span
+                  className="h-8 w-8 shrink-0 rounded-lg border border-white/15"
+                  style={{
+                    backgroundColor:
+                      selectedPaletteColor.hex,
+                  }}
+                />
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-neutral-300">
+                    {selectedPaletteColor.name}
+                  </p>
+
+                  <p className="mt-0.5 font-mono text-[11px] uppercase text-neutral-600">
+                    {selectedPaletteColor.hex}
+                  </p>
+                </div>
+
+                <span className="text-xs font-medium text-neutral-500">
+                  C
+                  {String(
+                    selectedPaletteColor.number,
+                  ).padStart(2, "0")}
+                </span>
+              </div>
+            </div>
+          ) : null}
+
+          {selectedPart.originalColor ? (
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <p className="text-sm font-medium text-white">
+                Original material
+              </p>
+
               <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
                 <div className="flex min-w-0 items-center gap-2">
                   <span
@@ -169,7 +414,7 @@ export function PropertiesPanel() {
                   />
 
                   <span className="truncate text-xs text-neutral-500">
-                    Original material color
+                    Material base color
                   </span>
                 </div>
 
@@ -177,35 +422,8 @@ export function PropertiesPanel() {
                   {selectedPart.originalColor}
                 </span>
               </div>
-            ) : null}
-
-            <div className="mt-3 flex items-center gap-3">
-              <input
-                id="custom-part-color"
-                type="color"
-                value={
-                  selectedPart.color ??
-                  selectedPart.originalColor ??
-                  "#f97316"
-                }
-                onChange={(event) =>
-                  assignPartColor(
-                    selectedPart.id,
-                    event.target.value,
-                  )
-                }
-                className="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-white/[0.03] p-1"
-              />
-
-              <div className="flex h-11 min-w-0 flex-1 items-center rounded-xl border border-white/10 bg-white/[0.025] px-3">
-                <span className="truncate font-mono text-xs uppercase text-neutral-400">
-                  {selectedPart.color ??
-                    selectedPart.originalColor ??
-                    "Original material"}
-                </span>
-              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       )}
     </aside>
