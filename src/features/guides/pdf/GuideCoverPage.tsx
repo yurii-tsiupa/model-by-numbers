@@ -1,0 +1,109 @@
+import {
+  Image,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+} from "@react-pdf/renderer";
+
+import type { ModelGuide } from "../types/ModelGuide";
+import { GuidePageFooter } from "./GuidePageFooter";
+import {
+  guidePdfStyles,
+  pdfColors,
+} from "./guidePdfStyles";
+
+type GuideCoverPageProps = {
+  guide: ModelGuide;
+};
+
+const styles = StyleSheet.create({
+  page: {
+    ...guidePdfStyles.page,
+    justifyContent: "space-between",
+  },
+  brand: {
+    color: pdfColors.accent,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+  },
+  titleBlock: {
+    marginTop: 30,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 700,
+    lineHeight: 1.15,
+  },
+  subtitle: {
+    color: pdfColors.muted,
+    fontSize: 15,
+    marginTop: 8,
+  },
+  imageContainer: {
+    ...guidePdfStyles.placeholder,
+    height: 300,
+    marginTop: 28,
+    overflow: "hidden",
+  },
+  image: {
+    height: "100%",
+    objectFit: "contain",
+    width: "100%",
+  },
+  metadata: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 24,
+  },
+  metadataItem: {
+    ...guidePdfStyles.card,
+    width: "31.8%",
+  },
+});
+
+export function GuideCoverPage({ guide }: GuideCoverPageProps) {
+  const metadata = [
+    ["Author", guide.author],
+    ["Parts", String(guide.partsCount)],
+    ["Colors", String(guide.colorsCount)],
+    ["Printer", guide.printerType.toUpperCase()],
+    ["Material", guide.material.toUpperCase()],
+    ["Generated", guide.generatedAt.toLocaleDateString()],
+  ];
+
+  return (
+    <Page size="A4" orientation="portrait" style={styles.page}>
+      <View>
+        <Text style={styles.brand}>Model by Numbers</Text>
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>{guide.title}</Text>
+          <Text style={styles.subtitle}>Painting Guide</Text>
+        </View>
+
+        <View style={styles.imageContainer}>
+          {guide.images.painted ? (
+            // React PDF Image does not expose an HTML alt prop.
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <Image src={guide.images.painted} style={styles.image} />
+          ) : (
+            <Text>Painted model view not available</Text>
+          )}
+        </View>
+
+        <View style={styles.metadata}>
+          {metadata.map(([label, value]) => (
+            <View key={label} style={styles.metadataItem}>
+              <Text style={guidePdfStyles.label}>{label}</Text>
+              <Text style={guidePdfStyles.value}>{value}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+      <GuidePageFooter pageNumber={1} />
+    </Page>
+  );
+}

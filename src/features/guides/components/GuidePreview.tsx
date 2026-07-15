@@ -1,5 +1,10 @@
-import { ImageIcon } from "lucide-react";
+"use client";
 
+import { ImageIcon } from "lucide-react";
+import { useRef, useState } from "react";
+
+import { createGuideFileName } from "../lib/createGuideFileName";
+import { downloadGuidePdf } from "../lib/downloadGuidePdf";
 import type { ModelGuide } from "../types/ModelGuide";
 import type { GuideImages } from "../types/ModelGuide";
 import { GuidePaletteSection } from "./GuidePaletteSection";
@@ -10,6 +15,8 @@ import { GuideProjectOverview } from "./GuideProjectOverview";
 type GuidePreviewProps = {
   guide: ModelGuide;
 };
+
+type DownloadStatus = "idle" | "generating" | "error";
 
 const modelViews: Array<{
   key: keyof GuideImages;
@@ -39,15 +46,50 @@ const modelViews: Array<{
 ];
 
 export function GuidePreview({ guide }: GuidePreviewProps) {
+  const [downloadStatus, setDownloadStatus] =
+    useState<DownloadStatus>("idle");
+  const isDownloadingRef = useRef(false);
+
   const hasMissingModelViews = modelViews.some(
     ({ key }) => !guide.images[key],
   );
+
+  async function handleDownloadPdf() {
+    if (isDownloadingRef.current) {
+      return;
+    }
+
+    isDownloadingRef.current = true;
+    setDownloadStatus("generating");
+
+    try {
+      const { generateGuidePdf } = await import(
+        "../pdf/generateGuidePdf"
+      );
+      const blob = await generateGuidePdf(guide);
+
+      downloadGuidePdf(
+        blob,
+        createGuideFileName(guide.title),
+      );
+      setDownloadStatus("idle");
+    } catch (error) {
+      console.error("Failed to generate guide PDF:", error);
+      setDownloadStatus("error");
+    } finally {
+      isDownloadingRef.current = false;
+    }
+  }
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
       <GuidePreviewHeader
         projectId={guide.projectId}
         title={guide.title}
+        downloadStatus={downloadStatus}
+        onDownload={() => {
+          void handleDownloadPdf();
+        }}
       />
 
       <div className="mx-auto max-w-7xl space-y-12 px-5 py-8 sm:px-6 sm:py-10 lg:px-8">
@@ -59,8 +101,8 @@ export function GuidePreview({ guide }: GuidePreviewProps) {
           </h2>
           {hasMissingModelViews ? (
             <p className="mt-2 text-sm text-amber-300/80">
-              Model views were not captured. Return to the editor to
-              generate them.
+              Some model views are missing. Return to the editor and
+              generate the guide again for a complete PDF.
             </p>
           ) : null}
 

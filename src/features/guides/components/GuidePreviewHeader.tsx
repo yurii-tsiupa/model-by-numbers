@@ -1,15 +1,27 @@
-import { ArrowLeft, Box, Download } from "lucide-react";
+import {
+  ArrowLeft,
+  Box,
+  CircleAlert,
+  Download,
+  LoaderCircle,
+} from "lucide-react";
 import Link from "next/link";
 
 type GuidePreviewHeaderProps = {
   projectId: string;
   title: string;
+  downloadStatus: "idle" | "generating" | "error";
+  onDownload: () => void;
 };
 
 export function GuidePreviewHeader({
   projectId,
   title,
+  downloadStatus,
+  onDownload,
 }: GuidePreviewHeaderProps) {
+  const isGenerating = downloadStatus === "generating";
+
   return (
     <header className="border-b border-white/10 bg-neutral-950/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-6 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
@@ -42,13 +54,33 @@ export function GuidePreviewHeader({
 
           <button
             type="button"
-            disabled
-            className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-full bg-orange-400/10 px-4 py-2.5 text-sm font-medium text-orange-300/50"
+            disabled={isGenerating}
+            onClick={onDownload}
+            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-orange-400 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:bg-orange-300 disabled:cursor-not-allowed disabled:bg-orange-400/30 disabled:text-orange-100/60"
           >
-            <Download className="h-4 w-4" />
-            PDF coming next
+            {isGenerating ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : downloadStatus === "error" ? (
+              <CircleAlert className="h-4 w-4" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {isGenerating
+              ? "Generating PDF..."
+              : downloadStatus === "error"
+                ? "Generation Failed - Retry"
+                : "Download PDF"}
           </button>
         </div>
+
+        {downloadStatus === "error" ? (
+          <p
+            role="alert"
+            className="text-sm text-red-300 lg:basis-full lg:text-right"
+          >
+            We could not generate the PDF. Please try again.
+          </p>
+        ) : null}
       </div>
     </header>
   );
