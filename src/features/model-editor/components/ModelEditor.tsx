@@ -10,6 +10,8 @@ import type { Project } from "@/features/models/types/Project";
 import { useProjectThumbnail } from "@/features/models/hooks/useProjectThumbnail";
 import { useSaveProjectThumbnail } from "@/features/models/hooks/useSaveProjectThumbnail";
 import { createThumbnailBlob } from "@/features/models/lib/createThumbnailBlob";
+import { useReferenceImages } from "@/features/references/hooks/useReferenceImages";
+import { ReferenceSplitPanel } from "@/features/references/components/ReferenceSplitPanel";
 
 import { useProjectAutosave } from "../hooks/useProjectAutosave";
 import { getGuideReadiness } from "../lib/getGuideReadiness";
@@ -37,6 +39,30 @@ export function ModelEditor({
   const [thumbnailError, setThumbnailError] = useState<string | null>(null);
   const thumbnailQuery = useProjectThumbnail(project.id);
   const saveThumbnail = useSaveProjectThumbnail();
+  const [referenceViewMode,setReferenceViewMode]=useState<"viewer"|"split"|"reference">("viewer");
+  const [selectedReferenceId,setSelectedReferenceId]=useState<string|null>(null);
+  const referencesQuery=useReferenceImages(project.id);
+  const references=referencesQuery.data??[];
+  const selectedReference=references.find(reference=>reference.id===selectedReferenceId)??null;
+  const effectiveReferenceViewMode=selectedReference?referenceViewMode:"viewer";
+
+  function openReferenceMode(mode: "split" | "reference", preferredReferenceId?: string) {
+    const preferredReference = preferredReferenceId ? references.find((reference) => reference.id === preferredReferenceId) : null;
+    const currentReference = references.find((reference) => reference.id === selectedReferenceId);
+    const nextReference = preferredReference ?? currentReference ?? references[0];
+    if (!nextReference) { setSelectedReferenceId(null); setReferenceViewMode("viewer"); return; }
+    setSelectedReferenceId(nextReference.id);
+    setReferenceViewMode(mode);
+  }
+
+  function handleReferenceDeleted(referenceId: string) {
+    if (selectedReferenceId !== referenceId) return;
+    const deletedIndex = references.findIndex((reference) => reference.id === referenceId);
+    const remaining = references.filter((reference) => reference.id !== referenceId);
+    const nextReference = remaining[Math.min(Math.max(deletedIndex, 0), remaining.length - 1)];
+    if (nextReference) setSelectedReferenceId(nextReference.id);
+    else { setSelectedReferenceId(null); setReferenceViewMode("viewer"); }
+  }
 
   const generationStatus = useGuideGenerationStore(
     (state) => state.status,
@@ -223,13 +249,13 @@ export function ModelEditor({
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-        <EditorSidebar project={project} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} />
+        <EditorSidebar project={project} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} />
 
-        <ModelViewer
-          ref={viewerRef}
-          project={project}
-          userId={userId}
-        />
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
+          <div className={`${effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-0 min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} /></div>
+          {selectedReference&&effectiveReferenceViewMode!=="viewer"?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={setSelectedReferenceId} onClose={()=>setReferenceViewMode("viewer")}/>:null}
+          <div className="absolute right-3 top-3 z-20 flex rounded-full border border-white/10 bg-black/70 p-1 text-xs">{(["viewer","split","reference"] as const).map(mode=><button key={mode} type="button" disabled={mode!=="viewer"&&references.length===0} onClick={()=>{if(mode==="viewer")setReferenceViewMode("viewer");else openReferenceMode(mode);}} className={`rounded-full px-3 py-1.5 capitalize disabled:opacity-40 ${effectiveReferenceViewMode===mode?"bg-orange-400 text-black":"text-neutral-300"}`}>{mode}</button>)}</div>
+        </div>
 
         <PropertiesPanel />
       </div>

@@ -6,6 +6,7 @@ import type {
   GuideImages,
   GuidePart,
   ModelGuide,
+  GuideReferenceImage,
 } from "../types/ModelGuide";
 import { getGuidePalette } from "./getGuidePalette";
 import { isPartIncludedInGuide } from "./isPartIncludedInGuide";
@@ -16,6 +17,7 @@ type BuildGuideDataParams = {
   palette: readonly PaletteColor[];
   images: GuideImages;
   author: string;
+  references?: readonly GuideReferenceImage[];
 };
 
 export function buildGuideData({
@@ -24,6 +26,7 @@ export function buildGuideData({
   palette,
   images,
   author,
+  references = [],
 }: BuildGuideDataParams): ModelGuide {
   const paletteById = new Map(
     palette.map((color) => [color.id, color]),
@@ -69,6 +72,7 @@ export function buildGuideData({
     palette: guidePalette,
     parts: guideParts,
     images: { ...images },
+    references: references.map(reference=>({...reference})),
     generatedAt: new Date(),
   };
 }

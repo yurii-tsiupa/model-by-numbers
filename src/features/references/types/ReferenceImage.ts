@@ -1,0 +1,2 @@
+export type ReferenceImageType = "front" | "back" | "side" | "detail" | "render" | "other";
+export type ReferenceImage = { id: string; projectId: string; name: string; blob: Blob; mimeType: "image/jpeg" | "image/png" | "image/webp"; type: ReferenceImageType; order: number; includeInGuide: boolean; width: number; height: number; size: number; createdAt: Date; updatedAt: Date; fingerprint: string; };

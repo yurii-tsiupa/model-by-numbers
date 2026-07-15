@@ -22,6 +22,8 @@ export type GuideImages = {
   painted: string | null;
   numbers: string | null;
 };
+import type { ReferenceImageType } from "@/features/references/types/ReferenceImage";
+export type GuideReferenceImage = { id:string; name:string; type:ReferenceImageType; dataUrl:string; width:number; height:number; };
 
 export type ModelGuide = {
   projectId: string;
@@ -36,5 +38,6 @@ export type ModelGuide = {
   palette: GuidePaletteColor[];
   parts: GuidePart[];
   images: GuideImages;
+  references?: GuideReferenceImage[];
   generatedAt: Date;
 };

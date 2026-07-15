@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import { ImageIcon } from "lucide-react";
 import { useRef, useState } from "react";
@@ -131,7 +132,6 @@ export function GuidePreview({ guide, savedFileName, savedPdfBlob, skipSave = fa
                   {image ? (
                     <div className="flex aspect-[4/3] items-center justify-center bg-neutral-900">
                       {/* Data URLs are temporary client-side captures. */}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={image}
                         alt={alt}
@@ -155,6 +155,8 @@ export function GuidePreview({ guide, savedFileName, savedPdfBlob, skipSave = fa
             })}
           </div>
         </section>
+
+        {(guide.references?.length ?? 0) > 0 ? <section><h2 className="text-2xl font-semibold text-white">Reference Images</h2><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{guide.references?.map(reference=><article key={reference.id} className="overflow-hidden rounded-2xl border border-white/10 bg-neutral-900"><div className="flex aspect-[4/3] items-center justify-center p-2"><img src={reference.dataUrl} alt={reference.name} className="max-h-full max-w-full object-contain"/></div><div className="border-t border-white/10 p-3"><p className="truncate text-sm text-white">{reference.name}</p><p className="mt-1 text-xs capitalize text-neutral-500">{reference.type}</p></div></article>)}</div></section>:null}
 
         <GuidePaletteSection palette={guide.palette} />
         <GuidePartsSection parts={guide.parts} />

@@ -10,6 +10,7 @@ import { deleteProject } from "../services/projects.service";
 import type { Project } from "../types/Project";
 import { projectThumbnailService } from "../services/projectThumbnail.service";
 import { generatedGuidesService } from "@/features/guides/services/generatedGuides.service";
+import { referenceImagesService } from "@/features/references/services/referenceImages.service";
 
 export function useDeleteProject(userId: string | undefined) {
   const queryClient = useQueryClient();
@@ -20,6 +21,7 @@ export function useDeleteProject(userId: string | undefined) {
       await Promise.allSettled([
         projectThumbnailService.deleteProjectThumbnail(project.id),
         generatedGuidesService.deleteByProjectId(project.id),
+        referenceImagesService.deleteByProjectId(project.id),
       ]);
     },
 

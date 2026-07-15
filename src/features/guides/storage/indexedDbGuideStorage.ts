@@ -3,10 +3,11 @@ import type { GeneratedGuide, SaveGeneratedGuideInput } from "../types/Generated
 import type { GuideStorage } from "./guideStorage";
 
 const DATABASE_NAME = "model-by-numbers";
-const DATABASE_VERSION = 3;
+const DATABASE_VERSION = 4;
 const STORE_NAME = "generated-guides";
 const MODEL_FILES_STORE = "model-files";
 const PROJECT_THUMBNAILS_STORE = "project-thumbnails";
+const REFERENCE_IMAGES_STORE = "reference-images";
 
 type StoredGuide = Omit<GeneratedGuide, "createdAt" | "updatedAt"> & {
   createdAt: Date | string | number;
@@ -59,6 +60,7 @@ function openDatabase(): Promise<IDBDatabase> {
         store.createIndex("createdAt", "createdAt", { unique: false });
       }
       if (!database.objectStoreNames.contains(PROJECT_THUMBNAILS_STORE)) database.createObjectStore(PROJECT_THUMBNAILS_STORE, { keyPath: "projectId" });
+      if (!database.objectStoreNames.contains(REFERENCE_IMAGES_STORE)) { const store=database.createObjectStore(REFERENCE_IMAGES_STORE,{keyPath:"id"});store.createIndex("projectId","projectId"); }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(friendlyStorageError(request.error));

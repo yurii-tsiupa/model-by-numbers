@@ -3,7 +3,7 @@
 import { ArrowLeft, Box, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { Loader } from "@/components/ui/Loader";
 import { useAuth } from "@/features/auth/hooks/useAuth";
@@ -14,6 +14,9 @@ import { useGuideGenerationStore } from "@/features/guides/store/guideGeneration
 import type { GuideImages } from "@/features/guides/types/ModelGuide";
 import { getGuideReadiness } from "@/features/model-editor/lib/getGuideReadiness";
 import { useProject } from "@/features/models/hooks/useProject";
+import { useReferenceImages } from "@/features/references/hooks/useReferenceImages";
+import { referencesToGuideImages } from "@/features/references/lib/referenceToDataUrl";
+import type { GuideReferenceImage } from "@/features/guides/types/ModelGuide";
 
 const EMPTY_GUIDE_IMAGES: GuideImages = {
   original: null,
@@ -51,6 +54,8 @@ export default function GuidePage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const projectId = params.projectId;
   const projectQuery = useProject(projectId, user?.uid);
+  const referencesQuery=useReferenceImages(projectId);
+  const [guideReferences,setGuideReferences]=useState<GuideReferenceImage[]|null>(null);
   const capturedProjectId = useGuideGenerationStore(
     (state) => state.projectId,
   );
@@ -63,6 +68,7 @@ export default function GuidePage() {
       router.replace("/login");
     }
   }, [isAuthLoading, router, user]);
+  useEffect(()=>{if(!referencesQuery.data)return;let active=true;void referencesToGuideImages(referencesQuery.data).then(rows=>{if(active)setGuideReferences(rows);}).catch(()=>{if(active)setGuideReferences([]);});return()=>{active=false;};},[referencesQuery.data]);
 
   if (isAuthLoading || !user) {
     return (
@@ -72,7 +78,7 @@ export default function GuidePage() {
     );
   }
 
-  if (projectQuery.isLoading) {
+  if (projectQuery.isLoading || referencesQuery.isLoading || guideReferences===null) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-white">
         <Loader label="Loading painting guide..." />
@@ -165,6 +171,7 @@ export default function GuidePage() {
         ? capturedImages
         : EMPTY_GUIDE_IMAGES,
     author: user.displayName?.trim() || "Model by Numbers User",
+    references: guideReferences,
   });
 
   return <GuidePreview guide={guide} />;

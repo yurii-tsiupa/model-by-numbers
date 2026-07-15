@@ -2,10 +2,11 @@ import type { ProjectThumbnail } from "../types/ProjectThumbnail";
 import type { ProjectThumbnailStorage } from "./projectThumbnailStorage";
 
 const DATABASE_NAME = "model-by-numbers";
-const DATABASE_VERSION = 3;
+const DATABASE_VERSION = 4;
 const STORE_NAME = "project-thumbnails";
 const MODEL_FILES_STORE = "model-files";
 const GUIDES_STORE = "generated-guides";
+const REFERENCES_STORE = "reference-images";
 
 function addStores(database: IDBDatabase) {
   if (!database.objectStoreNames.contains(MODEL_FILES_STORE)) {
@@ -19,6 +20,7 @@ function addStores(database: IDBDatabase) {
     store.createIndex("createdAt", "createdAt", { unique: false });
   }
   if (!database.objectStoreNames.contains(STORE_NAME)) database.createObjectStore(STORE_NAME, { keyPath: "projectId" });
+  if (!database.objectStoreNames.contains(REFERENCES_STORE)) { const store=database.createObjectStore(REFERENCES_STORE,{keyPath:"id"});store.createIndex("projectId","projectId"); }
 }
 
 function openDatabase(): Promise<IDBDatabase> {

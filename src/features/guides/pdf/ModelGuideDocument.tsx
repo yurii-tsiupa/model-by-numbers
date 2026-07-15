@@ -9,6 +9,7 @@ import { GuideModelViewsPage } from "./GuideModelViewsPage";
 import { GuidePalettePage } from "./GuidePalettePage";
 import { GuidePartsPage } from "./GuidePartsPage";
 import { GuideProjectPage } from "./GuideProjectPage";
+import { GuideReferencesPage } from "./GuideReferencesPage";
 
 Font.register({
   family: "Roboto",
@@ -40,6 +41,7 @@ export function ModelGuideDocument({
       <GuideCoverPage guide={guide} />
       <GuideProjectPage guide={guide} />
       <GuideModelViewsPage guide={guide} />
+      {(guide.references?.length ?? 0)>0?<GuideReferencesPage references={guide.references??[]}/>:null}
       <GuidePalettePage guide={guide} />
       <GuidePartsPage guide={guide} />
     </Document>

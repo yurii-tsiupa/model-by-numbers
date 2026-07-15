@@ -1,0 +1,4 @@
+import type { ReferenceImage } from "../types/ReferenceImage";
+import type { GuideReferenceImage } from "@/features/guides/types/ModelGuide";
+function blobToDataUrl(blob:Blob):Promise<string>{return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>typeof reader.result==="string"?resolve(reader.result):reject(new Error("Reference conversion failed."));reader.onerror=()=>reject(new Error("Reference conversion failed."));reader.readAsDataURL(blob);});}
+export async function referencesToGuideImages(references:readonly ReferenceImage[]):Promise<GuideReferenceImage[]>{return Promise.all(references.filter(r=>r.includeInGuide).sort((a,b)=>a.order-b.order).map(async r=>({id:r.id,name:r.name,type:r.type,dataUrl:await blobToDataUrl(r.blob),width:r.width,height:r.height})));}

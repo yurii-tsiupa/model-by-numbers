@@ -4,6 +4,7 @@ import {
   Box,
   FolderCog,
   Palette,
+  Images,
 } from "lucide-react";
 
 import type { Project } from "@/features/models/types/Project";
@@ -13,12 +14,15 @@ import type { EditorSidebarTab } from "../types/EditorSidebarTab";
 import { PaletteTab } from "./sidebar/PaletteTab";
 import { PartsTab } from "./sidebar/PartsTab";
 import { ProjectTab } from "./sidebar/ProjectTab";
+import { ReferencesTab } from "@/features/references/components/ReferencesTab";
 
 type EditorSidebarProps = {
   project: Project;
   isGeneratingThumbnail: boolean;
   thumbnailError: string | null;
   onRegenerateThumbnail: () => void;
+  onOpenReferenceMode: (mode: "split" | "reference", preferredReferenceId?: string) => void;
+  onReferenceDeleted: (id: string) => void;
 };
 
 const tabs: Array<{
@@ -41,6 +45,11 @@ const tabs: Array<{
     label: "Project",
     icon: FolderCog,
   },
+  {
+    id: "references",
+    label: "References",
+    icon: Images,
+  },
 ];
 
 export function EditorSidebar({
@@ -48,6 +57,8 @@ export function EditorSidebar({
   isGeneratingThumbnail,
   thumbnailError,
   onRegenerateThumbnail,
+  onOpenReferenceMode,
+  onReferenceDeleted,
 }: EditorSidebarProps) {
   const activeTab = useModelEditorStore(
     (state) => state.activeSidebarTab,
@@ -60,7 +71,7 @@ export function EditorSidebar({
 
   return (
     <aside className="flex max-h-[20rem] min-h-0 w-full shrink-0 flex-col overflow-hidden border-b border-white/10 bg-neutral-950/70 lg:h-full lg:max-h-none lg:w-72 lg:border-b-0 lg:border-r">
-      <div className="grid shrink-0 grid-cols-3 border-b border-white/10 p-2">
+      <div className="grid shrink-0 grid-cols-4 border-b border-white/10 p-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive =
@@ -97,6 +108,7 @@ export function EditorSidebar({
       {activeTab === "project" ? (
         <ProjectTab project={project} isGeneratingThumbnail={isGeneratingThumbnail} thumbnailError={thumbnailError} onRegenerateThumbnail={onRegenerateThumbnail} />
       ) : null}
+      {activeTab === "references" ? <ReferencesTab projectId={project.id} onOpenReferenceMode={onOpenReferenceMode} onReferenceDeleted={onReferenceDeleted} /> : null}
     </aside>
   );
 }
