@@ -2,10 +2,11 @@ import { create } from "zustand";
 
 import type { ModelPart } from "../types/ModelPart";
 import { PaletteColor } from "@/features/models/types/PaletteColor";
-import { generatePaletteFromParts } from "../lib/generatePaletteFromParts";
+import { syncPaletteFromParts } from "../lib/syncPaletteFromParts";
 import { normalizeHexColor } from "../lib/normalizeHexColor";
 import { EditorSidebarTab } from "../types/EditorSidebarTab";
-import { generatePaletteFromModel } from "../utils/generatePaletteFromModel";
+import { GeneratePaletteOptions } from "../types/PaletteGeneration";
+import { generatePalette } from "../utils/generatePalette";
 
 export type EditorSaveStatus =
   | "saved"
@@ -52,7 +53,7 @@ type ModelEditorState = {
   ) => void;
 
   setPalette: (palette: PaletteColor[]) => void;
-  generatePalette: () => void;
+  syncPaletteFromParts: () => void;
 
   setParts: (parts: ModelPart[]) => void;
   selectPart: (partId: string | null) => void;
@@ -101,7 +102,9 @@ type ModelEditorState = {
     paletteColorId: string,
   ) => void;
 
-  generatePaletteFromModel: () => void;
+  generatePalette: (
+    options: GeneratePaletteOptions,
+  ) => void;
 
   showAllParts: () => void;
   hideSelectedPart: () => void;
@@ -202,9 +205,9 @@ export const useModelEditorStore =
       });
     },
 
-    generatePalette: () => {
+    syncPaletteFromParts: () => {
       set((state) => {
-        const result = generatePaletteFromParts(
+        const result = syncPaletteFromParts(
           state.parts,
           state.palette,
         );
@@ -626,21 +629,21 @@ export const useModelEditorStore =
       });
     },
 
-    generatePaletteFromModel: () => {
+    generatePalette: (
+      options: GeneratePaletteOptions,
+    ) => {
       set((state) => {
-        const generated =
-          generatePaletteFromModel(state.parts);
+        const generated = generatePalette(
+          state.parts,
+          options,
+        );
 
         return {
           palette: generated.palette,
-
           parts: generated.parts,
-
-          highlightedPaletteColorId: null,
-
           selectedPartId:
             generated.parts[0]?.id ?? null,
-
+          highlightedPaletteColorId: null,
           ...markStateDirty(state),
         };
       });

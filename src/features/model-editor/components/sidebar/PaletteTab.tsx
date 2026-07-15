@@ -11,14 +11,14 @@ import {
   X,
 } from "lucide-react";
 import {
-  useEffect,
   useMemo,
   useState,
 } from "react";
 
 import { normalizeHexColor } from "../../lib/normalizeHexColor";
 import { useModelEditorStore } from "../../store/modelEditorStore";
-import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import { GeneratePaletteModal } from "../modals/GeneratePaletteModal";
+import { DEFAULT_PALETTE_GENERATION_OPTIONS } from "../../constants/defaultPaletteGenerationOptions";
 
 export function PaletteTab() {
   const palette = useModelEditorStore(
@@ -58,11 +58,6 @@ export function PaletteTab() {
         state.highlightPaletteColor,
     );
 
-  const selectPartsByPaletteColor =
-    useModelEditorStore(
-      (state) =>
-        state.selectPartsByPaletteColor,
-    );
 
   const selectionMode = useModelEditorStore(
     (state) => state.selectionMode,
@@ -86,7 +81,7 @@ export function PaletteTab() {
 
   const generatePalette =
     useModelEditorStore(
-      (state) => state.generatePaletteFromModel,
+      (state) => state.generatePalette,
     );
 
   const [isAddingColor, setIsAddingColor] =
@@ -106,6 +101,7 @@ export function PaletteTab() {
 
   const [isGeneratePaletteModalOpen, setIsGeneratePaletteModalOpen] =
     useState(false);
+    
 
   const usageByColorId = useMemo(() => {
     const usage = new Map<string, number>();
@@ -219,7 +215,8 @@ export function PaletteTab() {
           type="button"
           onClick={() => {
             if (palette.length === 0) {
-              generatePalette();
+              generatePalette(DEFAULT_PALETTE_GENERATION_OPTIONS);
+
               return;
             }
 
@@ -519,16 +516,15 @@ export function PaletteTab() {
           </div>
         </div>
       )}
-      <ConfirmationModal
+      <GeneratePaletteModal
         isOpen={isGeneratePaletteModalOpen}
-        title="Generate Palette"
-        description="This will replace the current palette and automatically assign colors to all model parts. Any manual palette changes will be lost."
-        confirmLabel="Generate"
-        cancelLabel="Cancel"
-        variant="warning"
-        onClose={() => setIsGeneratePaletteModalOpen(false)}
-        onConfirm={() => {
-          generatePalette();
+        hasPalette={palette.length > 0}
+        onClose={() =>
+          setIsGeneratePaletteModalOpen(false)
+        }
+        onGenerate={(options) => {
+          generatePalette(options);
+
           setIsGeneratePaletteModalOpen(false);
         }}
       />

@@ -47,8 +47,8 @@ export function PropertiesPanel() {
     (state) => state.clearPaletteColor,
   );
 
-  const generatePalette = useModelEditorStore(
-    (state) => state.generatePalette,
+  const syncPaletteFromParts = useModelEditorStore(
+    (state) => state.syncPaletteFromParts,
   );
 
   const selectedPart = useMemo(
@@ -138,7 +138,7 @@ export function PropertiesPanel() {
         {legacyPaintedPartsCount > 0 ? (
           <button
             type="button"
-            onClick={generatePalette}
+            onClick={syncPaletteFromParts}
             className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-orange-400/20 bg-orange-400/10 px-4 py-2.5 text-sm font-medium text-orange-300 transition hover:bg-orange-400/15"
           >
             <WandSparkles className="h-4 w-4" />

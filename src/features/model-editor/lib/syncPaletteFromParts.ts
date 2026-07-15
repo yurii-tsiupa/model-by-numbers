@@ -20,7 +20,7 @@ function createPaletteColorName(
   return `Color ${String(number).padStart(2, "0")}`;
 }
 
-export function generatePaletteFromParts(
+export function syncPaletteFromParts(
   parts: ModelPart[],
   existingPalette: PaletteColor[] = [],
 ): GeneratedPaletteResult {
