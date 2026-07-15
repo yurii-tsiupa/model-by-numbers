@@ -2,6 +2,7 @@
 
 import {
   Box,
+  Hash,
   Layers3,
   Paintbrush,
 } from "lucide-react";
@@ -28,6 +29,11 @@ const viewerModes: Array<{
     id: "painted",
     label: "Painted",
     icon: Paintbrush,
+  },
+  {
+    id: "numbers",
+    label: "Numbers",
+    icon: Hash,
   },
 ];
 

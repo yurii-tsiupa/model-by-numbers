@@ -190,6 +190,16 @@ export function ModelViewer({
     (state) => state.viewerMode,
   );
 
+  const selectedPartIds = useModelEditorStore(
+    (state) => state.selectedPartIds,
+  );
+
+  const highlightedPaletteColorId =
+    useModelEditorStore(
+      (state) =>
+        state.highlightedPaletteColorId,
+    );
+
   const localModel = useLocalModelUrl({
     projectId: project.id,
     userId,
@@ -278,6 +288,12 @@ export function ModelViewer({
     setRetryKey((currentValue) => currentValue + 1);
   }
 
+  const shouldShowNumbersHint =
+    viewerMode === "numbers" &&
+    !selectedPartId &&
+    selectedPartIds.length === 0 &&
+    !highlightedPaletteColorId;
+
   const currentError =
     localModel.error ?? viewerError;
 
@@ -350,6 +366,14 @@ export function ModelViewer({
       <div className="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center px-4">
         <ViewerModeSwitcher />
       </div>
+
+      {shouldShowNumbersHint ? (
+        <div className="pointer-events-none absolute inset-x-0 top-20 z-10 flex justify-center px-4">
+          <div className="rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs text-neutral-400 shadow-xl backdrop-blur-xl">
+            Select a painted part to preview its number.
+          </div>
+        </div>
+      ) : null}
 
       <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[calc(100%-2rem)] rounded-2xl border border-white/10 bg-black/45 px-4 py-3 backdrop-blur-xl">
         <p className="truncate text-sm font-medium text-white">

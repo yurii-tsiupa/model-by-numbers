@@ -1,4 +1,5 @@
 export type ViewerMode =
   | "original"
   | "base"
-  | "painted";
+  | "painted"
+  | "numbers";

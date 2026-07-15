@@ -24,6 +24,7 @@ import { useModelEditorStore } from "../store/modelEditorStore";
 import { ProjectPart } from "@/features/models/types/ProjectPart";
 import { mergeModelParts } from "../lib/mergeModelParts";
 import { ViewerMode } from "../types/ViewerMode";
+import { ModelNumberLabels } from "./ModelNumberLabels";
 
 type LoadedModelProps = {
   modelUrl: string;
@@ -174,9 +175,24 @@ export function LoadedModel({
   }
 
   return (
-    <primitive
-      object={model}
-      onPointerDown={handlePointerDown}
-    />
+    <>
+      <primitive
+        object={model}
+        onPointerDown={handlePointerDown}
+      />
+
+    {viewerMode === "numbers" ? (
+      <ModelNumberLabels
+        model={model}
+        parts={parts}
+        palette={palette}
+        selectedPartId={selectedPartId}
+        selectedPartIds={selectedPartIds}
+        highlightedPaletteColorId={
+          highlightedPaletteColorId
+        }
+      />
+    ) : null}
+    </>
   );
 }
