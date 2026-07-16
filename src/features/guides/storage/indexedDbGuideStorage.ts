@@ -2,13 +2,9 @@ import type { ModelGuide } from "../types/ModelGuide";
 import type { GeneratedGuide, SaveGeneratedGuideInput } from "../types/GeneratedGuide";
 import type { GuideStorage } from "./guideStorage";
 import { loadGuidePdfs, saveGuidePdf } from "@/features/storage/services/storage.service";
+import { LOCAL_DATABASE_STORES, openLocalDatabase } from "@/features/storage/lib/localDatabase";
 
-const DATABASE_NAME = "model-by-numbers";
-const DATABASE_VERSION = 4;
-const STORE_NAME = "generated-guides";
-const MODEL_FILES_STORE = "model-files";
-const PROJECT_THUMBNAILS_STORE = "project-thumbnails";
-const REFERENCE_IMAGES_STORE = "reference-images";
+const STORE_NAME = LOCAL_DATABASE_STORES.guides;
 
 type StoredGuide = Omit<GeneratedGuide, "createdAt" | "updatedAt"> & {
   createdAt: Date | string | number;
@@ -42,32 +38,6 @@ function cloneSnapshot(snapshot: ModelGuide): ModelGuide {
   };
 }
 
-function openDatabase(): Promise<IDBDatabase> {
-  if (typeof window === "undefined" || !window.indexedDB) {
-    return Promise.reject(new Error("Saved guides are unavailable in this browser."));
-  }
-  return new Promise((resolve, reject) => {
-    const request = window.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
-    request.onupgradeneeded = () => {
-      const database = request.result;
-      if (!database.objectStoreNames.contains(MODEL_FILES_STORE)) {
-        const modelFiles = database.createObjectStore(MODEL_FILES_STORE, { keyPath: "projectId" });
-        modelFiles.createIndex("userId", "userId", { unique: false });
-      }
-      if (!database.objectStoreNames.contains(STORE_NAME)) {
-        const store = database.createObjectStore(STORE_NAME, { keyPath: "id" });
-        store.createIndex("projectId", "projectId", { unique: false });
-        store.createIndex("projectId-version", ["projectId", "version"], { unique: true });
-        store.createIndex("createdAt", "createdAt", { unique: false });
-      }
-      if (!database.objectStoreNames.contains(PROJECT_THUMBNAILS_STORE)) database.createObjectStore(PROJECT_THUMBNAILS_STORE, { keyPath: "projectId" });
-      if (!database.objectStoreNames.contains(REFERENCE_IMAGES_STORE)) { const store=database.createObjectStore(REFERENCE_IMAGES_STORE,{keyPath:"id"});store.createIndex("projectId","projectId"); }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(friendlyStorageError(request.error));
-    request.onblocked = () => reject(new Error("Saved guide storage is temporarily unavailable."));
-  });
-}
 
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -78,33 +48,29 @@ function requestResult<T>(request: IDBRequest<T>): Promise<T> {
 
 class IndexedDbGuideStorage implements GuideStorage {
   async getAll(): Promise<GeneratedGuide[]> {
-    const database = await openDatabase();
-    try { const records = await requestResult(database.transaction(STORE_NAME).objectStore(STORE_NAME).getAll() as IDBRequest<StoredGuide[]>); return records.map(normalize); } finally { database.close(); }
+    const database = await openLocalDatabase();
+    const records = await requestResult(database.transaction(STORE_NAME).objectStore(STORE_NAME).getAll() as IDBRequest<StoredGuide[]>); return records.map(normalize);
   }
   async getByProjectId(projectId: string): Promise<GeneratedGuide[]> {
-    const database = await openDatabase();
-    try {
-      const transaction = database.transaction(STORE_NAME, "readonly");
+    const database = await openLocalDatabase();
+    const transaction = database.transaction(STORE_NAME, "readonly");
       const records = await requestResult(transaction.objectStore(STORE_NAME).index("projectId").getAll(projectId) as IDBRequest<StoredGuide[]>);
       const files = new Map((await loadGuidePdfs(projectId)).map(file => [file.id, file.blob]));
       return records.map(normalize).map(guide=>({...guide,pdfBlob:files.get(guide.id)??guide.pdfBlob})).sort((a, b) => b.version - a.version);
-    } finally { database.close(); }
   }
 
   async getById(guideId: string): Promise<GeneratedGuide | null> {
-    const database = await openDatabase();
-    try {
-      const transaction = database.transaction(STORE_NAME, "readonly");
+    const database = await openLocalDatabase();
+    const transaction = database.transaction(STORE_NAME, "readonly");
       const record = await requestResult(transaction.objectStore(STORE_NAME).get(guideId) as IDBRequest<StoredGuide | undefined>);
       if(!record)return null;
       const guide=normalize(record);
       const file=(await loadGuidePdfs(guide.projectId)).find(candidate=>candidate.id===guideId);
       return file?{...guide,pdfBlob:file.blob}:guide;
-    } finally { database.close(); }
   }
 
   async save(input: SaveGeneratedGuideInput): Promise<GeneratedGuide> {
-    const database = await openDatabase();
+    const database = await openLocalDatabase();
     const saved = await new Promise<GeneratedGuide>((resolve, reject) => {
       const transaction = database.transaction(STORE_NAME, "readwrite");
       const store = transaction.objectStore(STORE_NAME);
@@ -118,21 +84,19 @@ class IndexedDbGuideStorage implements GuideStorage {
         store.add({...saved,pdfBlob:null});
       };
       request.onerror = () => transaction.abort();
-      transaction.oncomplete = () => { database.close(); if (saved) resolve(saved); else reject(new Error("We could not save this guide in your browser.")); };
-      transaction.onerror = () => { database.close(); reject(friendlyStorageError(transaction.error)); };
-      transaction.onabort = () => { database.close(); reject(friendlyStorageError(transaction.error)); };
+      transaction.oncomplete = () => { if (saved) resolve(saved); else reject(new Error("We could not save this guide in your browser.")); };
+      transaction.onerror = () => { reject(friendlyStorageError(transaction.error)); };
+      transaction.onabort = () => { reject(friendlyStorageError(transaction.error)); };
     });
     if(saved.pdfBlob)await saveGuidePdf({id:saved.id,entity:"guide",entityId:saved.projectId,fileName:saved.fileName,mimeType:saved.pdfBlob.type||"application/pdf",blob:saved.pdfBlob,size:saved.pdfBlob.size,createdAt:saved.createdAt,updatedAt:saved.updatedAt,metadata:saved});
     return saved;
   }
 
   async delete(guideId: string): Promise<void> {
-    const database = await openDatabase();
-    try {
+    const database = await openLocalDatabase();
       const transaction = database.transaction(STORE_NAME, "readwrite");
       transaction.objectStore(STORE_NAME).delete(guideId);
       await new Promise<void>((resolve, reject) => { transaction.oncomplete = () => resolve(); transaction.onerror = () => reject(friendlyStorageError(transaction.error)); transaction.onabort = () => reject(friendlyStorageError(transaction.error)); });
-    } finally { database.close(); }
   }
 
   async deleteByProjectId(projectId: string): Promise<void> {

@@ -1,7 +1,7 @@
-export const STORAGE_DATABASE_NAME = "model-by-numbers";
-export const STORAGE_DATABASE_VERSION = 4;
+import { LOCAL_DATABASE_STORES } from "../lib/localDatabase";
 export const STORAGE_STORES = {
-  guide: "generated-guides",
-  reference: "reference-images",
-  thumbnail: "project-thumbnails",
+  guide: LOCAL_DATABASE_STORES.guides,
+  reference: LOCAL_DATABASE_STORES.references,
+  thumbnail: LOCAL_DATABASE_STORES.thumbnails,
+  "assembly-step-image": LOCAL_DATABASE_STORES.assemblyStepImages,
 } as const;

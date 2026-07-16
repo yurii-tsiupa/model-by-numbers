@@ -22,6 +22,8 @@ import { ModelViewer } from "./ModelViewer";
 import type { ModelViewerHandle } from "./ModelViewer";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { EditorSidebar } from "./EditorSidebar";
+import type { AssemblyStep } from "@/features/models/types/AssemblyStep";
+import { deleteAssemblyStepImage, saveAssemblyStepImage } from "../services/assemblyStepImage.service";
 
 type ModelEditorProps = {
   project: Project;
@@ -52,6 +54,9 @@ export function ModelEditor({
     useModelEditorStore.getState().showOnlyParts(partIds);
     window.setTimeout(() => viewerRef.current?.fitView(), 450);
   }
+  async function captureAssemblyImage(step:AssemblyStep){const viewer=viewerRef.current;if(!viewer)throw new Error("Viewer unavailable");const blob=await viewer.captureAssemblyStep({partIds:step.partIds,labelsMode:"numbers-and-names"});const extension=blob.type==="image/webp"?"webp":"png";let stored;try{stored=await saveAssemblyStepImage({projectId:project.id,stepId:step.id,blob,fileName:`assembly-step-${step.order}.${extension}`});}catch{throw new Error("assembly-save-failed");}if(!useModelEditorStore.getState().assemblySteps.some(item=>item.id===step.id)){await deleteAssemblyStepImage(project.id,step.id);throw new Error("Step unavailable");}useModelEditorStore.getState().setAssemblyStepImageKey(step.id,stored.key);return blob;}
+  async function deleteAssemblyImage(step:AssemblyStep){await deleteAssemblyStepImage(project.id,step.id);useModelEditorStore.getState().setAssemblyStepImageKey(step.id,null);}
+  async function deleteAssemblyStepWithImage(step:AssemblyStep){if(step.imageKey)await deleteAssemblyStepImage(project.id,step.id);useModelEditorStore.getState().deleteAssemblyStep(step.id);}
 
   function openReferenceMode(mode: "split" | "reference", preferredReferenceId?: string) {
     const preferredReference = preferredReferenceId ? references.find((reference) => reference.id === preferredReferenceId) : null;
@@ -262,7 +267,7 @@ export function ModelEditor({
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-        <EditorSidebar project={project} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onShowAssemblyParts={showAssemblyParts} />
+        <EditorSidebar project={project} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onShowAssemblyParts={showAssemblyParts} onCaptureAssemblyImage={captureAssemblyImage} onDeleteAssemblyImage={deleteAssemblyImage} onDeleteAssemblyStep={deleteAssemblyStepWithImage} />
 
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
           <div className={`${effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-0 min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} /></div>

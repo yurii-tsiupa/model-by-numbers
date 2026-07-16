@@ -130,6 +130,7 @@ function mapProjectDocument(
           partIds: Array.isArray(step.partIds) ? [...new Set(step.partIds.filter((id): id is string => typeof id === "string"))] : [],
           createdAt: typeof step.createdAt === "string" ? step.createdAt : new Date(0).toISOString(),
           updatedAt: typeof step.updatedAt === "string" ? step.updatedAt : new Date(0).toISOString(),
+          imageKey: typeof step.imageKey === "string" ? step.imageKey : null,
         }))
       : [],
 

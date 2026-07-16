@@ -92,6 +92,7 @@ type ModelEditorState = {
   updateAssemblyStep: (stepId: string, changes: UpdateAssemblyStepInput) => void;
   deleteAssemblyStep: (stepId: string) => void;
   moveAssemblyStep: (stepId: string, direction: "up" | "down") => void;
+  setAssemblyStepImageKey: (stepId: string, imageKey: string | null) => void;
   showOnlyParts: (partIds: string[]) => void;
   selectPart: (partId: string | null) => void;
 
@@ -370,7 +371,7 @@ export const useModelEditorStore =
       const partIds = [...new Set(input.partIds)].filter((id) => validPartIds.has(id));
       if (!title || title.length > 120 || description.length > 1000 || partIds.length === 0) return state;
       const now = new Date().toISOString();
-      const nextStep = { id: crypto.randomUUID(), order: state.assemblySteps.length + 1, title, description, partIds, createdAt: now, updatedAt: now };
+      const nextStep = { id: crypto.randomUUID(), order: state.assemblySteps.length + 1, title, description, partIds, createdAt: now, updatedAt: now, imageKey: null };
       return {
         assemblySteps: [...state.assemblySteps, nextStep].map((step, index) => ({ ...step, order: index + 1 })),
         ...markStateDirty(state),
@@ -404,6 +405,11 @@ export const useModelEditorStore =
       const assemblySteps = [...state.assemblySteps];
       [assemblySteps[index], assemblySteps[targetIndex]] = [assemblySteps[targetIndex], assemblySteps[index]];
       return { assemblySteps: assemblySteps.map((step, stepIndex) => ({ ...step, order: stepIndex + 1, updatedAt: step.id === stepId ? new Date().toISOString() : step.updatedAt })), ...markStateDirty(state) };
+    }),
+    setAssemblyStepImageKey: (stepId, imageKey) => set((state) => {
+      const step = state.assemblySteps.find((item) => item.id === stepId);
+      if (!step || step.imageKey === imageKey) return state;
+      return { assemblySteps: state.assemblySteps.map((item) => item.id === stepId ? { ...item, imageKey, updatedAt:new Date().toISOString() } : item), ...markStateDirty(state) };
     }),
     showOnlyParts: (partIds) => set((state) => {
       const ids = new Set(partIds);

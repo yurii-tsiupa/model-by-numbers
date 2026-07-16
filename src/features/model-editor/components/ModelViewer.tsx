@@ -40,6 +40,8 @@ import { ViewerModeSwitcher } from "./ViewerModeSwitcher";
 import type { ViewerMode } from "../types/ViewerMode";
 import { waitForAnimationFrames } from "../lib/waitForAnimationFrames";
 import {ExplodedViewToolbar} from "./ExplodedViewToolbar";
+import type { ExplodedLabelsMode } from "../types/ExplodedLabelsMode";
+import { captureAssemblyCanvas } from "../lib/captureAssemblyCanvas";
 
 type ModelViewerProps = {
   project: Project;
@@ -49,6 +51,7 @@ type ModelViewerProps = {
 export type ModelViewerHandle = {
   captureView: (mode: ViewerMode) => Promise<string>;
   fitView: () => void;
+  captureAssemblyStep: (options: {partIds:string[];labelsMode:ExplodedLabelsMode}) => Promise<Blob>;
 };
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
@@ -70,6 +73,7 @@ type SceneProps = {
   showAllNumberCalloutsForCapture: boolean;
   showAllPartsForCapture: boolean;
   forceAssembled:boolean;
+  forceFullyExploded:boolean;
 };
 
 function Scene({
@@ -83,6 +87,7 @@ function Scene({
   showAllNumberCalloutsForCapture,
   showAllPartsForCapture,
   forceAssembled,
+  forceFullyExploded,
 }: SceneProps) {
   return (
     <>
@@ -122,6 +127,7 @@ function Scene({
           }
           showAllPartsForCapture={showAllPartsForCapture}
           forceAssembled={forceAssembled}
+          forceFullyExploded={forceFullyExploded}
           controlsRef={controlsRef}
         />
 
@@ -196,6 +202,7 @@ export const ModelViewer = forwardRef<
   const [showAllPartsForCapture, setShowAllPartsForCapture] =
     useState(false);
   const [forceAssembled,setForceAssembled]=useState(false);
+  const [forceFullyExploded,setForceFullyExploded]=useState(false);
 
   const [viewerError, setViewerError] =
     useState<Error | null>(null);
@@ -357,6 +364,26 @@ export const ModelViewer = forwardRef<
     ref,
     () => ({
       fitView: handleFitModel,
+      captureAssemblyStep: async ({partIds,labelsMode}) => {
+        if(isCaptureInProgressRef.current)throw new Error("Capture busy.");
+        const model=modelRef.current,canvas=canvasRef.current,controls=controlsRef.current;
+        if(!model||!canvas||!controls||localModel.isLoading||isAssetLoading)throw new Error("Viewer unavailable.");
+        const camera=controls.object;if(!(camera instanceof PerspectiveCamera))throw new Error("Camera unavailable.");
+        const editor=useModelEditorStore.getState();const validIds=new Set(partIds.filter(id=>editor.parts.some(part=>part.id===id)));
+        if(validIds.size===0)throw new Error("No valid parts.");
+        const saved={viewerMode:editor.viewerMode,explosionFactor:editor.explosionFactor,explodedLabelsMode:editor.explodedLabelsMode,isExplodedLayoutEditing:editor.isExplodedLayoutEditing,parts:editor.parts,selectedPartId:editor.selectedPartId,selectedPartIds:editor.selectedPartIds,highlightedPaletteColorId:editor.highlightedPaletteColorId,grid:isGridVisible,cameraPosition:camera.position.clone(),cameraQuaternion:camera.quaternion.clone(),cameraUp:camera.up.clone(),near:camera.near,far:camera.far,zoom:camera.zoom,target:controls.target.clone(),controlsEnabled:controls.enabled};
+        isCaptureInProgressRef.current=true;
+        try{
+          controls.enabled=false;setIsGridVisible(false);setForceFullyExploded(true);
+          useModelEditorStore.setState({viewerMode:"exploded",explosionFactor:1,explodedLabelsMode:labelsMode,isExplodedLayoutEditing:false,parts:editor.parts.map(part=>({...part,visible:validIds.has(part.id)})),selectedPartId:null,selectedPartIds:[],highlightedPaletteColorId:null});
+          await waitForAnimationFrames(4);model.updateWorldMatrix(true,true);fitCameraToBounds({camera,controls,bounds:getVisibleModelBounds(model)});await waitForAnimationFrames(4);
+          return await captureAssemblyCanvas(canvas);
+        }finally{
+          setForceFullyExploded(false);setIsGridVisible(saved.grid);
+          useModelEditorStore.setState({viewerMode:saved.viewerMode,explosionFactor:saved.explosionFactor,explodedLabelsMode:saved.explodedLabelsMode,isExplodedLayoutEditing:saved.isExplodedLayoutEditing,parts:saved.parts,selectedPartId:saved.selectedPartId,selectedPartIds:saved.selectedPartIds,highlightedPaletteColorId:saved.highlightedPaletteColorId});
+          camera.position.copy(saved.cameraPosition);camera.quaternion.copy(saved.cameraQuaternion);camera.up.copy(saved.cameraUp);camera.near=saved.near;camera.far=saved.far;camera.zoom=saved.zoom;camera.updateProjectionMatrix();controls.target.copy(saved.target);controls.enabled=saved.controlsEnabled;controls.update();await waitForAnimationFrames(2);isCaptureInProgressRef.current=false;
+        }
+      },
       captureView: async (mode) => {
         if (isCaptureInProgressRef.current) {
           throw new Error(
@@ -567,6 +594,7 @@ export const ModelViewer = forwardRef<
               }
               showAllPartsForCapture={showAllPartsForCapture}
               forceAssembled={forceAssembled}
+              forceFullyExploded={forceFullyExploded}
             />
           </Canvas>
         </ViewerErrorBoundary>

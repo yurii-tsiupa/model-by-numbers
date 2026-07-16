@@ -18,6 +18,7 @@ import { ProjectTab } from "./sidebar/ProjectTab";
 import { ReferencesTab } from "@/features/references/components/ReferencesTab";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { AssemblyTab } from "./assembly/AssemblyTab";
+import type { AssemblyStep } from "@/features/models/types/AssemblyStep";
 
 type EditorSidebarProps = {
   project: Project;
@@ -27,6 +28,9 @@ type EditorSidebarProps = {
   onOpenReferenceMode: (mode: "split" | "reference", preferredReferenceId?: string) => void;
   onReferenceDeleted: (id: string) => void;
   onShowAssemblyParts: (partIds: string[]) => void;
+  onCaptureAssemblyImage: (step: AssemblyStep) => Promise<Blob>;
+  onDeleteAssemblyImage: (step: AssemblyStep) => Promise<void>;
+  onDeleteAssemblyStep: (step: AssemblyStep) => Promise<void>;
 };
 
 export function EditorSidebar({
@@ -37,6 +41,9 @@ export function EditorSidebar({
   onOpenReferenceMode,
   onReferenceDeleted,
   onShowAssemblyParts,
+  onCaptureAssemblyImage,
+  onDeleteAssemblyImage,
+  onDeleteAssemblyStep,
 }: EditorSidebarProps) {
   const {t}=useTranslation();
   const tabs:Array<{id:EditorSidebarTab;label:string;icon:typeof Box}>=[{id:"parts",label:t("editor.tabs.parts"),icon:Box},{id:"palette",label:t("editor.tabs.palette"),icon:Palette},{id:"project",label:t("editor.tabs.project"),icon:FolderCog},{id:"references",label:t("editor.tabs.references"),icon:Images},{id:"assembly",label:t("editor.tabs.assembly"),icon:Wrench}];
@@ -89,7 +96,7 @@ export function EditorSidebar({
         <ProjectTab project={project} isGeneratingThumbnail={isGeneratingThumbnail} thumbnailError={thumbnailError} onRegenerateThumbnail={onRegenerateThumbnail} />
       ) : null}
       {activeTab === "references" ? <ReferencesTab projectId={project.id} onOpenReferenceMode={onOpenReferenceMode} onReferenceDeleted={onReferenceDeleted} /> : null}
-      {activeTab === "assembly" ? <AssemblyTab onShowParts={onShowAssemblyParts} /> : null}
+      {activeTab === "assembly" ? <AssemblyTab projectId={project.id} onShowParts={onShowAssemblyParts} onCaptureImage={onCaptureAssemblyImage} onDeleteImage={onDeleteAssemblyImage} onDeleteStep={onDeleteAssemblyStep} /> : null}
     </aside>
   );
 }

@@ -1,9 +1,6 @@
-const DATABASE_NAME = "model-by-numbers";
-const DATABASE_VERSION = 4;
-const MODEL_FILES_STORE = "model-files";
-const GENERATED_GUIDES_STORE = "generated-guides";
-const PROJECT_THUMBNAILS_STORE = "project-thumbnails";
-const REFERENCE_IMAGES_STORE = "reference-images";
+import { LOCAL_DATABASE_STORES, openLocalDatabase } from "@/features/storage/lib/localDatabase";
+
+const MODEL_FILES_STORE = LOCAL_DATABASE_STORES.modelFiles;
 
 type StoredModelFile = {
   projectId: string;
@@ -15,96 +12,6 @@ type StoredModelFile = {
   savedAt: Date;
 };
 
-function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === "undefined") {
-      reject(
-        new Error(
-          "Local model storage is only available in the browser.",
-        ),
-      );
-
-      return;
-    }
-
-    if (!("indexedDB" in window)) {
-      reject(
-        new Error(
-          "IndexedDB is not supported by this browser.",
-        ),
-      );
-
-      return;
-    }
-
-    const request = window.indexedDB.open(
-      DATABASE_NAME,
-      DATABASE_VERSION,
-    );
-
-    request.onupgradeneeded = () => {
-      const database = request.result;
-
-      if (!database.objectStoreNames.contains(MODEL_FILES_STORE)) {
-        const store = database.createObjectStore(
-          MODEL_FILES_STORE,
-          {
-            keyPath: "projectId",
-          },
-        );
-
-        store.createIndex("userId", "userId", {
-          unique: false,
-        });
-      }
-
-      if (!database.objectStoreNames.contains(GENERATED_GUIDES_STORE)) {
-        const guideStore = database.createObjectStore(
-          GENERATED_GUIDES_STORE,
-          { keyPath: "id" },
-        );
-        guideStore.createIndex("projectId", "projectId", {
-          unique: false,
-        });
-        guideStore.createIndex(
-          "projectId-version",
-          ["projectId", "version"],
-          { unique: true },
-        );
-        guideStore.createIndex("createdAt", "createdAt", {
-          unique: false,
-        });
-      }
-
-      if (!database.objectStoreNames.contains(PROJECT_THUMBNAILS_STORE)) {
-        database.createObjectStore(PROJECT_THUMBNAILS_STORE, { keyPath: "projectId" });
-      }
-      if (!database.objectStoreNames.contains(REFERENCE_IMAGES_STORE)) {
-        const referenceStore=database.createObjectStore(REFERENCE_IMAGES_STORE,{keyPath:"id"});
-        referenceStore.createIndex("projectId","projectId",{unique:false});
-      }
-    };
-
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-
-    request.onerror = () => {
-      reject(
-        request.error ??
-          new Error("Unable to open local model storage."),
-      );
-    };
-
-    request.onblocked = () => {
-      reject(
-        new Error(
-          "Local model storage is blocked by another browser tab.",
-        ),
-      );
-    };
-  });
-}
 
 function waitForTransaction(
   transaction: IDBTransaction,
@@ -147,10 +54,9 @@ export async function saveModelFile({
     throw new Error("User ID is required.");
   }
 
-  const database = await openDatabase();
+  const database = await openLocalDatabase();
 
-  try {
-    const transaction = database.transaction(
+  const transaction = database.transaction(
       MODEL_FILES_STORE,
       "readwrite",
     );
@@ -169,10 +75,7 @@ export async function saveModelFile({
 
     store.put(storedFile);
 
-    await waitForTransaction(transaction);
-  } finally {
-    database.close();
-  }
+  await waitForTransaction(transaction);
 }
 
 export async function getModelFile({
@@ -186,10 +89,9 @@ export async function getModelFile({
     return null;
   }
 
-  const database = await openDatabase();
+  const database = await openLocalDatabase();
 
-  try {
-    return await new Promise<File | null>((resolve, reject) => {
+  return new Promise<File | null>((resolve, reject) => {
       const transaction = database.transaction(
         MODEL_FILES_STORE,
         "readonly",
@@ -222,10 +124,7 @@ export async function getModelFile({
             new Error("Unable to read the local model file."),
         );
       };
-    });
-  } finally {
-    database.close();
-  }
+  });
 }
 
 export async function deleteLocalModelFile(
@@ -235,10 +134,9 @@ export async function deleteLocalModelFile(
     return;
   }
 
-  const database = await openDatabase();
+  const database = await openLocalDatabase();
 
-  try {
-    const transaction = database.transaction(
+  const transaction = database.transaction(
       MODEL_FILES_STORE,
       "readwrite",
     );
@@ -247,8 +145,5 @@ export async function deleteLocalModelFile(
 
     store.delete(projectId);
 
-    await waitForTransaction(transaction);
-  } finally {
-    database.close();
-  }
+  await waitForTransaction(transaction);
 }

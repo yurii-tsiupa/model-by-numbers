@@ -15,3 +15,7 @@ export const deleteReference = (id: string) => provider.delete(id);
 export const deleteReferences = (projectId: string) => provider.deleteByEntity("reference", projectId);
 export const deleteThumbnail = (projectId: string) => provider.deleteByEntity("thumbnail", projectId);
 export const deleteGuidePdfs = (projectId: string) => provider.deleteByEntity("guide", projectId);
+export const saveAssemblyImageFile = (file: StorageFile) => provider.save(file);
+export const loadAssemblyImageFile = (id: string) => provider.get(id);
+export const deleteAssemblyImageFile = (id: string) => provider.delete(id);
+export const deleteAssemblyImageFiles = (projectId: string) => provider.deleteByEntity("assembly-step-image", projectId);

@@ -43,6 +43,7 @@ type LoadedModelProps = {
   showAllNumberCalloutsForCapture: boolean;
   showAllPartsForCapture: boolean;
   forceAssembled:boolean;
+  forceFullyExploded: boolean;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
   onModelReady?: (
     model: Object3D,
@@ -57,6 +58,7 @@ export function LoadedModel({
   showAllNumberCalloutsForCapture,
   showAllPartsForCapture,
   forceAssembled,
+  forceFullyExploded,
   controlsRef,
   onModelReady,
 }: LoadedModelProps) {
@@ -163,7 +165,7 @@ export function LoadedModel({
     }));
   }, [explodedLayout, parts]);
   useEffect(()=>()=>{for(const runtime of explodedLayout){runtime.mesh.position.set(...runtime.originalTransform.position);runtime.mesh.rotation.set(...runtime.originalTransform.rotation);runtime.mesh.scale.set(...runtime.originalTransform.scale);}},[explodedLayout]);
-  useFrame((_,delta)=>{const factor=viewerMode==="exploded"&&!forceAssembled?explosionFactor:0;for(const runtime of explodedLayout){if(isTransformDraggingRef.current&&runtime.partId===selectedPartId)continue;const explodedTarget=explodedTargets.get(runtime.partId)??runtime.explodedTransform.position;const target=runtime.originalTransform.position.map((value,index)=>MathUtils.lerp(value,explodedTarget[index],factor)) as [number,number,number];if(forceAssembled){runtime.mesh.position.set(...runtime.originalTransform.position);}else{runtime.mesh.position.set(MathUtils.damp(runtime.mesh.position.x,target[0],EXPLOSION_DAMPING,delta),MathUtils.damp(runtime.mesh.position.y,target[1],EXPLOSION_DAMPING,delta),MathUtils.damp(runtime.mesh.position.z,target[2],EXPLOSION_DAMPING,delta));}runtime.mesh.rotation.set(...runtime.originalTransform.rotation);runtime.mesh.scale.set(...runtime.originalTransform.scale);}});
+  useFrame((_,delta)=>{const factor=viewerMode==="exploded"&&!forceAssembled?explosionFactor:0;for(const runtime of explodedLayout){if(isTransformDraggingRef.current&&runtime.partId===selectedPartId)continue;const explodedTarget=explodedTargets.get(runtime.partId)??runtime.explodedTransform.position;const target=runtime.originalTransform.position.map((value,index)=>MathUtils.lerp(value,explodedTarget[index],factor)) as [number,number,number];if(forceAssembled){runtime.mesh.position.set(...runtime.originalTransform.position);}else if(forceFullyExploded){runtime.mesh.position.set(...explodedTarget);}else{runtime.mesh.position.set(MathUtils.damp(runtime.mesh.position.x,target[0],EXPLOSION_DAMPING,delta),MathUtils.damp(runtime.mesh.position.y,target[1],EXPLOSION_DAMPING,delta),MathUtils.damp(runtime.mesh.position.z,target[2],EXPLOSION_DAMPING,delta));}runtime.mesh.rotation.set(...runtime.originalTransform.rotation);runtime.mesh.scale.set(...runtime.originalTransform.scale);}});
 
   useEffect(() => {
     if (!isExplodedLayoutEditing) return;
@@ -176,10 +178,10 @@ export function LoadedModel({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isExplodedLayoutEditing, stopExplodedLayoutEditing]);
   useEffect(() => {
-    if (isExplodedLayoutEditing) return;
+    if (isExplodedLayoutEditing || forceFullyExploded) return;
     isTransformDraggingRef.current = false;
     if (controlsRef.current) controlsRef.current.enabled = true;
-  }, [controlsRef, isExplodedLayoutEditing]);
+  }, [controlsRef, forceFullyExploded, isExplodedLayoutEditing]);
 
   const editingRuntime = explodedLayout.find((runtime) => runtime.partId === selectedPartId);
   const editingPart = parts.find((part) => part.id === selectedPartId);
