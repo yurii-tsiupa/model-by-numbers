@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import type { GuideImages } from "../types/ModelGuide";
+import type { GuideAssemblyStep, GuideExplodedView, GuideImages, GuideSettings } from "../types/ModelGuide";
 
 export type GuideGenerationStatus =
   | "idle"
@@ -12,7 +12,9 @@ export type GuideCaptureStep =
   | "original"
   | "base"
   | "painted"
-  | "numbers";
+  | "numbers"
+  | "exploded"
+  | "assembly-assets";
 
 type GuideGenerationState = {
   status: GuideGenerationStatus;
@@ -22,8 +24,12 @@ type GuideGenerationState = {
   projectId: string | null;
   images: GuideImages | null;
   error: string | null;
+  settings: GuideSettings | null;
+  explodedView: GuideExplodedView | null;
+  assemblySteps: GuideAssemblyStep[];
 
-  startCapture: (projectId: string) => void;
+  startCapture: (projectId: string,totalSteps?:number) => void;
+  setGuideExtras:(settings:GuideSettings,explodedView:GuideExplodedView|null,assemblySteps:GuideAssemblyStep[])=>void;
   setCaptureStep: (
     step: GuideCaptureStep,
     completedSteps: number,
@@ -46,23 +52,25 @@ const initialState = {
   projectId: null,
   images: null,
   error: null,
+  settings:null,explodedView:null,assemblySteps:[],
 };
 
 export const useGuideGenerationStore =
   create<GuideGenerationState>()((set) => ({
     ...initialState,
 
-    startCapture: (projectId) => {
+    startCapture: (projectId,totalSteps=TOTAL_CAPTURE_STEPS) => {
       set({
         status: "capturing",
         currentStep: null,
         completedSteps: 0,
-        totalSteps: TOTAL_CAPTURE_STEPS,
+        totalSteps,
         projectId,
         images: null,
         error: null,
       });
     },
+    setGuideExtras:(settings,explodedView,assemblySteps)=>set({settings,explodedView,assemblySteps:assemblySteps.map(step=>({...step,parts:step.parts.map(part=>({...part}))}))}),
 
     setCaptureStep: (currentStep, completedSteps) => {
       set((state) =>
@@ -81,7 +89,7 @@ export const useGuideGenerationStore =
           ? {
               status: "ready",
               currentStep: null,
-              completedSteps: TOTAL_CAPTURE_STEPS,
+              completedSteps: state.totalSteps,
               images: { ...images },
               error: null,
             }

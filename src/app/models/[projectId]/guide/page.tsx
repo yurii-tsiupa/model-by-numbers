@@ -64,6 +64,9 @@ export default function GuidePage() {
   const capturedImages = useGuideGenerationStore(
     (state) => state.images,
   );
+  const guideSettings=useGuideGenerationStore(state=>state.settings);
+  const explodedView=useGuideGenerationStore(state=>state.explodedView);
+  const assemblySteps=useGuideGenerationStore(state=>state.assemblySteps);
 
   useEffect(() => {
     if (!isAuthLoading && !user) {
@@ -174,8 +177,11 @@ export default function GuidePage() {
         ? capturedImages
         : EMPTY_GUIDE_IMAGES,
     author: user.displayName?.trim() || t("common.user"),
-    references: guideReferences,
+    references: guideSettings?.includeReferenceImages===false?[]:guideReferences,
     locale,
+    settings:guideSettings??undefined,
+    explodedView,
+    assemblySteps,
   });
 
   return <GuidePreview guide={guide} />;

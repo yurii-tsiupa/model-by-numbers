@@ -43,7 +43,9 @@ export function GuidePreview({ guide, savedFileName, savedPdfBlob, skipSave = fa
       let blob = savedPdfBlob;
       if (!blob) {
         const { generateGuidePdf } = await import("../pdf/generateGuidePdf");
-        blob = await generateGuidePdf(guide);
+        blob = await generateGuidePdf(guide, () => {
+          setSaveWarning(text("guide.pdfImageWarning"));
+        });
       }
       const fileName = savedFileName ?? createGuideFileName(guide.title);
       if (!skipSave && !savedGuideIdRef.current) {

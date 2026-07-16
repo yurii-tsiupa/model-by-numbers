@@ -24,6 +24,12 @@ import { PropertiesPanel } from "./PropertiesPanel";
 import { EditorSidebar } from "./EditorSidebar";
 import type { AssemblyStep } from "@/features/models/types/AssemblyStep";
 import { deleteAssemblyStepImage, saveAssemblyStepImage } from "../services/assemblyStepImage.service";
+import { getAssemblyStepImage } from "../services/assemblyStepImage.service";
+import { blobToDataUrl } from "@/features/guides/lib/blobToDataUrl";
+import type { GuideAssemblyStep, GuideSettings } from "@/features/guides/types/ModelGuide";
+import { PAINTING_GUIDE_SETTINGS } from "@/features/guides/lib/guideSettings";
+import { GuideSettingsModal } from "@/features/guides/components/GuideSettingsModal";
+import {getAssemblyGuideReadiness} from "@/features/guides/lib/getAssemblyGuideReadiness";
 
 type ModelEditorProps = {
   project: Project;
@@ -41,6 +47,8 @@ export function ModelEditor({
   const isGeneratingRef = useRef(false);
   const autoThumbnailAttemptedRef = useRef(false);
   const [thumbnailError, setThumbnailError] = useState<string | null>(null);
+  const [showGuideSettings,setShowGuideSettings]=useState(false);
+  const [lastGuideSettings,setLastGuideSettings]=useState<GuideSettings|null>(null);
   const thumbnailQuery = useProjectThumbnail(project.id);
   const saveThumbnail = useSaveProjectThumbnail();
   const [referenceViewMode,setReferenceViewMode]=useState<"viewer"|"split"|"reference">("viewer");
@@ -92,6 +100,7 @@ export function ModelEditor({
   const setGenerationError = useGuideGenerationStore(
     (state) => state.setError,
   );
+  const setGuideExtras=useGuideGenerationStore(state=>state.setGuideExtras);
   const resetGuideGeneration = useGuideGenerationStore(
     (state) => state.reset,
   );
@@ -112,6 +121,7 @@ export function ModelEditor({
   const palette = useModelEditorStore(
     (state) => state.palette,
   );
+  const assemblySteps=useModelEditorStore(state=>state.assemblySteps);
 
   const isDirty = useModelEditorStore(
     (state) => state.isDirty,
@@ -157,7 +167,7 @@ export function ModelEditor({
     void generateThumbnail();
   }, [generateThumbnail, parts.length, thumbnailQuery.data, thumbnailQuery.isLoading]);
 
-  async function generateGuidePreview() {
+  async function generateGuidePreview(settings:GuideSettings) {
     if (isGeneratingRef.current) {
       return;
     }
@@ -178,6 +188,7 @@ export function ModelEditor({
     ) {
       return;
     }
+    if(!getAssemblyGuideReadiness({settings,assemblySteps:editorState.assemblySteps,parts:editorState.parts}).isReady){startCapture(project.id,1);setGenerationError(t("guide.errors.assemblyInvalid"));return;}
 
     if (!viewer) {
       startCapture(project.id);
@@ -187,8 +198,10 @@ export function ModelEditor({
       return;
     }
 
+    const paintingSteps=([] as Array<keyof GuideImages>);if(settings.includeOriginalView)paintingSteps.push("original");if(settings.includeBaseView)paintingSteps.push("base");if(settings.includePaintedView)paintingSteps.push("painted");if(settings.includeNumbersView)paintingSteps.push("numbers");
+    const totalSteps=paintingSteps.length+(settings.includeExplodedView?1:0)+(settings.includeAssemblyInstructions&&settings.includeAssemblyStepImages?1:0);
     isGeneratingRef.current = true;
-    startCapture(project.id);
+    startCapture(project.id,totalSteps);
 
     const images: GuideImages = {
       original: null,
@@ -198,18 +211,17 @@ export function ModelEditor({
     };
 
     try {
-      const captureSteps = [
-        "original",
-        "base",
-        "painted",
-        "numbers",
-      ] as const;
-
-      for (const [index, step] of captureSteps.entries()) {
-        setCaptureStep(step, index + 1);
+      let progress=0;
+      for (const step of paintingSteps) {
+        setCaptureStep(step, ++progress);
         images[step] = await viewer.captureView(step);
       }
-
+      let explodedView=null;
+      const includedParts=editorState.parts.filter(part=>part.includeInGuide);
+      if(settings.includeExplodedView){setCaptureStep("exploded",++progress);const blob=await viewer.captureAssemblyStep({partIds:includedParts.map(part=>part.id),labelsMode:"numbers-and-names"});explodedView={image:await blobToDataUrl(blob),labelsMode:"numbers-and-names" as const,partsCount:includedParts.length};}
+      const assemblyGuideSteps:GuideAssemblyStep[]=[];
+      if(settings.includeAssemblyInstructions){if(settings.includeAssemblyStepImages)setCaptureStep("assembly-assets",++progress);const partById=new Map(editorState.parts.map(part=>[part.id,part]));for(const step of editorState.assemblySteps.slice().sort((a,b)=>a.order-b.order)){const resolved=step.partIds.map(id=>partById.get(id)).filter((part):part is NonNullable<typeof part>=>Boolean(part));if(!step.title.trim()||resolved.length===0)continue;let image:string|null=null;if(settings.includeAssemblyStepImages&&step.imageKey){try{const blob=await getAssemblyStepImage(project.id,step.id);if(blob)image=await blobToDataUrl(blob);}catch{image=null;}}assemblyGuideSteps.push({id:step.id,order:step.order,title:step.title.trim(),description:step.description.trim(),parts:resolved.map(part=>({id:part.id,number:part.index+1,name:part.name})),image});}}
+      setGuideExtras(settings,explodedView,assemblyGuideSteps);
       setImages(project.id, images);
       router.push(`/models/${project.id}/guide`);
     } catch (error) {
@@ -253,6 +265,10 @@ export function ModelEditor({
     };
   }, [resetEditor]);
 
+  const canExplode=parts.filter(part=>part.includeInGuide).length>=2;
+  const canAssemble=assemblySteps.some(step=>step.title.trim()&&step.partIds.some(id=>parts.some(part=>part.id===id)));
+  const defaultSettings:GuideSettings={...PAINTING_GUIDE_SETTINGS,includeExplodedView:canExplode,includeAssemblyInstructions:canAssemble,includeAssemblyStepImages:canAssemble};
+
   return (
     <main className="flex h-screen flex-col overflow-hidden bg-neutral-950 text-white">
       <EditorHeader
@@ -260,7 +276,7 @@ export function ModelEditor({
         isGuideReady={isGuideReady}
         isGeneratingGuide={generationStatus === "capturing"}
         onGenerateGuide={() => {
-          void generateGuidePreview();
+          setShowGuideSettings(true);
         }}
         onSave={() => {
           void saveNow();
@@ -281,10 +297,11 @@ export function ModelEditor({
 
       <GuideCaptureOverlay
         onRetry={() => {
-          void generateGuidePreview();
+          if(lastGuideSettings)void generateGuidePreview(lastGuideSettings);
         }}
         onCancel={resetGuideGeneration}
       />
+      {showGuideSettings?<GuideSettingsModal initial={lastGuideSettings??defaultSettings} canExplode={canExplode} canAssemble={canAssemble} onClose={()=>setShowGuideSettings(false)} onConfirm={settings=>{setShowGuideSettings(false);setLastGuideSettings(settings);void generateGuidePreview(settings);}}/>:null}
     </main>
   );
 }

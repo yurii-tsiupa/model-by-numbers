@@ -7,6 +7,9 @@ import type {
   GuidePart,
   ModelGuide,
   GuideReferenceImage,
+  GuideSettings,
+  GuideExplodedView,
+  GuideAssemblyStep,
 } from "../types/ModelGuide";
 import { getGuidePalette } from "./getGuidePalette";
 import { isPartIncludedInGuide } from "./isPartIncludedInGuide";
@@ -20,6 +23,9 @@ type BuildGuideDataParams = {
   author: string;
   references?: readonly GuideReferenceImage[];
   locale: Locale;
+  settings?: GuideSettings;
+  explodedView?: GuideExplodedView | null;
+  assemblySteps?: readonly GuideAssemblyStep[];
 };
 
 export function buildGuideData({
@@ -30,6 +36,9 @@ export function buildGuideData({
   author,
   references = [],
   locale,
+  settings,
+  explodedView = null,
+  assemblySteps = [],
 }: BuildGuideDataParams): ModelGuide {
   const paletteById = new Map(
     palette.map((color) => [color.id, color]),
@@ -78,5 +87,8 @@ export function buildGuideData({
     images: { ...images },
     references: references.map(reference=>({...reference})),
     generatedAt: new Date(),
+    settings,
+    explodedView: explodedView ? { ...explodedView } : null,
+    assemblySteps: assemblySteps.map(step=>({...step,parts:step.parts.map(part=>({...part}))})).sort((a,b)=>a.order-b.order),
   };
 }

@@ -13,6 +13,7 @@ import type {
 import { GuidePageFooter } from "./GuidePageFooter";
 import { guidePdfStyles } from "./guidePdfStyles";
 import { translate } from "@/features/i18n/lib/i18n";
+import {getGuideSettings} from "../lib/guideSettings";
 
 type GuideModelViewsPageProps = {
   guide: ModelGuide;
@@ -54,7 +55,7 @@ const styles = StyleSheet.create({
 export function GuideModelViewsPage({
   guide,
 }: GuideModelViewsPageProps) {
-  const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);const modelViews:Array<{key:keyof GuideImages;label:string}>=[{key:"original",label:t("guide.original")},{key:"base",label:t("guide.base")},{key:"painted",label:t("guide.painted")},{key:"numbers",label:t("guide.numbers")}];
+  const locale=guide.locale??"en",settings=getGuideSettings(guide);const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);const enabled:Record<keyof GuideImages,boolean>={original:settings.includeOriginalView,base:settings.includeBaseView,painted:settings.includePaintedView,numbers:settings.includeNumbersView};const modelViews=([{key:"original",label:t("guide.original")},{key:"base",label:t("guide.base")},{key:"painted",label:t("guide.painted")},{key:"numbers",label:t("guide.numbers")}] as Array<{key:keyof GuideImages;label:string}>).filter(view=>enabled[view.key]);
   return (
     <Page size="A4" orientation="portrait" style={guidePdfStyles.page}>
       <Text style={guidePdfStyles.eyebrow}>{t("guide.visual")}</Text>

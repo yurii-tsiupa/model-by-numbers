@@ -18,7 +18,7 @@ export function GuideCaptureOverlay({
   onCancel,
 }: GuideCaptureOverlayProps) {
   const {t}=useTranslation();
-  const captureStepLabels:Record<GuideCaptureStep,string>={original:t("capture.original"),base:t("capture.base"),painted:t("capture.painted"),numbers:t("capture.numbers")};
+  const captureStepLabels:Record<GuideCaptureStep,string>={original:t("capture.original"),base:t("capture.base"),painted:t("capture.painted"),numbers:t("capture.numbers"),exploded:t("capture.exploded"),"assembly-assets":t("capture.assemblyAssets")};
   const status = useGuideGenerationStore(
     (state) => state.status,
   );

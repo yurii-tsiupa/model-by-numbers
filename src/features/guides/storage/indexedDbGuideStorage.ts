@@ -35,6 +35,9 @@ function cloneSnapshot(snapshot: ModelGuide): ModelGuide {
     images: { ...snapshot.images },
     parts: snapshot.parts.map((part) => ({ ...part })),
     palette: snapshot.palette.map((color) => ({ ...color })),
+    assemblySteps: snapshot.assemblySteps?.map(step=>({...step,parts:step.parts.map(part=>({...part}))})),
+    explodedView: snapshot.explodedView ? {...snapshot.explodedView} : snapshot.explodedView,
+    settings: snapshot.settings ? {...snapshot.settings} : snapshot.settings,
   };
 }
 

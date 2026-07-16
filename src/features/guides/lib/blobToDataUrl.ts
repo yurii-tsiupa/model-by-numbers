@@ -1,0 +1,1 @@
+export function blobToDataUrl(blob:Blob):Promise<string>{return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>typeof reader.result==="string"?resolve(reader.result):reject(new Error("Invalid image data."));reader.onerror=()=>reject(reader.error??new Error("Unable to read image."));reader.readAsDataURL(blob);});}
