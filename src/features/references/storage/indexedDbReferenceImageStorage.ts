@@ -1,13 +1,16 @@
+import { deleteReference, deleteReferences, loadReference, loadReferences, saveReference } from "@/features/storage/services/storage.service";
+import type { StorageFile } from "@/features/storage/types/StorageFile";
 import type { ReferenceImage } from "../types/ReferenceImage";
 import type { ReferenceChanges, ReferenceImageStorage } from "./referenceImageStorage";
-const DB="model-by-numbers", VERSION=4, STORE="reference-images";
-function openDb(): Promise<IDBDatabase> { if(typeof window==="undefined"||!indexedDB)return Promise.reject(new Error("Reference images are unavailable in this browser.")); return new Promise((resolve,reject)=>{const r=indexedDB.open(DB,VERSION);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains("model-files")){const s=d.createObjectStore("model-files",{keyPath:"projectId"});s.createIndex("userId","userId");}if(!d.objectStoreNames.contains("generated-guides")){const s=d.createObjectStore("generated-guides",{keyPath:"id"});s.createIndex("projectId","projectId");s.createIndex("projectId-version",["projectId","version"],{unique:true});s.createIndex("createdAt","createdAt");}if(!d.objectStoreNames.contains("project-thumbnails"))d.createObjectStore("project-thumbnails",{keyPath:"projectId"});if(!d.objectStoreNames.contains(STORE)){const s=d.createObjectStore(STORE,{keyPath:"id"});s.createIndex("projectId","projectId");}};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(new Error("Reference images are unavailable in this browser."));r.onblocked=()=>reject(new Error("Reference image storage is temporarily unavailable."));}); }
-function normalize(r:ReferenceImage):ReferenceImage{return{...r,createdAt:new Date(r.createdAt),updatedAt:new Date(r.updatedAt)};}
-function done(tx:IDBTransaction):Promise<void>{return new Promise((resolve,reject)=>{tx.oncomplete=()=>resolve();tx.onerror=()=>reject(new Error("We could not save this reference image."));tx.onabort=()=>reject(new Error("We could not save this reference image."));});}
-class Storage implements ReferenceImageStorage{
- async getByProjectId(projectId:string){const d=await openDb();try{const q=d.transaction(STORE).objectStore(STORE).index("projectId").getAll(projectId) as IDBRequest<ReferenceImage[]>;const rows=await new Promise<ReferenceImage[]>((res,rej)=>{q.onsuccess=()=>res(q.result);q.onerror=()=>rej(new Error("Reference images are unavailable."));});return rows.map(normalize).sort((a,b)=>a.order-b.order);}finally{d.close();}}
- async saveMany(refs:ReferenceImage[]){const d=await openDb();try{const tx=d.transaction(STORE,"readwrite"),s=tx.objectStore(STORE);refs.forEach(r=>s.add({...r}));await done(tx);return refs.map(normalize);}finally{d.close();}}
- async update(id:string,changes:ReferenceChanges){const d=await openDb();try{const tx=d.transaction(STORE,"readwrite"),s=tx.objectStore(STORE),q=s.get(id) as IDBRequest<ReferenceImage|undefined>;const updated=await new Promise<ReferenceImage>((res,rej)=>{q.onsuccess=()=>{if(!q.result){rej(new Error("This reference is no longer available."));tx.abort();return;}const next={...q.result,...changes,updatedAt:new Date()};s.put(next);res(next);};q.onerror=()=>rej(new Error("This reference is no longer available."));});await done(tx);return normalize(updated);}finally{d.close();}}
- async delete(id:string){const d=await openDb();try{const tx=d.transaction(STORE,"readwrite");tx.objectStore(STORE).delete(id);await done(tx);}finally{d.close();}}
- async deleteByProjectId(projectId:string){const rows=await this.getByProjectId(projectId);await Promise.all(rows.map(r=>this.delete(r.id)));}
-} export const indexedDbReferenceImageStorage=new Storage();
+
+const toFile = (reference: ReferenceImage): StorageFile => ({ id:reference.id, entity:"reference", entityId:reference.projectId, fileName:reference.name, mimeType:reference.mimeType, blob:reference.blob, size:reference.size, createdAt:reference.createdAt, updatedAt:reference.updatedAt, metadata:reference });
+const toReference = (file: StorageFile): ReferenceImage => file.metadata as ReferenceImage;
+
+class IndexedDbReferenceImageStorage implements ReferenceImageStorage {
+  async getByProjectId(projectId:string){return (await loadReferences(projectId)).map(toReference).sort((a,b)=>a.order-b.order);}
+  async saveMany(references:ReferenceImage[]){await Promise.all(references.map(reference=>saveReference(toFile(reference))));return references;}
+  async update(id:string,changes:ReferenceChanges){const file=await loadReference(id);if(!file||file.entity!=="reference")throw new Error("This reference is no longer available.");const current=toReference(file);const updated={...current,...changes,updatedAt:new Date()};await saveReference(toFile(updated));return updated;}
+  delete(id:string){return deleteReference(id);}
+  deleteByProjectId(projectId:string){return deleteReferences(projectId);}
+}
+export const indexedDbReferenceImageStorage=new IndexedDbReferenceImageStorage();

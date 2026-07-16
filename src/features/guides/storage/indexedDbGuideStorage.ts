@@ -1,6 +1,7 @@
 import type { ModelGuide } from "../types/ModelGuide";
 import type { GeneratedGuide, SaveGeneratedGuideInput } from "../types/GeneratedGuide";
 import type { GuideStorage } from "./guideStorage";
+import { loadGuidePdfs, saveGuidePdf } from "@/features/storage/services/storage.service";
 
 const DATABASE_NAME = "model-by-numbers";
 const DATABASE_VERSION = 4;
@@ -85,7 +86,8 @@ class IndexedDbGuideStorage implements GuideStorage {
     try {
       const transaction = database.transaction(STORE_NAME, "readonly");
       const records = await requestResult(transaction.objectStore(STORE_NAME).index("projectId").getAll(projectId) as IDBRequest<StoredGuide[]>);
-      return records.map(normalize).sort((a, b) => b.version - a.version);
+      const files = new Map((await loadGuidePdfs(projectId)).map(file => [file.id, file.blob]));
+      return records.map(normalize).map(guide=>({...guide,pdfBlob:files.get(guide.id)??guide.pdfBlob})).sort((a, b) => b.version - a.version);
     } finally { database.close(); }
   }
 
@@ -94,13 +96,16 @@ class IndexedDbGuideStorage implements GuideStorage {
     try {
       const transaction = database.transaction(STORE_NAME, "readonly");
       const record = await requestResult(transaction.objectStore(STORE_NAME).get(guideId) as IDBRequest<StoredGuide | undefined>);
-      return record ? normalize(record) : null;
+      if(!record)return null;
+      const guide=normalize(record);
+      const file=(await loadGuidePdfs(guide.projectId)).find(candidate=>candidate.id===guideId);
+      return file?{...guide,pdfBlob:file.blob}:guide;
     } finally { database.close(); }
   }
 
   async save(input: SaveGeneratedGuideInput): Promise<GeneratedGuide> {
     const database = await openDatabase();
-    return new Promise((resolve, reject) => {
+    const saved = await new Promise<GeneratedGuide>((resolve, reject) => {
       const transaction = database.transaction(STORE_NAME, "readwrite");
       const store = transaction.objectStore(STORE_NAME);
       const index = store.index("projectId");
@@ -110,13 +115,15 @@ class IndexedDbGuideStorage implements GuideStorage {
         const version = request.result.reduce((latest, guide) => Math.max(latest, guide.version), 0) + 1;
         const now = new Date();
         saved = { id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`, version, status: "ready", createdAt: now, updatedAt: now, ...input, snapshot: cloneSnapshot(input.snapshot) };
-        store.add(saved);
+        store.add({...saved,pdfBlob:null});
       };
       request.onerror = () => transaction.abort();
       transaction.oncomplete = () => { database.close(); if (saved) resolve(saved); else reject(new Error("We could not save this guide in your browser.")); };
       transaction.onerror = () => { database.close(); reject(friendlyStorageError(transaction.error)); };
       transaction.onabort = () => { database.close(); reject(friendlyStorageError(transaction.error)); };
     });
+    if(saved.pdfBlob)await saveGuidePdf({id:saved.id,entity:"guide",entityId:saved.projectId,fileName:saved.fileName,mimeType:saved.pdfBlob.type||"application/pdf",blob:saved.pdfBlob,size:saved.pdfBlob.size,createdAt:saved.createdAt,updatedAt:saved.updatedAt,metadata:saved});
+    return saved;
   }
 
   async delete(guideId: string): Promise<void> {
