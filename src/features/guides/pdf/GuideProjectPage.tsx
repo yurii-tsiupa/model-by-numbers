@@ -11,6 +11,7 @@ import {
   guidePdfStyles,
   pdfColors,
 } from "./guidePdfStyles";
+import { translate } from "@/features/i18n/lib/i18n";
 
 type GuideProjectPageProps = {
   guide: ModelGuide;
@@ -51,24 +52,21 @@ const styles = StyleSheet.create({
 export function GuideProjectPage({
   guide,
 }: GuideProjectPageProps) {
+  const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
   const details = [
-    ["Author", guide.author],
-    ["Printer type", guide.printerType.toUpperCase()],
-    ["Material", guide.material.toUpperCase()],
-    ["Visible parts", String(guide.partsCount)],
-    ["Used colors", String(guide.colorsCount)],
+    [t("guide.author"), guide.author],[t("guide.printer"), guide.printerType.toUpperCase()],[t("guide.material"), guide.material.toUpperCase()],[t("guide.visibleParts"), String(guide.partsCount)],[t("guide.usedColors"), String(guide.colorsCount)],
   ];
 
   return (
     <Page size="A4" orientation="portrait" style={guidePdfStyles.page}>
-      <Text style={guidePdfStyles.eyebrow}>Project reference</Text>
+      <Text style={guidePdfStyles.eyebrow}>{t("guide.projectReference")}</Text>
       <Text style={guidePdfStyles.pageTitle}>{guide.title}</Text>
 
       {guide.description ? (
         <Text style={styles.description}>{guide.description}</Text>
       ) : (
         <Text style={guidePdfStyles.sectionDescription}>
-          No project description was provided.
+          {t("guide.noDescription")}
         </Text>
       )}
 
@@ -81,7 +79,7 @@ export function GuideProjectPage({
         ))}
 
         <View style={styles.detail}>
-          <Text style={guidePdfStyles.label}>Base color</Text>
+          <Text style={guidePdfStyles.label}>{t("guide.baseColor")}</Text>
           <View style={styles.colorValue}>
             <View
               style={[
@@ -95,7 +93,7 @@ export function GuideProjectPage({
           </View>
         </View>
       </View>
-      <GuidePageFooter pageNumber={2} />
+      <GuidePageFooter pageNumber={2} locale={locale}/>
     </Page>
   );
 }

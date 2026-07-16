@@ -1,7 +1,10 @@
 import type { GuidePaletteColor } from "../types/ModelGuide";
+import type { Locale } from "@/features/i18n/types/Locale";
+import { translate } from "@/features/i18n/lib/i18n";
 
 type GuidePaletteSectionProps = {
   palette: GuidePaletteColor[];
+  locale: Locale;
 };
 
 function formatColorNumber(number: number): string {
@@ -10,19 +13,21 @@ function formatColorNumber(number: number): string {
 
 export function GuidePaletteSection({
   palette,
+  locale,
 }: GuidePaletteSectionProps) {
+  const t=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values);
   return (
     <section className="scroll-mt-24">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-400">
-          Paint reference
+          {t("guide.paintReference")}
         </p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-          Palette
+          {t("guide.palette")}
         </h2>
       </div>
 
-      <p className="mt-2 text-sm text-neutral-500">A numbered color key for every visible painted part.</p><div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <p className="mt-2 text-sm text-neutral-500">{t("guide.paletteDescription")}</p><div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {palette.map((color) => (
           <article
             key={color.id}
@@ -38,7 +43,7 @@ export function GuidePaletteSection({
                   {formatColorNumber(color.number)}
                 </p>
                 <p className="rounded-full bg-white/[0.05] px-2.5 py-1 text-xs text-neutral-400">
-                  {color.usageCount} {color.usageCount === 1 ? "part" : "parts"}
+                  {t("guide.usedBy",{count:color.usageCount})}
                 </p>
               </div>
               <p className="mt-1 truncate text-sm font-medium text-white">

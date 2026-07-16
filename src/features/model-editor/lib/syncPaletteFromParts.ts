@@ -17,7 +17,7 @@ function createPaletteColorId(
 function createPaletteColorName(
   number: number,
 ): string {
-  return `Color ${String(number).padStart(2, "0")}`;
+  return `C${String(number).padStart(2, "0")}`;
 }
 
 export function syncPaletteFromParts(

@@ -7,6 +7,7 @@ import {
   RotateCcw,
   Scan,
 } from "lucide-react";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 type ViewerToolbarProps = {
   isGridVisible: boolean;
@@ -40,46 +41,47 @@ export function ViewerToolbar({
   onToggleGrid,
   onFitModel
 }: ViewerToolbarProps) {
+  const {t}=useTranslation();
   const toolbarItems: ToolbarItem[] = [
     {
-      label: "Reset camera",
+      label: t("viewer.reset"),
       icon: RotateCcw,
       disabled: false,
       onClick: onResetCamera,
     },
     {
-      label: "Fit model",
+      label: t("viewer.fit"),
       icon: Focus,
       disabled: !hasParts,
       onClick: onFitModel,
     },
     {
-      label: "Show all",
+      label: t("viewer.showAll"),
       icon: Eye,
       disabled: !hasParts,
       onClick: onShowAll,
     },
     {
-      label: "Hide selected",
+      label: t("viewer.hideSelected"),
       icon: EyeOff,
       disabled: !hasSelectedPart,
       onClick: onHideSelected,
     },
     {
-      label: "Isolate selected",
+      label: t("viewer.isolate"),
       icon: Scan,
       disabled: !hasSelectedPart,
       onClick: onIsolateSelected,
     },
     {
-      label: "Toggle grid",
+      label: t("viewer.grid"),
       icon: Grid3X3,
       disabled: false,
       active: isGridVisible,
       onClick: onToggleGrid,
     },
     {
-      label: "Fullscreen",
+      label: t("viewer.fullscreen"),
       icon: Maximize,
       disabled: true,
     },
@@ -100,7 +102,7 @@ export function ViewerToolbar({
               title={item.label}
               aria-label={item.label}
               aria-pressed={
-                item.label === "Toggle grid"
+                item.label === t("viewer.grid")
                   ? item.active
                   : undefined
               }

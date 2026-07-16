@@ -9,6 +9,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { Loader } from "@/components/ui/Loader";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { ModelEditor } from "@/features/model-editor/components/ModelEditor";
 import { useProject } from "@/features/models/hooks/useProject";
@@ -22,6 +23,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 export default function ModelEditorPage() {
+  const {t}=useTranslation();
   const router = useRouter();
   const params = useParams<{ projectId: string }>();
 
@@ -39,7 +41,7 @@ export default function ModelEditorPage() {
   if (isAuthLoading || !user) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-white">
-        <Loader label="Loading project..." />
+        <Loader label={t("models.loading")} />
       </main>
     );
   }

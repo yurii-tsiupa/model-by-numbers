@@ -11,6 +11,7 @@ import { optimizationOptions } from "../../constants/paletteGeneration";
 import { DEFAULT_PALETTE_GENERATION_OPTIONS } from "../../constants/defaultPaletteGenerationOptions";
 import { getPaletteGenerationPreview } from "../../utils/getPaletteGenerationPreview";
 import { ModelPart } from "../../types/ModelPart";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 type GeneratePaletteModalProps = {
   isOpen: boolean;
@@ -33,6 +34,8 @@ export function GeneratePaletteModal({
   onClose,
   onGenerate,
 }: GeneratePaletteModalProps) {
+  const {t}=useTranslation();
+  const optimizationText={none:[t("palette.none"),t("palette.noneDescription")],low:[t("palette.low"),t("palette.lowDescription")],medium:[t("palette.medium"),t("palette.mediumDescription")],high:[t("palette.high"),t("palette.highDescription")]};
   const [source, setSource] =
     useState<PaletteSource>(
       DEFAULT_PALETTE_GENERATION_OPTIONS.source,
@@ -115,20 +118,20 @@ export function GeneratePaletteModal({
       >
         <div className="border-b border-white/10 p-6">
           <h2 className="text-xl font-semibold text-white">
-            Generate Palette
+            {t("palette.generate")}
           </h2>
 
           <p className="mt-2 text-sm leading-6 text-neutral-400">
             {hasPalette
-              ? "This will replace your current palette and reassign all model parts."
-              : "Create a painting palette from the model."}
+              ? t("palette.replace")
+              : t("palette.create")}
           </p>
         </div>
 
         <div className="space-y-8 p-6">
           <section>
             <h3 className="text-sm font-medium text-white">
-              Palette Source
+              {t("palette.source")}
             </h3>
 
             <div className="mt-4">
@@ -144,12 +147,11 @@ export function GeneratePaletteModal({
                 }`}
               >
                 <p className="font-medium text-white">
-                  Original Material Colors
+                  {t("palette.originalMaterials")}
                 </p>
 
                 <p className="mt-1 text-sm text-neutral-400">
-                  Generate the palette from
-                  original model materials.
+                  {t("palette.originalDescription")}
                 </p>
               </button>
             </div>
@@ -157,7 +159,7 @@ export function GeneratePaletteModal({
 
           <section>
             <h3 className="text-sm font-medium text-white">
-              Optimization
+              {t("palette.optimization")}
             </h3>
 
             <div className="mt-4 space-y-3">
@@ -180,7 +182,7 @@ export function GeneratePaletteModal({
                   >
                     <div className="flex items-center justify-between">
                       <p className="font-medium text-white">
-                        {option.title}
+                        {optimizationText[option.value][0]}
                       </p>
 
                       <div
@@ -194,7 +196,7 @@ export function GeneratePaletteModal({
                     </div>
 
                     <p className="mt-2 text-sm text-neutral-400">
-                      {option.description}
+                      {optimizationText[option.value][1]}
                     </p>
                   </button>
                 ),
@@ -204,13 +206,13 @@ export function GeneratePaletteModal({
 
           <section>
             <h3 className="text-sm font-medium text-white">
-              Estimated result
+              {t("palette.estimated")}
             </h3>
 
             <div className="mt-4 grid grid-cols-3 gap-3">
               <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-3">
                 <p className="text-xs text-neutral-600">
-                  Original
+                  {t("palette.original")}
                 </p>
 
                 <p className="mt-2 text-xl font-semibold text-white">
@@ -220,7 +222,7 @@ export function GeneratePaletteModal({
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-3">
                 <p className="text-xs text-neutral-600">
-                  Generated
+                  {t("palette.generated")}
                 </p>
 
                 <p className="mt-2 text-xl font-semibold text-white">
@@ -230,7 +232,7 @@ export function GeneratePaletteModal({
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-3">
                 <p className="text-xs text-neutral-600">
-                  Merged
+                  {t("palette.merged")}
                 </p>
 
                 <p className="mt-2 text-xl font-semibold text-orange-300">
@@ -241,14 +243,12 @@ export function GeneratePaletteModal({
 
             {parts.length === 0 ? (
               <p className="mt-3 text-xs leading-5 text-red-400">
-                No model parts are available for palette
-                generation.
+                {t("palette.noParts")}
               </p>
             ) : preview.mergedColorCount === 0 &&
               optimization !== "none" ? (
               <p className="mt-3 text-xs leading-5 text-neutral-500">
-                The model colors are already sufficiently
-                different for this optimization level.
+                {t("palette.alreadyDifferent")}
               </p>
             ) : null}
           </section>
@@ -261,7 +261,7 @@ export function GeneratePaletteModal({
             onClick={handleClose}
             className="rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:bg-white/5"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
 
           <button
@@ -279,7 +279,7 @@ export function GeneratePaletteModal({
             }}
             className="rounded-xl bg-orange-500 px-5 py-2 text-sm font-medium text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Generate
+            {t("palette.generateAction")}
           </button>
         </div>
       </div>

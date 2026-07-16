@@ -2,6 +2,7 @@
 
 import { AlertTriangle, LoaderCircle } from "lucide-react";
 import { useEffect } from "react";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 type ConfirmationModalProps = {
   isOpen: boolean;
@@ -24,13 +25,14 @@ export function ConfirmationModal({
   isOpen,
   title,
   description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   variant = "warning",
   isLoading = false,
   onConfirm,
   onClose,
 }: ConfirmationModalProps) {
+  const {t}=useTranslation();
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -105,7 +107,7 @@ export function ConfirmationModal({
             onClick={onClose}
             className="rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:bg-white/5 disabled:opacity-50"
           >
-            {cancelLabel}
+            {cancelLabel??t("common.cancel")}
           </button>
 
           <button
@@ -117,10 +119,10 @@ export function ConfirmationModal({
             {isLoading ? (
               <>
                 <LoaderCircle className="h-4 w-4 animate-spin" />
-                Processing...
+                {t("common.processing")}
               </>
             ) : (
-              confirmLabel
+              confirmLabel??t("common.confirm")
             )}
           </button>
         </div>

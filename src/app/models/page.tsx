@@ -15,18 +15,12 @@ import { NewProjectModal } from "@/features/models/components/NewProjectModal";
 import { useDeleteProject } from "@/features/models/hooks/useDeleteProject";
 import { useProjects } from "@/features/models/hooks/useProjects";
 import type { Project } from "@/features/models/types/Project";
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Unable to delete the project. Please try again.";
-}
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 export default function ModelsPage() {
   const router = useRouter();
   const { user, isLoading: isAuthLoading } = useAuth();
+  const {t}=useTranslation();
 
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] =
     useState(false);
@@ -79,7 +73,7 @@ export default function ModelsPage() {
       setProjectToDelete(null);
     } catch (error) {
       console.error("Failed to delete project:", error);
-      setDeleteError(getErrorMessage(error));
+      setDeleteError(t("models.deleteFailed"));
     } finally {
       setDeletingProjectId(null);
     }
@@ -88,7 +82,7 @@ export default function ModelsPage() {
   if (isAuthLoading || !user) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-white">
-        <Loader label="Loading your workspace..." />
+        <Loader label={t("models.loading")} />
       </main>
     );
   }

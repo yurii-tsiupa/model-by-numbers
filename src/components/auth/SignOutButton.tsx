@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 export function SignOutButton() {
   const router = useRouter();
   const { signOut } = useAuth();
+  const {t}=useTranslation();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -38,7 +40,7 @@ export function SignOutButton() {
         <LogOut className="h-4 w-4" />
       )}
 
-      {isSubmitting ? "Signing out..." : "Sign out"}
+      {isSubmitting ? t("auth.signingOut") : t("auth.signOut")}
     </button>
   );
 }

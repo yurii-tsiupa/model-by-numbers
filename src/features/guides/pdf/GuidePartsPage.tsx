@@ -11,6 +11,7 @@ import {
   guidePdfStyles,
   pdfColors,
 } from "./guidePdfStyles";
+import { translate } from "@/features/i18n/lib/i18n";
 
 type GuidePartsPageProps = {
   guide: ModelGuide;
@@ -85,6 +86,7 @@ function formatColorNumber(number: number): string {
 export function GuidePartsPage({
   guide,
 }: GuidePartsPageProps) {
+  const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
   const palettePageCount = Math.max(
     1,
     Math.ceil(guide.palette.length / COLORS_PER_PAGE),
@@ -104,12 +106,12 @@ export function GuidePartsPage({
           orientation="portrait"
           style={guidePdfStyles.page}
         >
-          <Text style={guidePdfStyles.eyebrow}>Step reference</Text>
+          <Text style={guidePdfStyles.eyebrow}>{t("guide.stepReference")}</Text>
           <Text style={guidePdfStyles.pageTitle}>
-            Parts{pageIndex > 0 ? " (continued)" : ""}
+            {t("guide.parts")}{pageIndex > 0 ? ` (${t("guide.continued")})` : ""}
           </Text>
           <Text style={guidePdfStyles.sectionDescription}>
-            Paint each visible part using its assigned palette color.
+            {t("pdf.partsHelp")}
           </Text>
 
           <View style={styles.list}>
@@ -151,7 +153,7 @@ export function GuidePartsPage({
                           </View>
                         </>
                       ) : (
-                        <Text style={styles.unassigned}>Unassigned</Text>
+                        <Text style={styles.unassigned}>{t("common.unassigned")}</Text>
                       )}
                     </View>
                   </View>
@@ -160,6 +162,7 @@ export function GuidePartsPage({
           </View>
           <GuidePageFooter
             pageNumber={firstPartsPageNumber + pageIndex}
+            locale={locale}
           />
         </Page>
       ))}

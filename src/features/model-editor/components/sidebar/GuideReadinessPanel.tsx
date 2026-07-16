@@ -11,6 +11,7 @@ import type { Project } from "@/features/models/types/Project";
 
 import { getGuideReadiness } from "../../lib/getGuideReadiness";
 import { useModelEditorStore } from "../../store/modelEditorStore";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 type GuideReadinessPanelProps = {
   project: Project;
@@ -19,6 +20,7 @@ type GuideReadinessPanelProps = {
 export function GuideReadinessPanel({
   project,
 }: GuideReadinessPanelProps) {
+  const {t,locale}=useTranslation();
   const parts = useModelEditorStore(
     (state) => state.parts,
   );
@@ -33,8 +35,9 @@ export function GuideReadinessPanel({
         project,
         parts,
         palette,
+        locale,
       }),
-    [palette, parts, project],
+    [locale,palette, parts, project],
   );
 
   return (
@@ -45,14 +48,12 @@ export function GuideReadinessPanel({
             <FileCheck2 className="h-4 w-4 text-neutral-500" />
 
             <h3 className="text-sm font-medium text-white">
-              Guide readiness
+              {t("readiness.title")}
             </h3>
           </div>
 
           <p className="mt-1 text-xs text-neutral-600">
-            {readiness.completedCount} of{" "}
-            {readiness.totalCount} checks
-            completed
+            {t("readiness.progress",{completed:readiness.completedCount,total:readiness.totalCount})}
           </p>
         </div>
 
@@ -134,8 +135,8 @@ export function GuideReadinessPanel({
           }`}
         >
           {readiness.isReady
-            ? "The project is ready for guide generation."
-            : "Complete the remaining checks before generating a guide."}
+            ? t("readiness.ready")
+            : t("readiness.notReady")}
         </p>
       </div>
     </section>

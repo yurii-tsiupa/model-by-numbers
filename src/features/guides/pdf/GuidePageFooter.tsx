@@ -1,14 +1,18 @@
 import { Text } from "@react-pdf/renderer";
 
 import { guidePdfStyles } from "./guidePdfStyles";
+import type { Locale } from "@/features/i18n/types/Locale";
+import { translate } from "@/features/i18n/lib/i18n";
 
 export function GuidePageFooter({
   pageNumber: _pageNumber,
+  locale = "en",
 }: {
   pageNumber: number;
+  locale?: Locale;
 }) {
   void _pageNumber;
   return (
-    <Text fixed style={guidePdfStyles.footer} render={({pageNumber,totalPages})=>`MODEL BY NUMBERS  ·  CLASSIC  ·  ${pageNumber} / ${totalPages}`}/>
+    <Text fixed style={guidePdfStyles.footer} render={({pageNumber,totalPages})=>translate(locale,"pdf.footer",{page:pageNumber,total:totalPages})}/>
   );
 }

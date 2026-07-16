@@ -16,8 +16,10 @@ import {
 import { PAINT_COLORS } from "../constants/paintColors";
 import { normalizeHexColor } from "../lib/normalizeHexColor";
 import { useModelEditorStore } from "../store/modelEditorStore";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 export function PropertiesPanel() {
+  const {t}=useTranslation();
   const [customColor, setCustomColor] =
     useState("#f97316");
 
@@ -89,7 +91,7 @@ export function PropertiesPanel() {
       selectedPart?.originalColor ??
       "#f97316";
 
-    setCustomColor(nextColor);
+    queueMicrotask(() => setCustomColor(nextColor));
   }, [
     selectedPaletteColor?.hex,
     selectedPart?.id,
@@ -118,21 +120,19 @@ export function PropertiesPanel() {
     <aside className="flex max-h-[22rem] min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-white/10 bg-neutral-950/70 lg:h-full lg:max-h-none lg:w-72 lg:border-l lg:border-t-0">
       <div className="shrink-0 border-b border-white/10 p-4 sm:p-5">
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-600">
-          Properties
+          {t("properties.title")}
         </p>
 
         <h2 className="mt-2 truncate text-lg font-semibold text-white">
           {selectedPart
             ? selectedPart.name
-            : "No selection"}
+            : t("properties.noSelection")}
         </h2>
 
         <p className="mt-1 text-xs text-neutral-600">
           {selectedPart
-            ? `Part ${String(
-                selectedPart.index + 1,
-              ).padStart(2, "0")}`
-            : "Select a model part to edit it."}
+            ? t("properties.partNumber",{number:String(selectedPart.index + 1).padStart(2,"0")})
+            : t("properties.selectPart")}
         </p>
 
         {legacyPaintedPartsCount > 0 ? (
@@ -142,7 +142,7 @@ export function PropertiesPanel() {
             className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-orange-400/20 bg-orange-400/10 px-4 py-2.5 text-sm font-medium text-orange-300 transition hover:bg-orange-400/15"
           >
             <WandSparkles className="h-4 w-4" />
-            Generate Palette
+            {t("palette.generate")}
           </button>
         ) : null}
       </div>
@@ -155,12 +155,11 @@ export function PropertiesPanel() {
             </div>
 
             <p className="mt-4 text-sm font-medium text-neutral-400">
-              Select a part
+              {t("properties.selectTitle")}
             </p>
 
             <p className="mt-1 text-xs leading-5 text-neutral-600">
-              Choose a model part from the sidebar
-              or directly in the viewer.
+              {t("properties.selectHelp")}
             </p>
           </div>
         </div>
@@ -170,12 +169,11 @@ export function PropertiesPanel() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-white">
-                  Project palette
+                  {t("properties.projectPalette")}
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-neutral-600">
-                  Assign a shared project color to
-                  this part.
+                  {t("properties.assignHelp")}
                 </p>
               </div>
 
@@ -191,7 +189,7 @@ export function PropertiesPanel() {
                   className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs text-neutral-500 transition hover:text-white"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  Clear
+                  {t("properties.clear")}
                 </button>
               ) : null}
             </div>
@@ -252,12 +250,11 @@ export function PropertiesPanel() {
             ) : (
               <div className="mt-4 rounded-xl border border-dashed border-white/10 px-4 py-5 text-center">
                 <p className="text-sm text-neutral-500">
-                  No palette colors yet.
+                  {t("palette.empty")}
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-neutral-700">
-                  Choose a preset or create a custom
-                  color.
+                  {t("palette.emptyHelp")}
                 </p>
               </div>
             )}
@@ -265,12 +262,11 @@ export function PropertiesPanel() {
 
           <div className="mt-6 border-t border-white/10 pt-5">
             <p className="text-sm font-medium text-white">
-              Quick colors
+              {t("properties.quick")}
             </p>
 
             <p className="mt-1 text-xs leading-5 text-neutral-600">
-              Existing colors are reused instead of
-              creating duplicates.
+              {t("properties.quickHelp")}
             </p>
 
             <div className="mt-4 grid grid-cols-4 gap-2">
@@ -294,8 +290,8 @@ export function PropertiesPanel() {
                         color.value,
                       )
                     }
-                    title={color.name}
-                    aria-label={`Use ${color.name}`}
+                    title={t(`color.${color.id}`)}
+                    aria-label={t("properties.useColor",{name:t(`color.${color.id}`)})}
                     aria-pressed={isSelected}
                     className={`relative aspect-square cursor-pointer rounded-xl border p-1 transition ${
                       isSelected
@@ -327,7 +323,7 @@ export function PropertiesPanel() {
               htmlFor="custom-part-color"
               className="text-sm font-medium text-white"
             >
-              Custom color
+              {t("properties.custom")}
             </label>
 
             <div className="mt-3 flex items-center gap-2">
@@ -354,8 +350,8 @@ export function PropertiesPanel() {
                 type="button"
                 onClick={handleApplyCustomColor}
                 className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-white/10 text-neutral-400 transition hover:border-white/20 hover:bg-white/[0.05] hover:text-white"
-                aria-label="Add and assign custom color"
-                title="Add and assign color"
+                aria-label={t("properties.addColor")}
+                title={t("properties.addColorTitle")}
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -365,7 +361,7 @@ export function PropertiesPanel() {
           {selectedPaletteColor ? (
             <div className="mt-6 border-t border-white/10 pt-5">
               <p className="text-sm font-medium text-white">
-                Assigned color
+                {t("properties.assigned")}
               </p>
 
               <div className="mt-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-3">
@@ -400,7 +396,7 @@ export function PropertiesPanel() {
           {selectedPart.originalColor ? (
             <div className="mt-6 border-t border-white/10 pt-5">
               <p className="text-sm font-medium text-white">
-                Original material
+                {t("properties.originalMaterial")}
               </p>
 
               <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
@@ -414,7 +410,7 @@ export function PropertiesPanel() {
                   />
 
                   <span className="truncate text-xs text-neutral-500">
-                    Material base color
+                    {t("properties.materialBase")}
                   </span>
                 </div>
 

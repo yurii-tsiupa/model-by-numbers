@@ -12,20 +12,11 @@ import type {
 } from "../types/ModelGuide";
 import { GuidePageFooter } from "./GuidePageFooter";
 import { guidePdfStyles } from "./guidePdfStyles";
+import { translate } from "@/features/i18n/lib/i18n";
 
 type GuideModelViewsPageProps = {
   guide: ModelGuide;
 };
-
-const modelViews: Array<{
-  key: keyof GuideImages;
-  label: string;
-}> = [
-  { key: "original", label: "Original Model" },
-  { key: "base", label: "Base Model" },
-  { key: "painted", label: "Painted Model" },
-  { key: "numbers", label: "Numbered Model" },
-];
 
 const styles = StyleSheet.create({
   grid: {
@@ -63,12 +54,13 @@ const styles = StyleSheet.create({
 export function GuideModelViewsPage({
   guide,
 }: GuideModelViewsPageProps) {
+  const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);const modelViews:Array<{key:keyof GuideImages;label:string}>=[{key:"original",label:t("guide.original")},{key:"base",label:t("guide.base")},{key:"painted",label:t("guide.painted")},{key:"numbers",label:t("guide.numbers")}];
   return (
     <Page size="A4" orientation="portrait" style={guidePdfStyles.page}>
-      <Text style={guidePdfStyles.eyebrow}>Visual reference</Text>
-      <Text style={guidePdfStyles.pageTitle}>Model Views</Text>
+      <Text style={guidePdfStyles.eyebrow}>{t("guide.visual")}</Text>
+      <Text style={guidePdfStyles.pageTitle}>{t("guide.modelViews")}</Text>
       <Text style={guidePdfStyles.sectionDescription}>
-        Use these views to compare each stage of the painting process.
+        {t("pdf.modelViewsHelp")}
       </Text>
 
       <View style={styles.grid}>
@@ -83,7 +75,7 @@ export function GuideModelViewsPage({
                   // eslint-disable-next-line jsx-a11y/alt-text
                   <Image src={image} style={styles.image} />
                 ) : (
-                  <Text>Model view not available</Text>
+                  <Text>{t("pdf.missingView")}</Text>
                 )}
               </View>
               <Text style={styles.viewLabel}>{label}</Text>
@@ -91,7 +83,7 @@ export function GuideModelViewsPage({
           );
         })}
       </View>
-      <GuidePageFooter pageNumber={3} />
+      <GuidePageFooter pageNumber={3} locale={locale}/>
     </Page>
   );
 }

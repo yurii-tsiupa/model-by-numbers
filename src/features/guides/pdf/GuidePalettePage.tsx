@@ -11,6 +11,7 @@ import {
   guidePdfStyles,
   pdfColors,
 } from "./guidePdfStyles";
+import { translate } from "@/features/i18n/lib/i18n";
 
 type GuidePalettePageProps = {
   guide: ModelGuide;
@@ -73,6 +74,7 @@ function formatColorNumber(number: number): string {
 export function GuidePalettePage({
   guide,
 }: GuidePalettePageProps) {
+  const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values);
   const pageCount = Math.max(
     1,
     Math.ceil(guide.palette.length / COLORS_PER_PAGE),
@@ -87,12 +89,12 @@ export function GuidePalettePage({
           orientation="portrait"
           style={guidePdfStyles.page}
         >
-          <Text style={guidePdfStyles.eyebrow}>Paint reference</Text>
+          <Text style={guidePdfStyles.eyebrow}>{t("guide.paintReference")}</Text>
           <Text style={guidePdfStyles.pageTitle}>
-            Palette{pageIndex > 0 ? " (continued)" : ""}
+            {t("guide.palette")}{pageIndex > 0 ? ` (${t("guide.continued")})` : ""}
           </Text>
           <Text style={guidePdfStyles.sectionDescription}>
-            {guide.colorsCount} colors used by visible model parts.
+            {t("pdf.paletteHelp",{count:guide.colorsCount})}
           </Text>
 
           <View style={styles.list}>
@@ -115,13 +117,12 @@ export function GuidePalettePage({
                   <Text style={styles.name}>{color.name}</Text>
                   <Text style={styles.hex}>{color.hex.toUpperCase()}</Text>
                   <Text style={styles.usage}>
-                    {color.usageCount}{" "}
-                    {color.usageCount === 1 ? "part" : "parts"}
+                    {t("guide.usedBy",{count:color.usageCount})}
                   </Text>
                 </View>
               ))}
           </View>
-          <GuidePageFooter pageNumber={4 + pageIndex} />
+          <GuidePageFooter pageNumber={4 + pageIndex} locale={locale}/>
         </Page>
       ))}
     </>

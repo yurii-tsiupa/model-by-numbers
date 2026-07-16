@@ -5,8 +5,11 @@ import { useMemo, useState } from "react";
 
 import { useModelEditorStore } from "../../store/modelEditorStore";
 import { PartListItem } from "../PartListItem";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 export function PartsTab() {
+  const {t}=useTranslation();
+  const filterLabels={all:t("editor.filter.all"),painted:t("editor.filter.painted"),unpainted:t("editor.filter.unpainted"),hidden:t("editor.filter.hidden"),included:t("editor.filter.included"),excluded:t("editor.filter.excluded")};
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "painted" | "unpainted" | "hidden" | "included" | "excluded">("all");
 
@@ -71,11 +74,11 @@ export function PartsTab() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-600">
-              Model Structure
+              {t("editor.structure")}
             </p>
 
             <h2 className="mt-2 text-lg font-semibold text-white">
-              Parts
+              {t("editor.tabs.parts")}
             </h2>
           </div>
 
@@ -93,17 +96,17 @@ export function PartsTab() {
             onChange={(event) =>
               setSearchQuery(event.target.value)
             }
-            placeholder="Search parts"
+            placeholder={t("editor.searchParts")}
             disabled={!hasParts}
             className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.025] pl-9 pr-3 text-sm text-neutral-300 outline-none transition placeholder:text-neutral-700 focus:border-white/20 disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {(["all", "painted", "unpainted", "hidden", "included", "excluded"] as const).map((option) => <button key={option} type="button" onClick={() => setFilter(option)} className={`cursor-pointer rounded-full border px-2.5 py-1 text-[11px] capitalize transition ${filter === option ? "border-orange-400/30 bg-orange-400/10 text-orange-300" : "border-white/10 text-neutral-500 hover:text-neutral-300"}`}>{option}</button>)}
+          {(["all", "painted", "unpainted", "hidden", "included", "excluded"] as const).map((option) => <button key={option} type="button" onClick={() => setFilter(option)} className={`cursor-pointer rounded-full border px-2.5 py-1 text-[11px] transition ${filter === option ? "border-orange-400/30 bg-orange-400/10 text-orange-300" : "border-white/10 text-neutral-500 hover:text-neutral-300"}`}>{filterLabels[option]}</button>)}
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
-          <span className="text-xs text-neutral-600">{filteredParts.length} of {parts.length} results</span>
-          {filteredParts.length > 0 ? <div className="flex gap-2"><button type="button" onClick={() => setPartsIncludedInGuide(filteredParts.map((part) => part.id), true)} className="cursor-pointer text-[11px] text-neutral-500 hover:text-orange-300">Include filtered</button><button type="button" onClick={() => setPartsIncludedInGuide(filteredParts.map((part) => part.id), false)} className="cursor-pointer text-[11px] text-neutral-500 hover:text-red-300">Exclude filtered</button></div> : null}
+          <span className="text-xs text-neutral-600">{t("editor.results",{shown:filteredParts.length,total:parts.length})}</span>
+          {filteredParts.length > 0 ? <div className="flex gap-2"><button type="button" onClick={() => setPartsIncludedInGuide(filteredParts.map((part) => part.id), true)} className="cursor-pointer text-[11px] text-neutral-500 hover:text-orange-300">{t("editor.includeFiltered")}</button><button type="button" onClick={() => setPartsIncludedInGuide(filteredParts.map((part) => part.id), false)} className="cursor-pointer text-[11px] text-neutral-500 hover:text-red-300">{t("editor.excludeFiltered")}</button></div> : null}
         </div>
       </div>
 
@@ -115,7 +118,7 @@ export function PartsTab() {
             </div>
 
             <p className="mt-4 text-sm font-medium text-neutral-400">
-              No parts loaded
+              {t("editor.noParts")}
             </p>
           </div>
         </div>
@@ -123,11 +126,11 @@ export function PartsTab() {
         <div className="flex flex-1 items-center justify-center p-5 text-center">
           <div>
             <p className="text-sm font-medium text-neutral-400">
-              No matching parts
+              {t("editor.noMatchingParts")}
             </p>
 
             <p className="mt-1 text-xs text-neutral-600">
-              Try another search term or filter.
+              {t("editor.trySearch")}
             </p>
           </div>
         </div>

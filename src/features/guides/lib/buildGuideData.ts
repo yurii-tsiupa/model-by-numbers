@@ -10,6 +10,7 @@ import type {
 } from "../types/ModelGuide";
 import { getGuidePalette } from "./getGuidePalette";
 import { isPartIncludedInGuide } from "./isPartIncludedInGuide";
+import type { Locale } from "@/features/i18n/types/Locale";
 
 type BuildGuideDataParams = {
   project: Project;
@@ -18,6 +19,7 @@ type BuildGuideDataParams = {
   images: GuideImages;
   author: string;
   references?: readonly GuideReferenceImage[];
+  locale: Locale;
 };
 
 export function buildGuideData({
@@ -27,6 +29,7 @@ export function buildGuideData({
   images,
   author,
   references = [],
+  locale,
 }: BuildGuideDataParams): ModelGuide {
   const paletteById = new Map(
     palette.map((color) => [color.id, color]),
@@ -60,6 +63,7 @@ export function buildGuideData({
   const guidePalette = getGuidePalette(parts, palette);
 
   return {
+    locale,
     projectId: project.id,
     title: project.name,
     description: project.description,

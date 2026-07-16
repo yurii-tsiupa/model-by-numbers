@@ -41,7 +41,7 @@ function getMeshOriginalColor(
 function createFallbackPartName(
   index: number,
 ): string {
-  return `Part ${String(index + 1).padStart(2, "0")}`;
+  return `P${String(index + 1).padStart(2, "0")}`;
 }
 
 export function extractModelParts(

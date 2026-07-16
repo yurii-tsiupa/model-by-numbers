@@ -15,6 +15,7 @@ import { PaletteTab } from "./sidebar/PaletteTab";
 import { PartsTab } from "./sidebar/PartsTab";
 import { ProjectTab } from "./sidebar/ProjectTab";
 import { ReferencesTab } from "@/features/references/components/ReferencesTab";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 type EditorSidebarProps = {
   project: Project;
@@ -25,33 +26,6 @@ type EditorSidebarProps = {
   onReferenceDeleted: (id: string) => void;
 };
 
-const tabs: Array<{
-  id: EditorSidebarTab;
-  label: string;
-  icon: typeof Box;
-}> = [
-  {
-    id: "parts",
-    label: "Parts",
-    icon: Box,
-  },
-  {
-    id: "palette",
-    label: "Palette",
-    icon: Palette,
-  },
-  {
-    id: "project",
-    label: "Project",
-    icon: FolderCog,
-  },
-  {
-    id: "references",
-    label: "References",
-    icon: Images,
-  },
-];
-
 export function EditorSidebar({
   project,
   isGeneratingThumbnail,
@@ -60,6 +34,8 @@ export function EditorSidebar({
   onOpenReferenceMode,
   onReferenceDeleted,
 }: EditorSidebarProps) {
+  const {t}=useTranslation();
+  const tabs:Array<{id:EditorSidebarTab;label:string;icon:typeof Box}>=[{id:"parts",label:t("editor.tabs.parts"),icon:Box},{id:"palette",label:t("editor.tabs.palette"),icon:Palette},{id:"project",label:t("editor.tabs.project"),icon:FolderCog},{id:"references",label:t("editor.tabs.references"),icon:Images}];
   const activeTab = useModelEditorStore(
     (state) => state.activeSidebarTab,
   );

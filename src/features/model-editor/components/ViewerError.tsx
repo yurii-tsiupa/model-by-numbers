@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   RotateCcw,
 } from "lucide-react";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 type ViewerErrorProps = {
   message?: string;
@@ -9,9 +10,10 @@ type ViewerErrorProps = {
 };
 
 export function ViewerError({
-  message = "The file may be damaged or use an unsupported format.",
+  message,
   onRetry,
 }: ViewerErrorProps) {
+  const {t}=useTranslation();
   return (
     <div className="flex h-full w-full items-center justify-center px-6">
       <div className="max-w-md text-center">
@@ -20,11 +22,11 @@ export function ViewerError({
         </div>
 
         <h2 className="mt-5 text-lg font-semibold text-white">
-          We could not open this model
+          {t("viewer.errorTitle")}
         </h2>
 
         <p className="mt-2 text-sm leading-6 text-neutral-500">
-          {message}
+          {message??t("viewer.errorDescription")}
         </p>
 
         {onRetry ? (
@@ -34,7 +36,7 @@ export function ViewerError({
             className="mt-6 inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.05]"
           >
             <RotateCcw className="h-4 w-4" />
-            Try Again
+            {t("common.retry")}
           </button>
         ) : null}
       </div>

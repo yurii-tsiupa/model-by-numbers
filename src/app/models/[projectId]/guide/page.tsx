@@ -17,6 +17,7 @@ import { useProject } from "@/features/models/hooks/useProject";
 import { useReferenceImages } from "@/features/references/hooks/useReferenceImages";
 import { referencesToGuideImages } from "@/features/references/lib/referenceToDataUrl";
 import type { GuideReferenceImage } from "@/features/guides/types/ModelGuide";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 const EMPTY_GUIDE_IMAGES: GuideImages = {
   original: null,
@@ -52,6 +53,7 @@ export default function GuidePage() {
   const router = useRouter();
   const params = useParams<{ projectId: string }>();
   const { user, isLoading: isAuthLoading } = useAuth();
+  const {locale,t}=useTranslation();
   const projectId = params.projectId;
   const projectQuery = useProject(projectId, user?.uid);
   const referencesQuery=useReferenceImages(projectId);
@@ -73,7 +75,7 @@ export default function GuidePage() {
   if (isAuthLoading || !user) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-white">
-        <Loader label="Checking guide access..." />
+        <Loader label={t("guide.checking")} />
       </main>
     );
   }
@@ -81,7 +83,7 @@ export default function GuidePage() {
   if (projectQuery.isLoading || referencesQuery.isLoading || guideReferences===null) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-white">
-        <Loader label="Loading painting guide..." />
+        <Loader label={t("guide.loading")} />
       </main>
     );
   }
@@ -132,15 +134,15 @@ export default function GuidePage() {
       <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-white">
         <section className="w-full max-w-md rounded-3xl border border-red-400/15 bg-red-400/[0.035] p-8 text-center">
           <ShieldAlert className="mx-auto h-7 w-7 text-red-400" />
-          <h1 className="mt-4 text-xl font-semibold">Guide unavailable</h1>
+          <h1 className="mt-4 text-xl font-semibold">{t("guide.unavailable")}</h1>
           <p className="mt-2 text-sm leading-6 text-neutral-500">
-            You do not have permission to view this project.
+            {t("guide.noPermission")}
           </p>
           <Link
             href="/models"
             className="mt-6 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-medium text-neutral-950"
           >
-            Back to Models
+            {t("guide.backModels")}
           </Link>
         </section>
       </main>
@@ -151,6 +153,7 @@ export default function GuidePage() {
     project,
     parts: project.parts,
     palette: project.palette,
+    locale,
   });
 
   if (!readiness.isReady) {
@@ -170,8 +173,9 @@ export default function GuidePage() {
       capturedProjectId === projectId && capturedImages
         ? capturedImages
         : EMPTY_GUIDE_IMAGES,
-    author: user.displayName?.trim() || "Model by Numbers User",
+    author: user.displayName?.trim() || t("common.user"),
     references: guideReferences,
+    locale,
   });
 
   return <GuidePreview guide={guide} />;

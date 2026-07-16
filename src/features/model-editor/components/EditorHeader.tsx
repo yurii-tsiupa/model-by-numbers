@@ -9,6 +9,8 @@ import {
 import { useRouter } from "next/navigation";
 
 import type { Project } from "@/features/models/types/Project";
+import { LanguageSwitcher } from "@/features/i18n/components/LanguageSwitcher";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 import {
   type EditorSaveStatus,
@@ -23,21 +25,6 @@ type EditorHeaderProps = {
   isGeneratingGuide: boolean;
 };
 
-const statusLabels: Record<Project["status"], string> = {
-  draft: "Draft",
-  processing: "Processing",
-  ready: "Ready",
-  generated: "Generated",
-  archived: "Archived",
-};
-
-const saveStatusLabels: Record<EditorSaveStatus, string> = {
-  saved: "Saved",
-  dirty: "Unsaved changes",
-  saving: "Saving...",
-  error: "Save failed",
-};
-
 export function EditorHeader({
   project,
   onSave,
@@ -46,6 +33,9 @@ export function EditorHeader({
   isGeneratingGuide,
 }: EditorHeaderProps) {
   const router = useRouter();
+  const {t}=useTranslation();
+  const statusLabels:Record<Project["status"],string>={draft:t("status.draft"),processing:t("status.processing"),ready:t("status.ready"),generated:t("status.generated"),archived:t("status.archived")};
+  const saveStatusLabels:Record<EditorSaveStatus,string>={saved:t("editor.saved"),dirty:t("editor.unsaved"),saving:t("editor.saving"),error:t("editor.saveFailed")};
 
   const isDirty = useModelEditorStore(
     (state) => state.isDirty,
@@ -62,7 +52,7 @@ export function EditorHeader({
           <button
             type="button"
             onClick={() => router.push("/models")}
-            aria-label="Back to models"
+            aria-label={t("editor.back")}
             className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/10 text-neutral-400 transition hover:border-white/20 hover:bg-white/[0.05] hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -85,7 +75,7 @@ export function EditorHeader({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2"><LanguageSwitcher/>
           <button
             type="button"
             disabled={!isDirty || saveStatus === "saving"}
@@ -98,7 +88,7 @@ export function EditorHeader({
               <Save className="h-4 w-4" />
             )}
 
-            {saveStatus === "saving" ? "Saving" : "Save"}
+            {saveStatus === "saving" ? t("editor.saving") : t("editor.save")}
           </button>
 
           <button
@@ -115,8 +105,8 @@ export function EditorHeader({
 
             <span className="hidden sm:inline">
               {isGeneratingGuide
-                ? "Preparing Guide..."
-                : "Generate Guide"}
+                ? t("editor.preparing")
+                : t("editor.generate")}
             </span>
           </button>
         </div>

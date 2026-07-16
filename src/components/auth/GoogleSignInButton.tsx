@@ -6,37 +6,39 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
-function getAuthenticationError(error: unknown): string {
+function getAuthenticationError(error: unknown): "auth.genericError"|"auth.popupClosed"|"auth.popupBlocked"|"auth.popupOpen"|"auth.network"|"auth.unauthorized"|"auth.signInFailed" {
   if (!(error instanceof FirebaseError)) {
-    return "Something went wrong. Please try again.";
+    return "auth.genericError";
   }
 
   switch (error.code) {
     case "auth/popup-closed-by-user":
-      return "The sign-in window was closed.";
+      return "auth.popupClosed";
 
     case "auth/popup-blocked":
-      return "The browser blocked the sign-in window.";
+      return "auth.popupBlocked";
 
     case "auth/cancelled-popup-request":
-      return "Another sign-in window is already open.";
+      return "auth.popupOpen";
 
     case "auth/network-request-failed":
-      return "Network error. Check your connection and try again.";
+      return "auth.network";
 
     case "auth/unauthorized-domain":
-      return "This domain is not authorized in Firebase.";
+      return "auth.unauthorized";
 
     default:
       console.error("Google sign-in failed:", error);
-      return "Unable to sign in with Google.";
+      return "auth.signInFailed";
   }
 }
 
 export function GoogleSignInButton() {
   const router = useRouter();
   const { signIn } = useAuth();
+  const {t}=useTranslation();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(
@@ -52,7 +54,7 @@ export function GoogleSignInButton() {
 
       router.replace("/models");
     } catch (error) {
-      setErrorMessage(getAuthenticationError(error));
+      setErrorMessage(t(getAuthenticationError(error)));
     } finally {
       setIsSubmitting(false);
     }
@@ -69,12 +71,12 @@ export function GoogleSignInButton() {
         {isSubmitting ? (
           <>
             <LoaderCircle className="h-5 w-5 animate-spin" />
-            Signing in...
+            {t("auth.signingIn")}
           </>
         ) : (
           <>
             <GoogleIcon />
-            Continue with Google
+            {t("auth.google")}
           </>
         )}
       </button>

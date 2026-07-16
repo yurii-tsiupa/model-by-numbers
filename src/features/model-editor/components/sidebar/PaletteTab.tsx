@@ -19,8 +19,11 @@ import { normalizeHexColor } from "../../lib/normalizeHexColor";
 import { useModelEditorStore } from "../../store/modelEditorStore";
 import { GeneratePaletteModal } from "../modals/GeneratePaletteModal";
 import { DEFAULT_PALETTE_GENERATION_OPTIONS } from "../../constants/defaultPaletteGenerationOptions";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
+import { formatCount } from "@/features/i18n/lib/i18n";
 
 export function PaletteTab() {
+  const {t,locale}=useTranslation();
   const palette = useModelEditorStore(
     (state) => state.palette,
   );
@@ -189,11 +192,11 @@ export function PaletteTab() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-600">
-              Project Colors
+              {t("palette.projectColors")}
             </p>
 
             <h2 className="mt-2 text-lg font-semibold text-white">
-              Palette
+              {t("editor.tabs.palette")}
             </h2>
           </div>
 
@@ -208,7 +211,7 @@ export function PaletteTab() {
           className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:bg-white/[0.05] hover:text-white"
         >
           <Plus className="h-4 w-4" />
-          Add Color
+          {t("palette.addColor")}
         </button>
 
         <button
@@ -225,7 +228,7 @@ export function PaletteTab() {
           className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-orange-500/10 bg-orange-500/[0.03] px-4 py-2.5 text-sm font-medium text-orange-400 transition hover:border-orange-500/25 hover:bg-orange-500/[0.08] hover:text-orange-300 active:scale-[0.98]"
         >
           <Sparkles className="h-4 w-4 shrink-0" />
-          Generate Palette
+          {t("palette.generate")}
         </button>
       </div>
 
@@ -238,10 +241,10 @@ export function PaletteTab() {
             
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-orange-300">
-                Assign Palette Color
+                {t("palette.assignColor")}
               </p>
               <p className="mt-0.5 text-xs text-neutral-400">
-                Selected parts: <span className="font-medium text-neutral-200">{selectedPartIds.length}</span>
+                {t("palette.selectedParts",{count:selectedPartIds.length})}
               </p>
             </div>
           </div>
@@ -255,7 +258,7 @@ export function PaletteTab() {
               }}
               className="cursor-pointer rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-neutral-400 transition hover:bg-white/[0.05] hover:text-neutral-200"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
 
             <button
@@ -278,7 +281,7 @@ export function PaletteTab() {
               className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-orange-400 px-3 py-1.5 text-xs font-semibold text-neutral-950 transition hover:bg-orange-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Check className="h-3.5 w-3.5" />
-              Apply
+              {t("palette.apply")}
             </button>
           </div>
         </div>
@@ -290,15 +293,15 @@ export function PaletteTab() {
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-medium text-white">
                 {isAddingColor
-                  ? "New palette color"
-                  : "Edit palette color"}
+                  ? t("palette.newColor")
+                  : t("palette.editColor")}
               </p>
 
               <button
                 type="button"
                 onClick={closeForm}
                 className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-neutral-500 transition hover:bg-white/[0.05] hover:text-white"
-                aria-label="Close color form"
+                aria-label={t("palette.closeForm")}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -324,7 +327,7 @@ export function PaletteTab() {
                     event.target.value,
                   )
                 }
-                placeholder="Color name"
+                placeholder={t("palette.colorName")}
                 className="h-10 min-w-0 flex-1 rounded-lg border border-white/10 bg-black/20 px-3 text-sm text-white outline-none placeholder:text-neutral-700 focus:border-white/20"
               />
             </div>
@@ -353,8 +356,8 @@ export function PaletteTab() {
                 <Check className="h-4 w-4" />
 
                 {isAddingColor
-                  ? "Add"
-                  : "Save"}
+                  ? t("palette.add")
+                  : t("editor.save")}
               </button>
             </div>
           </div>
@@ -369,12 +372,11 @@ export function PaletteTab() {
             </div>
 
             <p className="mt-4 text-sm font-medium text-neutral-400">
-              No palette yet
+              {t("palette.noPalette")}
             </p>
 
             <p className="mt-1 text-xs leading-5 text-neutral-600">
-              Add a color or assign one to a
-              model part.
+              {t("palette.noPaletteHelp")}
             </p>
           </div>
         </div>
@@ -441,10 +443,7 @@ export function PaletteTab() {
                       </span>
 
                       <span className="mt-1 block text-xs text-neutral-500">
-                        {usageCount}{" "}
-                        {usageCount === 1
-                          ? "part"
-                          : "parts"}
+                        {formatCount(locale,usageCount,"part")}
                       </span>
                     </span>
 
@@ -468,7 +467,7 @@ export function PaletteTab() {
                       className="flex h-8 min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-orange-400/20 bg-orange-400/5 px-3 text-xs font-semibold text-orange-400 transition hover:border-orange-400/40 hover:bg-orange-400/10 disabled:cursor-not-allowed disabled:border-white/5 disabled:bg-transparent disabled:text-neutral-700"
                     >
                       <Layers3 className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">Assign to Parts</span>
+                      <span className="truncate">{t("palette.assignParts")}</span>
                     </button>
 
                     <button
@@ -484,7 +483,7 @@ export function PaletteTab() {
                         setDraftHex(color.hex);
                       }}
                       className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 text-neutral-500 transition hover:border-white/20 hover:bg-white/[0.05] hover:text-white"
-                      aria-label={`Edit ${color.name}`}
+                      aria-label={t("palette.editNamed",{name:color.name})}
                     >
                       <Edit3 className="h-3.5 w-3.5" />
                     </button>
@@ -501,10 +500,10 @@ export function PaletteTab() {
                       }}
                       title={
                         usageCount > 0
-                          ? `Used by ${usageCount} parts`
-                          : "Delete color"
+                          ? t("palette.usedBy",{count:formatCount(locale,usageCount,"part")})
+                          : t("palette.deleteColor")
                       }
-                      aria-label={`Delete ${color.name}`}
+                      aria-label={t("palette.deleteNamed",{name:color.name})}
                       className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 text-neutral-600 transition hover:border-red-400/30 hover:bg-red-400/10 hover:text-red-400 disabled:cursor-not-allowed disabled:border-white/5 disabled:text-neutral-800 disabled:hover:bg-transparent"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

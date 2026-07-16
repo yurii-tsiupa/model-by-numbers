@@ -1,0 +1,3 @@
+"use client";
+import { useTranslation } from "../hooks/useTranslation";
+export function LanguageSwitcher(){const {locale,setLocale,t}=useTranslation();return <div role="group" aria-label={t("language.label")} className="flex rounded-full border border-white/10 bg-black/20 p-1">{(["en","uk"] as const).map(item=><button key={item} type="button" onClick={()=>setLocale(item)} aria-pressed={locale===item} className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${locale===item?"bg-orange-400 text-neutral-950":"text-neutral-400 hover:text-white"}`}>{item==="en"?"EN":"UA"}</button>)}</div>}

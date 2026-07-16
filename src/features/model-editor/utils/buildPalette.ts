@@ -38,7 +38,7 @@ export function buildPalette({
       palette.push({
         id: paletteColorId,
         number: colorNumber,
-        name: `Color ${String(
+        name: `C${String(
           colorNumber,
         ).padStart(2, "0")}`,
         hex,

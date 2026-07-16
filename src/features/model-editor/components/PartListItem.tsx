@@ -10,6 +10,7 @@ import {
   useEffect,
   useRef,
 } from "react";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 type PartListItemProps = {
   index: number;
@@ -34,6 +35,7 @@ export function PartListItem({
   onToggleVisibility,
   onToggleGuideInclusion,
 }: PartListItemProps) {
+  const {t}=useTranslation();
   const itemRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -73,8 +75,8 @@ export function PartListItem({
       <button
         type="button"
         onClick={handleToggleGuideInclusion}
-        aria-label={isIncludedInGuide ? `Exclude ${name} from guide` : `Include ${name} in guide`}
-        title={isIncludedInGuide ? "Exclude from guide" : "Include in guide"}
+        aria-label={isIncludedInGuide ? t("parts.excludeNamed",{name}) : t("parts.includeNamed",{name})}
+        title={isIncludedInGuide ? t("parts.excludeGuide") : t("parts.includeGuide")}
         className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg transition ${isIncludedInGuide ? "text-orange-400 hover:bg-orange-400/10" : "text-neutral-700 hover:bg-white/[0.05] hover:text-neutral-400"}`}
       >
         <FileCheck2 className="h-4 w-4" />
@@ -124,7 +126,7 @@ export function PartListItem({
         type="button"
         onClick={handleToggleVisibility}
         aria-label={
-          isVisible ? `Hide ${name}` : `Show ${name}`
+          isVisible ? t("parts.hideNamed",{name}) : t("parts.showNamed",{name})
         }
         className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg transition ${
           isVisible

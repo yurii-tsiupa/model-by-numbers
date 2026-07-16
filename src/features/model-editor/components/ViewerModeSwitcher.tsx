@@ -9,35 +9,32 @@ import {
 
 import { useModelEditorStore } from "../store/modelEditorStore";
 import type { ViewerMode } from "../types/ViewerMode";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 const viewerModes: Array<{
   id: ViewerMode;
-  label: string;
   icon: typeof Box;
 }> = [
   {
     id: "original",
-    label: "Original",
     icon: Layers3,
   },
   {
     id: "base",
-    label: "Base",
     icon: Box,
   },
   {
     id: "painted",
-    label: "Painted",
     icon: Paintbrush,
   },
   {
     id: "numbers",
-    label: "Numbers",
     icon: Hash,
   },
 ];
 
 export function ViewerModeSwitcher() {
+  const {t}=useTranslation();
   const viewerMode = useModelEditorStore(
     (state) => state.viewerMode,
   );
@@ -60,8 +57,8 @@ export function ViewerModeSwitcher() {
             onClick={() =>
               setViewerMode(mode.id)
             }
-            title={`${mode.label} mode`}
-            aria-label={`${mode.label} mode`}
+            title={t("viewer.mode",{mode:t(`viewer.${mode.id}`)})}
+            aria-label={t("viewer.mode",{mode:t(`viewer.${mode.id}`)})}
             aria-pressed={isActive}
             className={`flex h-9 cursor-pointer items-center gap-2 rounded-full px-3 text-xs font-medium transition ${
               isActive
@@ -72,7 +69,7 @@ export function ViewerModeSwitcher() {
             <Icon className="h-4 w-4" />
 
             <span className="hidden sm:inline">
-              {mode.label}
+              {t(`viewer.${mode.id}`)}
             </span>
           </button>
         );

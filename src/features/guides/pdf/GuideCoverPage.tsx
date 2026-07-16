@@ -12,6 +12,7 @@ import {
   guidePdfStyles,
   pdfColors,
 } from "./guidePdfStyles";
+import { formatLocalizedDate,translate } from "@/features/i18n/lib/i18n";
 
 type GuideCoverPageProps = {
   guide: ModelGuide;
@@ -69,22 +70,23 @@ const styles = StyleSheet.create({
 });
 
 export function GuideCoverPage({ guide }: GuideCoverPageProps) {
+  const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
   const metadata = [
-    ["Author", guide.author],
-    ["Parts", String(guide.partsCount)],
-    ["Colors", String(guide.colorsCount)],
-    ["Printer", guide.printerType.toUpperCase()],
-    ["Material", guide.material.toUpperCase()],
-    ["Generated", guide.generatedAt.toLocaleDateString()],
+    [t("guide.author"), guide.author],
+    [t("guide.parts"), String(guide.partsCount)],
+    [t("guide.usedColors"), String(guide.colorsCount)],
+    [t("guide.printer"), guide.printerType.toUpperCase()],
+    [t("guide.material"), guide.material.toUpperCase()],
+    [t("guide.generated"), formatLocalizedDate(guide.generatedAt,locale)],
   ];
 
   return (
     <Page size="A4" orientation="portrait" style={styles.page}>
       <View>
-        <Text style={styles.brand}>Model by Numbers · Classic</Text><View style={styles.accentRule}/>
+        <Text style={styles.brand}>{t("pdf.brand")}</Text><View style={styles.accentRule}/>
         <View style={styles.titleBlock}>
           <Text style={styles.title}>{guide.title}</Text>
-          <Text style={styles.subtitle}>Painting Guide</Text>
+          <Text style={styles.subtitle}>{t("guide.paintingGuide")}</Text>
         </View>
 
         <View style={styles.imageContainer}>
@@ -93,7 +95,7 @@ export function GuideCoverPage({ guide }: GuideCoverPageProps) {
             // eslint-disable-next-line jsx-a11y/alt-text
             <Image src={guide.images.painted} style={styles.image} />
           ) : (
-            <Text>Painted model view not available</Text>
+            <Text>{t("pdf.missingPainted")}</Text>
           )}
         </View>
 
@@ -106,7 +108,7 @@ export function GuideCoverPage({ guide }: GuideCoverPageProps) {
           ))}
         </View>
       </View>
-      <GuidePageFooter pageNumber={1} />
+      <GuidePageFooter pageNumber={1} locale={locale}/>
     </Page>
   );
 }

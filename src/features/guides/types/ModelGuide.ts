@@ -26,6 +26,7 @@ import type { ReferenceImageType } from "@/features/references/types/ReferenceIm
 export type GuideReferenceImage = { id:string; name:string; type:ReferenceImageType; dataUrl:string; width:number; height:number; };
 
 export type ModelGuide = {
+  locale?: import("@/features/i18n/types/Locale").Locale;
   projectId: string;
   title: string;
   description: string;

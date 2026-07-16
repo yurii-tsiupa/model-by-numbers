@@ -24,6 +24,7 @@ import {
 } from "three";
 
 import type { Project } from "@/features/models/types/Project";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 import { useLocalModelUrl } from "../hooks/useLocalModelUrl";
 import { LoadedModel } from "./LoadedModel";
@@ -168,6 +169,7 @@ export const ModelViewer = forwardRef<
   { project, userId },
   ref,
 ) {
+  const {t}=useTranslation();
   const controlsRef =
     useRef<OrbitControlsImpl | null>(null);
 
@@ -567,7 +569,7 @@ export const ModelViewer = forwardRef<
         </p>
 
         <p className="mt-0.5 truncate text-xs text-neutral-500">
-          {project.originalFileName || "Model file"}
+          {project.originalFileName || t("models.modelFile")}
         </p>
       </div>
 

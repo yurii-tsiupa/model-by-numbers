@@ -22,6 +22,8 @@ import type { ProjectThumbnail } from "../types/ProjectThumbnail";
 import type { GeneratedGuide } from "@/features/guides/types/GeneratedGuide";
 import { getGuideParts } from "@/features/guides/lib/isPartIncludedInGuide";
 import { getGuidePalette } from "@/features/guides/lib/getGuidePalette";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
+import { formatCount,formatLocalizedDate } from "@/features/i18n/lib/i18n";
 
 type ModelCardProps = {
   project: Project;
@@ -32,25 +34,9 @@ type ModelCardProps = {
   isLocalDataLoading: boolean;
 };
 
-const statusLabels: Record<Project["status"], string> = {
-  draft: "Draft",
-  processing: "Processing",
-  ready: "Ready",
-  generated: "Generated",
-  archived: "Archived",
-};
-
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("en", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
-
-function formatFileSize(bytes: number): string {
+function formatFileSize(bytes: number,unknown:string): string {
   if (!bytes) {
-    return "Unknown size";
+    return unknown;
   }
 
   const kilobytes = bytes / 1024;
@@ -72,6 +58,8 @@ export function ModelCard({
   isLocalDataLoading,
 }: ModelCardProps) {
   const router = useRouter();
+  const {t,locale}=useTranslation();
+  const statusLabels:Record<Project["status"],string>={draft:t("status.draft"),processing:t("status.processing"),ready:t("status.ready"),generated:t("status.generated"),archived:t("status.archived")};
 
   const [failedThumbnailUrl, setFailedThumbnailUrl] = useState<string | null>(null);
   const localThumbnailUrl = useMemo(() => thumbnail ? URL.createObjectURL(thumbnail.blob) : null, [thumbnail]);
@@ -111,7 +99,7 @@ export function ModelCard({
     <article
       role="link"
       tabIndex={isDeleting ? -1 : 0}
-      aria-label={`Open ${project.name}`}
+      aria-label={t("models.openProject",{name:project.name})}
       onClick={openProject}
       onKeyDown={handleCardKeyDown}
       className={`group overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.025] transition duration-300 ${
@@ -149,7 +137,7 @@ export function ModelCard({
         <div
           className="absolute bottom-4 right-4 h-5 w-5 rounded-full border border-white/20 shadow-lg shadow-black/40"
           style={{ backgroundColor: project.baseColor }}
-          title={`Base color: ${project.baseColor}`}
+          title={`${t("guide.baseColor")}: ${project.baseColor}`}
         />
       </div>
 
@@ -160,42 +148,42 @@ export function ModelCard({
           </h2>
 
           <p className="mt-1 line-clamp-2 min-h-10 text-sm leading-5 text-neutral-500">
-            {project.description || "No description provided."}
+            {project.description || t("models.noDescription")}
           </p>
         </div>
 
         <div className="mt-5 space-y-2.5 border-t border-white/10 pt-4 text-xs text-neutral-500">
-          <div className="flex items-center justify-between gap-3"><span>{includedParts.length} {includedParts.length === 1 ? "part" : "parts"}</span><span>{usedColors.length} {usedColors.length === 1 ? "color" : "colors"}</span>{latestGuide ? <span>Guide v{latestGuide.version} {latestGuide.status}</span> : null}</div>
+          <div className="flex items-center justify-between gap-3"><span>{formatCount(locale,includedParts.length,"part")}</span><span>{formatCount(locale,usedColors.length,"color")}</span>{latestGuide ? <span>{t("history.version",{version:latestGuide.version})}</span> : null}</div>
           <div className="flex items-center justify-between gap-3">
             <span className="flex min-w-0 items-center gap-2">
               <FileBox className="h-3.5 w-3.5 shrink-0" />
 
               <span className="truncate">
-                {project.originalFileName || "Model file"}
+                {project.originalFileName || t("models.modelFile")}
               </span>
             </span>
 
             <span className="shrink-0">
-              {formatFileSize(project.originalFileSize)}
+              {formatFileSize(project.originalFileSize,t("models.unknownSize"))}
             </span>
           </div>
 
           <div className="flex items-center justify-between gap-3">
             <span className="flex items-center gap-2">
               <CalendarDays className="h-3.5 w-3.5" />
-              Created
+              {t("models.created")}
             </span>
 
-            <span>{formatDate(project.createdAt)}</span>
+            <span>{formatLocalizedDate(project.createdAt,locale,{day:"2-digit",month:"short",year:"numeric"})}</span>
           </div>
 
           <div className="flex items-center justify-between gap-3">
             <span className="flex items-center gap-2">
               <History className="h-3.5 w-3.5" />
-              Updated
+              {t("models.updatedLabel")}
             </span>
 
-            <span>{formatDate(project.updatedAt)}</span>
+            <span>{formatLocalizedDate(project.updatedAt,locale,{day:"2-digit",month:"short",year:"numeric"})}</span>
           </div>
         </div>
 
@@ -210,14 +198,14 @@ export function ModelCard({
             className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Box className="h-4 w-4" />
-            Open
+            {t("common.open")}
           </button>
 
           <button
             type="button"
             disabled={isDeleting}
             onClick={handleDelete}
-            aria-label={`Delete ${project.name}`}
+            aria-label={t("models.deleteProject",{name:project.name})}
             className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/10 text-neutral-500 transition hover:border-red-400/30 hover:bg-red-400/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isDeleting ? (

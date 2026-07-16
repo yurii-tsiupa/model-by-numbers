@@ -5,6 +5,7 @@ import { AuthProvider } from "@/providers/AuthProvider";
 
 import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
+import { I18nProvider } from "@/features/i18n/context/I18nProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +36,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <QueryProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <I18nProvider><AuthProvider>{children}</AuthProvider></I18nProvider>
         </QueryProvider>
       </body>
     </html>

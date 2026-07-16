@@ -6,23 +6,19 @@ import {
   type GuideCaptureStep,
   useGuideGenerationStore,
 } from "../store/guideGenerationStore";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 type GuideCaptureOverlayProps = {
   onRetry: () => void;
   onCancel: () => void;
 };
 
-const captureStepLabels: Record<GuideCaptureStep, string> = {
-  original: "Capturing original view...",
-  base: "Capturing base view...",
-  painted: "Capturing painted view...",
-  numbers: "Capturing numbered view...",
-};
-
 export function GuideCaptureOverlay({
   onRetry,
   onCancel,
 }: GuideCaptureOverlayProps) {
+  const {t}=useTranslation();
+  const captureStepLabels:Record<GuideCaptureStep,string>={original:t("capture.original"),base:t("capture.base"),painted:t("capture.painted"),numbers:t("capture.numbers")};
   const status = useGuideGenerationStore(
     (state) => state.status,
   );
@@ -54,12 +50,12 @@ export function GuideCaptureOverlay({
               <LoaderCircle className="h-6 w-6 animate-spin text-orange-300" />
             </div>
             <h2 className="mt-5 text-xl font-semibold text-white">
-              Preparing your guide
+              {t("capture.title")}
             </h2>
             <p className="mt-2 text-sm text-neutral-400">
               {currentStep
                 ? captureStepLabels[currentStep]
-                : "Preparing model capture..."}
+                : t("capture.preparing")}
             </p>
             <div className="mt-6 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
               <div
@@ -79,10 +75,10 @@ export function GuideCaptureOverlay({
               <CircleAlert className="h-6 w-6 text-red-400" />
             </div>
             <h2 className="mt-5 text-xl font-semibold text-white">
-              We could not prepare the guide preview.
+              {t("capture.failed")}
             </h2>
             <p className="mt-2 text-sm leading-6 text-neutral-500">
-              The model views could not be captured. Please try again.
+              {t("capture.failedDescription")}
             </p>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
               <button
@@ -90,14 +86,14 @@ export function GuideCaptureOverlay({
                 onClick={onRetry}
                 className="flex-1 cursor-pointer rounded-full bg-orange-400 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:bg-orange-300"
               >
-                Try Again
+                {t("common.retry")}
               </button>
               <button
                 type="button"
                 onClick={onCancel}
                 className="flex-1 cursor-pointer rounded-full border border-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.05]"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
             </div>
           </>

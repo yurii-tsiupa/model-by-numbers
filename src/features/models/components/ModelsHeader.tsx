@@ -4,6 +4,8 @@ import type { User } from "firebase/auth";
 import { Box, Plus } from "lucide-react";
 
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { LanguageSwitcher } from "@/features/i18n/components/LanguageSwitcher";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 type ModelsHeaderProps = {
   user: User;
@@ -14,10 +16,11 @@ export function ModelsHeader({
   user,
   onNewProject,
 }: ModelsHeaderProps) {
+  const {t}=useTranslation();
   const fallbackLetter = (
     user.displayName ??
     user.email ??
-    "U"
+    t("common.user")
   )
     .charAt(0)
     .toUpperCase();
@@ -36,10 +39,10 @@ export function ModelsHeader({
             </span>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-4"><LanguageSwitcher/>
             <div className="hidden text-right md:block">
               <p className="max-w-48 truncate text-sm font-medium text-white">
-                {user.displayName ?? "User"}
+                {user.displayName ?? t("common.user")}
               </p>
 
               <p className="max-w-48 truncate text-xs text-neutral-500">
@@ -51,7 +54,7 @@ export function ModelsHeader({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={user.photoURL}
-                alt={user.displayName ?? "User avatar"}
+                alt={user.displayName ?? t("models.avatar")}
                 referrerPolicy="no-referrer"
                 className="h-9 w-9 rounded-full border border-white/10 object-cover"
               />
@@ -70,16 +73,15 @@ export function ModelsHeader({
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-8 sm:flex-row sm:items-end sm:justify-between sm:px-6 lg:px-8">
           <div>
             <p className="text-sm font-medium text-orange-400">
-              Workspace
+              {t("models.workspace")}
             </p>
 
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              My Models
+              {t("models.title")}
             </h1>
 
             <p className="mt-3 max-w-xl text-sm leading-6 text-neutral-400 sm:text-base">
-              Manage your 3D models and build clear painting guides for
-              every project.
+              {t("models.description")}
             </p>
           </div>
 
@@ -89,7 +91,7 @@ export function ModelsHeader({
             className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
           >
             <Plus className="h-4 w-4" />
-            New Project
+            {t("models.new")}
           </button>
         </div>
       </section>

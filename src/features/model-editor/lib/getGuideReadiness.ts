@@ -4,11 +4,14 @@ import type { GuidePartInput } from "@/features/guides/types/GuidePartInput";
 
 import type { GuideReadiness } from "../types/GuideReadiness";
 import { getGuideParts } from "@/features/guides/lib/isPartIncludedInGuide";
+import type { Locale } from "@/features/i18n/types/Locale";
+import { formatCount,translate } from "@/features/i18n/lib/i18n";
 
 type GetGuideReadinessParams = {
   project: Project;
   parts: readonly GuidePartInput[];
   palette: PaletteColor[];
+  locale?:Locale;
 };
 
 const HEX_COLOR_PATTERN =
@@ -18,7 +21,9 @@ export function getGuideReadiness({
   project,
   parts,
   palette,
+  locale="en",
 }: GetGuideReadinessParams): GuideReadiness {
+  const t=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values);
   const includedParts = getGuideParts(parts);
 
   const paletteColorIds = new Set(
@@ -42,90 +47,82 @@ export function getGuideReadiness({
   const checks = [
     {
       id: "model-file" as const,
-      label: "Model file",
+      label: t("readiness.modelFile"),
       description: project.originalFileName
         ? project.originalFileName
-        : "No model file is attached.",
+        : t("readiness.noModel"),
       isComplete: Boolean(
         project.originalFileName,
       ),
     },
     {
       id: "parts" as const,
-      label: "Model parts",
+      label: t("readiness.modelParts"),
       description:
         includedParts.length > 0
-          ? `${includedParts.length} ${includedParts.length === 1 ? "part" : "parts"} included in guide.`
-          : "No parts are included in the guide.",
+          ? t("readiness.included",{count:formatCount(locale,includedParts.length,"part")})
+          : t("readiness.noIncluded"),
       isComplete: includedParts.length > 0,
     },
     {
       id: "palette" as const,
-      label: "Project palette",
+      label: t("readiness.projectPalette"),
       description:
         palette.length > 0
-          ? `${palette.length} ${
-              palette.length === 1
-                ? "color"
-                : "colors"
-            } available.`
-          : "Generate or add palette colors.",
+          ? t("readiness.available",{count:formatCount(locale,palette.length,"color")})
+          : t("readiness.addPalette"),
       isComplete: palette.length > 0,
     },
     {
       id: "painted-parts" as const,
-      label: "Painted parts",
+      label: t("readiness.painted"),
       description:
         paintedIncludedParts.length > 0
-          ? `${paintedIncludedParts.length} of ${includedParts.length} included parts use palette colors.`
-          : "No included parts have palette colors.",
+          ? t("readiness.paintedCount",{painted:paintedIncludedParts.length,total:includedParts.length})
+          : t("readiness.noPainted"),
       isComplete: paintedIncludedParts.length > 0,
     },
     {
       id: "visible-parts-painted" as const,
-      label: "Included parts completed",
+      label: t("readiness.completed"),
       description:
         includedParts.length === 0
-          ? "No parts are included in the guide."
+          ? t("readiness.noIncluded")
           : unpaintedIncludedPartsCount === 0
-            ? "All included parts have colors."
-            : `${unpaintedIncludedPartsCount} included ${
-                unpaintedIncludedPartsCount === 1
-                  ? "part is"
-                  : "parts are"
-              } still unpainted.`,
+            ? t("readiness.allColors")
+            : t("readiness.unpainted",{count:formatCount(locale,unpaintedIncludedPartsCount,"unpaintedPart")}),
       isComplete:
         includedParts.length > 0 &&
         unpaintedIncludedPartsCount === 0,
     },
     {
       id: "base-color" as const,
-      label: "Base color",
+      label: t("guide.baseColor"),
       description: HEX_COLOR_PATTERN.test(
         project.baseColor,
       )
         ? project.baseColor.toUpperCase()
-        : "Select a valid project base color.",
+        : t("readiness.validBase"),
       isComplete: HEX_COLOR_PATTERN.test(
         project.baseColor,
       ),
     },
     {
       id: "printer-type" as const,
-      label: "Printer type",
+      label: t("guide.printer"),
       description: project.printerType
-        ? `Printer type: ${project.printerType.toUpperCase()}.`
-        : "Select a printer type.",
+        ? t("readiness.printerValue",{value:project.printerType.toUpperCase()})
+        : t("readiness.selectPrinter"),
       isComplete: Boolean(
         project.printerType,
       ),
     },
     {
       id: "material" as const,
-      label: "Material",
+      label: t("guide.material"),
       description: project.material
-        ? `Material: ${project.material.toUpperCase()}.`
-        : "Select a printing material.",
+        ? t("readiness.materialValue",{value:project.material.toUpperCase()})
+        : t("readiness.selectMaterial"),
       isComplete: Boolean(project.material),
     },
   ];
