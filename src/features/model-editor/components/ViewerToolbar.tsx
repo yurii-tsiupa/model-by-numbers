@@ -60,7 +60,7 @@ export function ViewerToolbar({
     {
       label: t("viewer.showAll"),
       icon: Eye,
-      disabled: !hasParts || partActionsDisabled,
+      disabled: !hasParts,
       onClick: onShowAll,
     },
     {

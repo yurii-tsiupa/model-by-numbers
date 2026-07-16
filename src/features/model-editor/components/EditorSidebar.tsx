@@ -27,7 +27,8 @@ type EditorSidebarProps = {
   onRegenerateThumbnail: () => void;
   onOpenReferenceMode: (mode: "split" | "reference", preferredReferenceId?: string) => void;
   onReferenceDeleted: (id: string) => void;
-  onShowAssemblyParts: (partIds: string[]) => void;
+  onFocusAssemblyStep: (stepId: string) => void;
+  onExitAssemblyFocus: () => void;
   onCaptureAssemblyImage: (step: AssemblyStep) => Promise<Blob>;
   onDeleteAssemblyImage: (step: AssemblyStep) => Promise<void>;
   onDeleteAssemblyStep: (step: AssemblyStep) => Promise<void>;
@@ -40,7 +41,8 @@ export function EditorSidebar({
   onRegenerateThumbnail,
   onOpenReferenceMode,
   onReferenceDeleted,
-  onShowAssemblyParts,
+  onFocusAssemblyStep,
+  onExitAssemblyFocus,
   onCaptureAssemblyImage,
   onDeleteAssemblyImage,
   onDeleteAssemblyStep,
@@ -96,7 +98,7 @@ export function EditorSidebar({
         <ProjectTab project={project} isGeneratingThumbnail={isGeneratingThumbnail} thumbnailError={thumbnailError} onRegenerateThumbnail={onRegenerateThumbnail} />
       ) : null}
       {activeTab === "references" ? <ReferencesTab projectId={project.id} onOpenReferenceMode={onOpenReferenceMode} onReferenceDeleted={onReferenceDeleted} /> : null}
-      {activeTab === "assembly" ? <AssemblyTab projectId={project.id} onShowParts={onShowAssemblyParts} onCaptureImage={onCaptureAssemblyImage} onDeleteImage={onDeleteAssemblyImage} onDeleteStep={onDeleteAssemblyStep} /> : null}
+      {activeTab === "assembly" ? <AssemblyTab projectId={project.id} onFocusStep={onFocusAssemblyStep} onExitFocus={onExitAssemblyFocus} onCaptureImage={onCaptureAssemblyImage} onDeleteImage={onDeleteAssemblyImage} onDeleteStep={onDeleteAssemblyStep} /> : null}
     </aside>
   );
 }

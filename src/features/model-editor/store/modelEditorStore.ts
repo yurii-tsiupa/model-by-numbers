@@ -26,6 +26,12 @@ export type SelectionMode =
 type ModelEditorState = {
   parts: ModelPart[];
   assemblySteps: AssemblyStep[];
+  focusedAssemblyStepId: string | null;
+  assemblyFocusSnapshot: {
+    partVisibility: Array<{ partId: string; visible: boolean }>;
+    viewerMode: ViewerMode;
+    selectedPartId: string | null;
+  } | null;
   selectedPartId: string | null;
 
   isDirty: boolean;
@@ -93,7 +99,8 @@ type ModelEditorState = {
   deleteAssemblyStep: (stepId: string) => void;
   moveAssemblyStep: (stepId: string, direction: "up" | "down") => void;
   setAssemblyStepImageKey: (stepId: string, imageKey: string | null) => void;
-  showOnlyParts: (partIds: string[]) => void;
+  focusAssemblyStep: (stepId: string) => void;
+  exitAssemblyStepFocus: () => void;
   selectPart: (partId: string | null) => void;
 
   togglePartVisibility: (
@@ -221,6 +228,8 @@ export const useModelEditorStore =
   create<ModelEditorState>()((set) => ({
     parts: [],
     assemblySteps: [],
+    focusedAssemblyStepId: null,
+    assemblyFocusSnapshot: null,
     selectedPartId: null,
 
     palette: [],
@@ -386,15 +395,20 @@ export const useModelEditorStore =
       const partIds = changes.partIds === undefined ? step.partIds : [...new Set(changes.partIds)].filter((id) => validPartIds.has(id));
       if (!title || title.length > 120 || description.length > 1000 || partIds.length === 0) return state;
       if (title === step.title && description === step.description && partIds.length === step.partIds.length && partIds.every((id, index) => id === step.partIds[index])) return state;
+      const focusedPartIds = state.focusedAssemblyStepId === stepId ? new Set(partIds) : null;
       return {
         assemblySteps: state.assemblySteps.map((item) => item.id === stepId ? { ...item, title, description, partIds, updatedAt: new Date().toISOString() } : item),
+        ...(focusedPartIds ? { parts: state.parts.map((part) => ({ ...part, visible: focusedPartIds.has(part.id) })) } : {}),
         ...markStateDirty(state),
       };
     }),
     deleteAssemblyStep: (stepId) => set((state) => {
       if (!state.assemblySteps.some((step) => step.id === stepId)) return state;
+      const snapshot = state.focusedAssemblyStepId === stepId ? state.assemblyFocusSnapshot : null;
+      const visibility = snapshot ? new Map(snapshot.partVisibility.map((item) => [item.partId, item.visible])) : null;
       return {
         assemblySteps: state.assemblySteps.filter((step) => step.id !== stepId).map((step, index) => ({ ...step, order: index + 1 })),
+        ...(snapshot ? { parts: state.parts.map((part) => ({ ...part, visible: visibility?.get(part.id) ?? true })), viewerMode: snapshot.viewerMode, selectedPartId: snapshot.selectedPartId && state.parts.some((part) => part.id === snapshot.selectedPartId && (visibility?.get(part.id) ?? true)) ? snapshot.selectedPartId : null, focusedAssemblyStepId:null, assemblyFocusSnapshot:null } : {}),
         ...markStateDirty(state),
       };
     }),
@@ -411,17 +425,26 @@ export const useModelEditorStore =
       if (!step || step.imageKey === imageKey) return state;
       return { assemblySteps: state.assemblySteps.map((item) => item.id === stepId ? { ...item, imageKey, updatedAt:new Date().toISOString() } : item), ...markStateDirty(state) };
     }),
-    showOnlyParts: (partIds) => set((state) => {
-      const ids = new Set(partIds);
-      const hasChanges = state.parts.some((part) => part.visible !== ids.has(part.id));
-      const firstPartId = state.parts.find((part) => ids.has(part.id))?.id ?? null;
-      return {
-        parts: hasChanges ? state.parts.map((part) => ({ ...part, visible: ids.has(part.id) })) : state.parts,
-        viewerMode: "exploded",
-        isExplodedLayoutEditing: false,
-        selectedPartId: firstPartId,
-        ...(hasChanges ? markStateDirty(state) : {}),
+    focusAssemblyStep: (stepId) => set((state) => {
+      const step = state.assemblySteps.find((item) => item.id === stepId);
+      if (!step) return state;
+      const existingIds = new Set(state.parts.map((part) => part.id));
+      const focusedIds = new Set(step.partIds.filter((id) => existingIds.has(id)));
+      if (focusedIds.size === 0) return state;
+      const snapshot = state.assemblyFocusSnapshot ?? {
+        partVisibility: state.parts.map((part) => ({ partId: part.id, visible: part.visible })),
+        viewerMode: state.viewerMode,
+        selectedPartId: state.selectedPartId,
       };
+      return { focusedAssemblyStepId:stepId, assemblyFocusSnapshot:snapshot, viewerMode:"exploded", isExplodedLayoutEditing:false, selectedPartId:state.parts.find((part)=>focusedIds.has(part.id))?.id??null, parts:state.parts.map((part)=>({...part,visible:focusedIds.has(part.id)})) };
+    }),
+    exitAssemblyStepFocus: () => set((state) => {
+      if (!state.assemblyFocusSnapshot) return state;
+      const snapshot=state.assemblyFocusSnapshot;
+      const visibility=new Map(snapshot.partVisibility.map((item)=>[item.partId,item.visible]));
+      const restoredParts=state.parts.map((part)=>({...part,visible:visibility.get(part.id)??true}));
+      const selectedPartId=snapshot.selectedPartId&&restoredParts.some((part)=>part.id===snapshot.selectedPartId&&part.visible)?snapshot.selectedPartId:null;
+      return {parts:restoredParts,viewerMode:snapshot.viewerMode,selectedPartId,focusedAssemblyStepId:null,assemblyFocusSnapshot:null,isExplodedLayoutEditing:false};
     }),
 
     setPartIncludedInGuide: (partId, included) => {
@@ -933,6 +956,8 @@ export const useModelEditorStore =
       set({
         parts: [],
         assemblySteps: [],
+        focusedAssemblyStepId: null,
+        assemblyFocusSnapshot: null,
         selectedPartId: null,
         palette: [],
         activeSidebarTab: "parts",

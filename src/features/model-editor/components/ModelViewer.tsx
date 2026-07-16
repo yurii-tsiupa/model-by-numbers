@@ -184,6 +184,9 @@ export const ModelViewer = forwardRef<
 ) {
   const {t}=useTranslation();
   const isExplodedLayoutEditing = useModelEditorStore((state) => state.isExplodedLayoutEditing);
+  const focusedAssemblyStepId = useModelEditorStore((state) => state.focusedAssemblyStepId);
+  const focusedAssemblyStep = useModelEditorStore((state) => state.assemblySteps.find((step) => step.id === state.focusedAssemblyStepId));
+  const exitAssemblyStepFocus = useModelEditorStore((state) => state.exitAssemblyStepFocus);
   const controlsRef =
     useRef<OrbitControlsImpl | null>(null);
 
@@ -603,6 +606,7 @@ export const ModelViewer = forwardRef<
       <div className="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center px-4">
         <ViewerModeSwitcher />
       </div>
+      {focusedAssemblyStep ? <div role="status" className="absolute left-1/2 top-20 z-20 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-orange-400/30 bg-black/80 px-4 py-2 shadow-xl backdrop-blur"><div><p className="text-xs font-semibold text-orange-200">{t("assembly.focus.bannerTitle",{number:String(focusedAssemblyStep.order).padStart(2,"0")})}</p><p className="text-[10px] text-neutral-400">{t("assembly.focus.bannerDescription")}</p></div><button type="button" onClick={exitAssemblyStepFocus} className="rounded-lg bg-orange-400 px-3 py-1.5 text-xs font-semibold text-black">{t("assembly.focus.exit")}</button></div>:null}
 
       {shouldShowNumbersHint ? (
         <div className="pointer-events-none absolute inset-x-0 top-20 z-10 flex justify-center px-4">
@@ -628,10 +632,10 @@ export const ModelViewer = forwardRef<
         isGridVisible={isGridVisible}
         hasParts={parts.length > 0}
         hasSelectedPart={Boolean(selectedPartId)}
-        partActionsDisabled={isExplodedLayoutEditing}
+        partActionsDisabled={isExplodedLayoutEditing || Boolean(focusedAssemblyStepId)}
         onResetCamera={handleResetCamera}
         onFitModel={handleFitModel}
-        onShowAll={showAllParts}
+        onShowAll={() => { if (focusedAssemblyStepId) exitAssemblyStepFocus(); showAllParts(); }}
         onHideSelected={hideSelectedPart}
         onIsolateSelected={isolateSelectedPart}
         onToggleGrid={() =>
