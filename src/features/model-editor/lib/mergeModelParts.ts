@@ -5,19 +5,21 @@ import type { ModelPart } from "../types/ModelPart";
 export function mergeModelParts(
   extractedParts: ModelPart[],
   savedParts: ProjectPart[],
+  authoritativeImport = false,
 ): ModelPart[] {
   const savedPartsById = new Map(
     savedParts.map((part) => [part.id, part]),
   );
 
-  return extractedParts.map((part) => {
-    const savedPart = savedPartsById.get(part.id);
+  const savedPartsByMeshUuid = new Map(savedParts.filter(part=>part.meshUuid).map(part=>[part.meshUuid,part]));
+  return extractedParts.flatMap((part) => {
+    const savedPart = savedPartsByMeshUuid.get(part.meshUuid) ?? savedPartsById.get(part.id);
 
     if (!savedPart) {
-      return part;
+      return authoritativeImport ? [] : [part];
     }
 
-    return {
+    return [{
       ...part,
       name: savedPart.name || part.name,
       visible: savedPart.visible,
@@ -31,6 +33,6 @@ export function mergeModelParts(
       paletteColorId:
         savedPart.paletteColorId ?? null,
       explodedOffset: savedPart.explodedOffset ?? null,
-    };
+    }];
   });
 }

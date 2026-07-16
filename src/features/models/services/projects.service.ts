@@ -63,6 +63,7 @@ function mapProjectDocument(
     parts: Array.isArray(data.parts)
       ? data.parts.map((part: Partial<ProjectPart>) => ({
           id: String(part.id ?? ""),
+          meshUuid: typeof part.meshUuid === "string" ? part.meshUuid : undefined,
           name: String(part.name ?? "Unnamed part"),
           visible: part.visible !== false,
           includeInGuide: part.includeInGuide !== false,
@@ -138,6 +139,7 @@ function mapProjectDocument(
           imageContentVersion: typeof step.imageContentVersion === "number" && Number.isInteger(step.imageContentVersion) && step.imageContentVersion > 0 ? step.imageContentVersion : (typeof step.imageKey === "string" ? 1 : null),
         }))
       : [],
+    importSchemaVersion: data.importSchemaVersion === 1 ? 1 : undefined,
 
     createdAt:
       data.createdAt instanceof Timestamp
@@ -212,6 +214,8 @@ export async function createProject({
   printerType,
   material,
   baseColor,
+  parts,
+  importSchemaVersion,
   onUploadProgress,
 }: CreateProjectParams): Promise<Project> {
   const trimmedName = name.trim();
@@ -251,7 +255,8 @@ export async function createProject({
     material,
     baseColor,
 
-    parts: [],
+    parts: parts ?? [],
+    importSchemaVersion: importSchemaVersion ?? null,
     palette: [],
     assemblySteps: [],
 

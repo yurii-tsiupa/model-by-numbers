@@ -37,6 +37,7 @@ export type Project = {
   parts: ProjectPart[];
   palette: PaletteColor[];
   assemblySteps: AssemblyStep[];
+  importSchemaVersion?: 1;
 
   createdAt: Date;
   updatedAt: Date;
@@ -53,4 +54,6 @@ export type CreateProjectInput = {
   printerType: PrinterType;
   material: ProjectMaterial;
   baseColor: string;
+  parts?: ProjectPart[];
+  importSchemaVersion?: 1;
 };

@@ -4,7 +4,7 @@ import { uk } from "../locales/uk";
 import type { Locale } from "../types/Locale";
 const dictionaries={en,uk};
 export type TranslationValues=Readonly<Record<string,string|number>>;
-export function translate(locale:Locale|undefined,key:TranslationKey,values?:TranslationValues){let text:string=dictionaries[locale??DEFAULT_LOCALE][key];for(const [name,value] of Object.entries(values??{}))text=text.replaceAll(`{${name}}`,String(value));return text;}
+export function translate(locale:Locale|undefined,key:TranslationKey,values?:TranslationValues){const dictionary=dictionaries[locale??DEFAULT_LOCALE] as Partial<Record<TranslationKey,string>>;let text=dictionary[key]??en[key]??key;for(const [name,value] of Object.entries(values??{}))text=text.replaceAll(`{${name}}`,String(value));return text;}
 export const formatLocalizedDate=(value:Date,locale:Locale|undefined,options?:Intl.DateTimeFormatOptions)=>new Intl.DateTimeFormat(INTL_LOCALES[locale??DEFAULT_LOCALE],options).format(value);
 export const formatLocalizedNumber=(value:number,locale:Locale|undefined)=>new Intl.NumberFormat(INTL_LOCALES[locale??DEFAULT_LOCALE]).format(value);
 export function plural(locale:Locale,count:number,forms:{one:string;few?:string;many:string}){const category=new Intl.PluralRules(INTL_LOCALES[locale]).select(count);return category==="one"?forms.one:category==="few"?(forms.few??forms.many):forms.many;}

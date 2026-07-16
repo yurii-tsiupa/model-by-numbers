@@ -70,6 +70,7 @@ type SceneProps = {
   isGridVisible: boolean;
   onModelReady: (model: Object3D) => void;
   savedParts: Project["parts"];
+  importSchemaVersion?: 1;
   baseColor: string;
   viewerMode: ViewerMode;
   showAllNumberCalloutsForCapture: boolean;
@@ -81,6 +82,7 @@ type SceneProps = {
 function Scene({
   modelUrl,
   savedParts,
+  importSchemaVersion,
   controlsRef,
   isGridVisible,
   onModelReady,
@@ -121,6 +123,7 @@ function Scene({
         <LoadedModel
           modelUrl={modelUrl}
           savedParts={savedParts}
+          importSchemaVersion={importSchemaVersion}
           viewerMode={viewerMode}
           baseColor={baseColor}
           onModelReady={onModelReady}
@@ -624,6 +627,7 @@ export const ModelViewer = forwardRef<
             <Scene
               modelUrl={localModel.modelUrl}
               savedParts={project.parts}
+              importSchemaVersion={project.importSchemaVersion}
               viewerMode={viewerMode}
               baseColor={project.baseColor}
               controlsRef={controlsRef}

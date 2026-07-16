@@ -2,6 +2,7 @@ import type { ExplodedOffset } from "@/features/model-editor/types/ExplodedOffse
 
 export type ProjectPart = {
   id: string;
+  meshUuid?: string;
   name: string;
   visible: boolean;
   includeInGuide: boolean;

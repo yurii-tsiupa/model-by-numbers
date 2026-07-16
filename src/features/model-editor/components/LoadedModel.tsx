@@ -38,6 +38,7 @@ import {MAX_EXPLODED_OFFSET} from "../lib/exploded/exploded.constants";
 type LoadedModelProps = {
   modelUrl: string;
   savedParts: ProjectPart[];
+  importSchemaVersion?: 1;
   viewerMode: ViewerMode;
   baseColor: string;
   showAllNumberCalloutsForCapture: boolean;
@@ -53,6 +54,7 @@ type LoadedModelProps = {
 export function LoadedModel({
   modelUrl,
   savedParts,
+  importSchemaVersion,
   viewerMode,
   baseColor,
   showAllNumberCalloutsForCapture,
@@ -223,11 +225,12 @@ export function LoadedModel({
     const mergedParts = mergeModelParts(
       extractedParts,
       savedParts,
+      importSchemaVersion === 1,
     );
 
     setParts(mergedParts);
     hasInitializedPartsRef.current = true;
-  }, [model, savedParts, setParts]);
+  }, [importSchemaVersion, model, savedParts, setParts]);
 
   useEffect(() => {
     onModelReady?.(model);
@@ -243,6 +246,7 @@ export function LoadedModel({
       selectedPartId,
       selectedPartIds,
       highlightedPaletteColorId,
+      hideUnmappedMeshes: importSchemaVersion === 1,
     });
   }, [
     model,
@@ -253,6 +257,7 @@ export function LoadedModel({
     selectedPartId,
     selectedPartIds,
     highlightedPaletteColorId,
+    importSchemaVersion,
   ]);
 
   useEffect(() => {

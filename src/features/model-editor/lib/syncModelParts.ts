@@ -173,6 +173,7 @@ export function syncModelParts({
   selectedPartId,
   selectedPartIds,
   highlightedPaletteColorId,
+  hideUnmappedMeshes = false,
 }: {
   model: Object3D;
   parts: ModelPart[];
@@ -182,6 +183,7 @@ export function syncModelParts({
   selectedPartId: string | null;
   selectedPartIds: string[];
   highlightedPaletteColorId: string | null;
+  hideUnmappedMeshes?: boolean;
 }): void {
   const paletteById = new Map(
     palette.map((color) => [
@@ -207,6 +209,7 @@ export function syncModelParts({
     );
 
     if (!part) {
+      if (hideUnmappedMeshes) object.visible = false;
       return;
     }
 

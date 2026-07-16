@@ -73,7 +73,7 @@ export function NewProjectModal({
 
   const isSubmitting = createProjectMutation.isPending;
   const isAnalysisRunning = modelImport.status === "reading" || modelImport.status === "parsing" || modelImport.status === "analyzing";
-  const isAnalysisReady = modelImport.status === "review" && modelImport.analysis !== null && modelImport.errors.length === 0 && (modelImport.analysis.performanceLevel !== "very-heavy" || hasConfirmedHeavyModel);
+  const isAnalysisReady = modelImport.status === "review" && modelImport.analysis !== null && modelImport.errors.length === 0 && modelImport.reviewedPartsValid && (modelImport.analysis.performanceLevel !== "very-heavy" || hasConfirmedHeavyModel);
 
   useEffect(() => {
     if (!isOpen) {
@@ -135,7 +135,7 @@ export function NewProjectModal({
     } else if (modelImport.status === "error") {
       nextErrors.file = t("modelImport.validation.analysisFailed");
     } else if (!isAnalysisReady) {
-      nextErrors.file = t("modelImport.validation.analysisRequired");
+      nextErrors.file = !modelImport.reviewedParts.some(part=>part.includeInProject) ? t("modelImport.partsReview.validation.none") : modelImport.reviewedParts.some(part=>part.includeInProject&&!part.editedName.trim()) ? t("modelImport.partsReview.validation.names") : t("modelImport.validation.analysisRequired");
     }
 
     setErrors(nextErrors);
@@ -162,6 +162,8 @@ export function NewProjectModal({
         material,
         baseColor,
         file,
+        importSchemaVersion: 1,
+        parts: modelImport.reviewedParts.filter(part=>part.includeInProject).map((part)=>({id:`part-${Math.max(0,Number(part.id.slice(5))-1)}`,meshUuid:part.meshUuid,name:part.editedName.trim().replace(/\s+/g," "),visible:true,includeInGuide:true,color:null,paletteColorId:null,explodedOffset:null})),
         onUploadProgress: setUploadProgress,
       });
 
@@ -404,12 +406,13 @@ export function NewProjectModal({
               </p>
 
               <ModelImportFlow
-                file={file} status={modelImport.status} progress={modelImport.progress} stage={modelImport.currentStage} analysis={modelImport.analysis} warnings={modelImport.warnings} errors={modelImport.errors} disabled={isSubmitting} heavyConfirmed={hasConfirmedHeavyModel}
+                file={file} status={modelImport.status} progress={modelImport.progress} stage={modelImport.currentStage} analysis={modelImport.analysis} warnings={modelImport.warnings} errors={modelImport.errors} importedModel={modelImport.importedModel} reviewedParts={modelImport.reviewedParts} disabled={isSubmitting} heavyConfirmed={hasConfirmedHeavyModel}
                 onFileSelected={(selectedFile) => { setFile(selectedFile); setHasConfirmedHeavyModel(false); setErrors(current => ({ ...current, file: undefined })); void modelImport.startImport(selectedFile); }}
                 onChooseAnother={() => { setFile(null); setHasConfirmedHeavyModel(false); modelImport.resetImport(); setErrors(current => ({ ...current, file: undefined })); }}
                 onTryAgain={() => { if (file) void modelImport.startImport(file); }}
                 onCancelAnalysis={() => { modelImport.cancelImport(); setFile(null); }}
                 onConfirmHeavy={() => setHasConfirmedHeavyModel(true)}
+                onUpdatePart={modelImport.updateReviewedPart} onBulkParts={modelImport.setReviewedInclusion} onResetParts={modelImport.resetReviewedParts} onApplySuggestedNames={modelImport.applySuggestedNames}
               />
               {errors.file ? <p className="mt-2 text-sm text-red-400">{errors.file}</p> : null}
             </div>
