@@ -23,7 +23,7 @@ export function useCreateProject(userId: string | undefined) {
     mutationFn: (variables: CreateProjectVariables) =>
       createProject(variables),
 
-    onSuccess: async (createdProject) => {
+    onSuccess: (createdProject) => {
       if (!userId) {
         return;
       }
@@ -45,8 +45,10 @@ export function useCreateProject(userId: string | undefined) {
         },
       );
 
-      await queryClient.invalidateQueries({
-        queryKey,
+      void queryClient.invalidateQueries({ queryKey }).catch((error: unknown) => {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("Project was created, but the project list refresh failed.", error);
+        }
       });
     },
   });

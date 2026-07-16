@@ -12,6 +12,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   DEFAULT_PROJECT_COLOR,
@@ -36,6 +37,12 @@ import { createTransformedGlbFile } from "@/features/model-import/lib/createTran
 import type { ImportPreviewCapture } from "@/features/model-import/context/ImportTransformPreviewContext";
 import { useSaveProjectThumbnail } from "../hooks/useSaveProjectThumbnail";
 import { createThumbnailBlob } from "../lib/createThumbnailBlob";
+import { ModelImportStepper, type ImportStepId } from "@/features/model-import/components/ModelImportStepper";
+import { ModelImportFinalSummary } from "@/features/model-import/components/ModelImportFinalSummary";
+import { getModelGuideCapabilities } from "@/features/model-import/lib/getModelGuideCapabilities";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import { buildInitialProjectParts } from "../lib/buildInitialProjectParts";
+import { isValidProjectImport } from "../lib/validateProjectImport";
 
 type NewProjectModalProps = {
   userId: string;
@@ -53,14 +60,6 @@ type FormErrors = {
 const INITIAL_PRINTER_TYPE: PrinterType = "fdm";
 const INITIAL_MATERIAL: ProjectMaterial = "pla";
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Unable to create the project. Please try again.";
-}
-
 export function NewProjectModal({
   userId,
   isOpen,
@@ -68,11 +67,13 @@ export function NewProjectModal({
   onThumbnailWarning,
 }: NewProjectModalProps) {
   const { t } = useTranslation();
+  const router = useRouter();
   const createProjectMutation = useCreateProject(userId);
   const modelImport = useModelImport();
   const importTransform = useImportTransform(modelImport.analysis, modelImport.orientationSuggestion);
   const saveThumbnail = useSaveProjectThumbnail();
   const importPreviewCaptureRef = useRef<ImportPreviewCapture | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -88,12 +89,17 @@ export function NewProjectModal({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState<FormErrors>({});
   const [creationStage,setCreationStage]=useState<"idle"|"creating"|"thumbnail"|"opening">("idle");
+  const [showDiscardConfirmation,setShowDiscardConfirmation]=useState(false);
   const includedMeshUuids=useMemo(()=>new Set(modelImport.reviewedParts.filter(part=>part.includeInProject).map(part=>part.meshUuid)),[modelImport.reviewedParts]);
   const importUnits = useImportUnits(modelImport.analysis, modelImport.importedModel?.scene??null, importTransform.transform, includedMeshUuids);
 
   const isSubmitting = createProjectMutation.isPending || creationStage !== "idle";
   const isAnalysisRunning = modelImport.status === "reading" || modelImport.status === "parsing" || modelImport.status === "analyzing";
   const isAnalysisReady = modelImport.status === "review" && modelImport.analysis !== null && modelImport.errors.length === 0 && modelImport.reviewedPartsValid && importUnits.modelUnits !== null && importUnits.originalDimensions !== null && (modelImport.analysis.performanceLevel !== "very-heavy" || hasConfirmedHeavyModel);
+  const currentStep:ImportStepId=!file?(name.trim()?"model":"details"):isAnalysisRunning?"analysis":modelImport.status!=="review"?"model":isAnalysisReady?"review":"parts";
+  const availableSteps=useMemo(()=>new Set<ImportStepId>(["details","model",...(file?["analysis" as const]:[]),...(modelImport.status==="review"?["parts" as const,"adjust" as const]:[]),...(isAnalysisReady?["review" as const]:[])]),[file,isAnalysisReady,modelImport.status]);
+  const guideCapabilities=useMemo(()=>modelImport.importedModel?getModelGuideCapabilities({formatCapabilities:modelImport.importedModel.capabilities,includedPartsCount:modelImport.reviewedParts.filter(part=>part.includeInProject).length}):[],[modelImport.importedModel,modelImport.reviewedParts]);
+  const hasMeaningfulChanges=Boolean(name||description||file);
 
   useEffect(() => {
     if (!isOpen) {
@@ -102,18 +108,21 @@ export function NewProjectModal({
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape" && !isSubmitting) {
-        onClose();
+        if(hasMeaningfulChanges)setShowDiscardConfirmation(true);else onClose();
       }
+      if(event.key==="Tab"&&dialogRef.current){const elements=[...dialogRef.current.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(element=>element.offsetParent!==null);if(!elements.length)return;const first=elements[0],last=elements[elements.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}
     }
 
     document.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
+    const focusFrame=requestAnimationFrame(()=>{if(dialogRef.current&&!dialogRef.current.contains(document.activeElement))dialogRef.current.querySelector<HTMLElement>('input:not([disabled]),button:not([disabled])')?.focus();});
 
     return () => {
+      cancelAnimationFrame(focusFrame);
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-  }, [isOpen, isSubmitting, onClose]);
+  }, [hasMeaningfulChanges, isOpen, isSubmitting, onClose]);
 
   function resetForm() {
     setName("");
@@ -137,18 +146,19 @@ export function NewProjectModal({
       return;
     }
 
-    resetForm();
-    onClose();
+    if(hasMeaningfulChanges){setShowDiscardConfirmation(true);return;}
+    resetForm();onClose();
   }
+  function confirmClose(){setShowDiscardConfirmation(false);resetForm();onClose();}
+  function scrollToStep(step:ImportStepId){const ids:Record<ImportStepId,string>={details:"project-details-section",model:"model-file-section",analysis:"import-step-analysis",parts:"import-step-parts",adjust:"import-transform-panel",review:"import-step-review"};document.getElementById(ids[step])?.scrollIntoView({behavior:"smooth",block:"start"});}
 
   function validateForm(): boolean {
     const nextErrors: FormErrors = {};
 
     if (!name.trim()) {
-      nextErrors.name = "Project name is required.";
+      nextErrors.name = t("modelImport.form.nameRequired");
     } else if (name.trim().length > 80) {
-      nextErrors.name =
-        "Project name must not exceed 80 characters.";
+      nextErrors.name = t("modelImport.form.nameTooLong");
     }
 
     if (!file) {
@@ -173,12 +183,25 @@ export function NewProjectModal({
       return;
     }
 
+    let failedStage: Exclude<typeof creationStage, "idle"> = "creating";
+
     try {
       setErrors({});
       setUploadProgress(0);
       setCreationStage("creating");
 
-      if (!modelImport.importedModel || !importUnits.modelUnits || !importUnits.originalDimensions) return;
+      if (
+        !modelImport.importedModel ||
+        !importUnits.modelUnits ||
+        !importUnits.originalDimensions ||
+        !isValidProjectImport(
+          importTransform.transform,
+          importUnits.originalDimensions,
+        )
+      ) {
+        throw new Error("invalid-import-settings");
+      }
+
       const transformedFile = await createTransformedGlbFile(file, modelImport.importedModel, importTransform.transform);
       const createdProject=await createProjectMutation.mutateAsync({
         userId,
@@ -192,20 +215,29 @@ export function NewProjectModal({
         modelUnits: importUnits.modelUnits,
         originalDimensions: importUnits.originalDimensions,
         importSchemaVersion: 1,
-        parts: modelImport.reviewedParts.filter(part=>part.includeInProject).map((part)=>({id:`part-${Math.max(0,Number(part.id.slice(5))-1)}`,meshUuid:part.meshUuid,sourcePartKey:modelImport.importedModel?.format==="stl"?"stl:0":undefined,name:part.editedName.trim().replace(/\s+/g," "),visible:true,includeInGuide:true,color:null,paletteColorId:null,explodedOffset:null})),
+        parts: buildInitialProjectParts(modelImport.reviewedParts),
         onUploadProgress: setUploadProgress,
       });
 
+      failedStage = "thumbnail";
       setCreationStage("thumbnail");
-      try{const capture=importPreviewCaptureRef.current;if(!capture)throw new Error("Preview unavailable");const dataUrl=await capture();const image=await createThumbnailBlob(dataUrl);const now=new Date();await saveThumbnail.mutateAsync({projectId:createdProject.id,...image,createdAt:now,updatedAt:now});}catch{onThumbnailWarning?.();console.warn("Initial project thumbnail generation failed.");}
+      try{const capture=importPreviewCaptureRef.current;if(!capture)throw new Error("Preview unavailable");const dataUrl=await capture();const image=await createThumbnailBlob(dataUrl);const now=new Date();await saveThumbnail.mutateAsync({projectId:createdProject.id,...image,createdAt:now,updatedAt:now});}catch(error){onThumbnailWarning?.();if(process.env.NODE_ENV!=="production")console.error("Project created, but its initial thumbnail could not be saved.",error);}
+      failedStage = "opening";
       setCreationStage("opening");
 
       resetForm();
       onClose();
+      router.push(`/models/${createdProject.id}`);
     } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error(`Project creation failed during the ${failedStage} stage.`, error);
+      }
       setCreationStage("idle");
       setErrors({
-        submit: getErrorMessage(error),
+        submit:
+          error instanceof Error && error.message === "invalid-import-settings"
+            ? t("modelImport.form.invalidSettings")
+            : t("modelImport.form.createFailed"),
       });
     }
   }
@@ -224,26 +256,27 @@ export function NewProjectModal({
       }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="new-project-title"
-        className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] border border-white/10 bg-neutral-950 shadow-2xl shadow-black/70 sm:rounded-[2rem]"
+        className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-neutral-950 shadow-2xl shadow-black/70 sm:rounded-[2rem]"
       >
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/10 bg-neutral-950/95 px-6 py-5 backdrop-blur-xl sm:px-8">
           <div>
             <p className="text-sm font-medium text-orange-400">
-              New project
+              {t("modelImport.modal.eyebrow")}
             </p>
 
             <h2
               id="new-project-title"
               className="mt-1 text-2xl font-semibold tracking-tight text-white"
             >
-              Add a 3D model
+              {t("modelImport.modal.title")}
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-neutral-500">
-              {t("modelImport.upload.modalDescription")}
+              {t("modelImport.modal.description")}
             </p>
           </div>
 
@@ -251,21 +284,23 @@ export function NewProjectModal({
             type="button"
             disabled={isSubmitting}
             onClick={handleClose}
-            aria-label="Close modal"
+            aria-label={t("modelImport.modal.close")}
             className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/10 text-neutral-400 transition hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-6 px-6 py-6 sm:px-8">
-            <div>
+        <div className="border-b border-white/10 bg-neutral-950/90 px-6 pb-4 sm:px-8"><ModelImportStepper current={currentStep} available={availableSteps} onSelect={scrollToStep}/></div>
+
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-6 sm:px-8">
+            <div id="project-details-section" className="scroll-mt-40">
               <label
                 htmlFor="project-name"
                 className="text-sm font-medium text-neutral-200"
               >
-                Project name
+                {t("modelImport.form.projectName")}
               </label>
 
               <input
@@ -274,7 +309,7 @@ export function NewProjectModal({
                 value={name}
                 disabled={isSubmitting}
                 maxLength={80}
-                placeholder="For example: Space Marine"
+                placeholder={t("modelImport.form.namePlaceholder")}
                 onChange={(event) => {
                   setName(event.target.value);
 
@@ -308,7 +343,7 @@ export function NewProjectModal({
                 htmlFor="project-description"
                 className="text-sm font-medium text-neutral-200"
               >
-                Description
+                {t("modelImport.form.description")}
               </label>
 
               <textarea
@@ -317,7 +352,7 @@ export function NewProjectModal({
                 disabled={isSubmitting}
                 maxLength={500}
                 rows={4}
-                placeholder="A short description of your model..."
+                placeholder={t("modelImport.form.descriptionPlaceholder")}
                 onChange={(event) =>
                   setDescription(event.target.value)
                 }
@@ -335,7 +370,7 @@ export function NewProjectModal({
                   htmlFor="printer-type"
                   className="text-sm font-medium text-neutral-200"
                 >
-                  Printer type
+                  {t("guide.printer")}
                 </label>
 
                 <select
@@ -354,7 +389,7 @@ export function NewProjectModal({
                       key={option.value}
                       value={option.value}
                     >
-                      {option.label}
+                      {t(`domain.${option.value}`)}
                     </option>
                   ))}
                 </select>
@@ -365,7 +400,7 @@ export function NewProjectModal({
                   htmlFor="project-material"
                   className="text-sm font-medium text-neutral-200"
                 >
-                  Material
+                  {t("guide.material")}
                 </label>
 
                 <select
@@ -384,7 +419,7 @@ export function NewProjectModal({
                       key={option.value}
                       value={option.value}
                     >
-                      {option.label}
+                      {t(`domain.${option.value}`)}
                     </option>
                   ))}
                 </select>
@@ -396,7 +431,7 @@ export function NewProjectModal({
                 htmlFor="base-color"
                 className="text-sm font-medium text-neutral-200"
               >
-                Base color
+                {t("guide.baseColor")}
               </label>
 
               <div className="mt-2 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
@@ -429,14 +464,14 @@ export function NewProjectModal({
                     }
                   }}
                   className="min-w-0 flex-1 bg-transparent text-sm uppercase text-white outline-none disabled:cursor-not-allowed"
-                  aria-label="Base color hexadecimal value"
+                  aria-label={t("modelImport.form.baseColorHex")}
                 />
               </div>
             </div>
 
-            <div>
+            <div id="model-file-section" className="scroll-mt-40">
               <p className="mb-2 text-sm font-medium text-neutral-200">
-                Model file
+                {t("modelImport.form.modelFile")}
               </p>
 
               <ImportTransformPreviewProvider transform={importTransform.transform} includedMeshUuids={includedMeshUuids} captureRef={importPreviewCaptureRef}>{modelImport.status==="review"?<OrientationSuggestionBanner suggestion={modelImport.orientationSuggestion} hasManualOverride={importTransform.hasManualOrientationOverride} onReset={importTransform.resetSuggestedOrientation} onReview={()=>document.getElementById("import-transform-panel")?.scrollIntoView({behavior:"smooth",block:"start"})}/>:null}<ModelImportFlow
@@ -451,6 +486,8 @@ export function NewProjectModal({
               />{modelImport.status==="review"&&modelImport.analysis&&importTransform.bounds?<div id="import-transform-panel" className="scroll-mt-24"><ImportTransformPanel analysis={modelImport.analysis} transform={importTransform.transform} bounds={importTransform.bounds} onRotate={importTransform.rotate} onView={importTransform.setView} onResetRotation={importTransform.resetRotation} onReset={importTransform.reset} onCenter={importTransform.autoCenter} onNormalize={importTransform.autoNormalize}/>{importUnits.originalDimensions?<ImportUnitsPanel format={modelImport.importedModel?.format??"glb"} units={importUnits.selectedUnits} dimensions={importUnits.displayDimensions??importUnits.originalDimensions} warning={importUnits.warning} onChange={importUnits.selectUnit}/>:null}</div>:null}</ImportTransformPreviewProvider>
               {errors.file ? <p className="mt-2 text-sm text-red-400">{errors.file}</p> : null}
             </div>
+
+            {isAnalysisReady&&modelImport.analysis&&file&&importUnits.modelUnits&&importUnits.originalDimensions?<ModelImportFinalSummary name={name.trim()||t("projectInfo.unknown")} fileName={file.name} printer={t(`domain.${printerType}`)} material={t(`domain.${material}`)} baseColor={baseColor} analysis={modelImport.analysis} included={modelImport.reviewedParts.filter(part=>part.includeInProject).length} excluded={modelImport.reviewedParts.filter(part=>!part.includeInProject).length} dimensions={importUnits.originalDimensions} units={importUnits.modelUnits} orientationAdjusted={importTransform.hasManualOrientationOverride||Boolean(modelImport.orientationSuggestion&&modelImport.orientationSuggestion.confidence!=="low")} warningCount={modelImport.warnings.filter(warning=>warning.severity!=="info").length} capabilities={guideCapabilities}/>:null}
 
             {isSubmitting ? (
               <div className="rounded-2xl border border-orange-400/15 bg-orange-400/[0.05] p-4">
@@ -473,8 +510,7 @@ export function NewProjectModal({
                 </div>
 
                 <p className="mt-3 text-xs leading-5 text-neutral-500">
-                  The model is currently handled locally. Only its
-                  project metadata will be saved.
+                  {t("modelImport.form.localStorageNotice")}
                 </p>
               </div>
             ) : null}
@@ -489,10 +525,11 @@ export function NewProjectModal({
             ) : null}
           </div>
 
-          <div className="sticky bottom-0 flex flex-col-reverse gap-3 border-t border-white/10 bg-neutral-950/95 px-6 py-5 backdrop-blur-xl sm:flex-row sm:justify-end sm:px-8">
+          <div className="flex flex-col-reverse gap-3 border-t border-white/10 bg-neutral-950/95 px-6 py-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-8">
+            <p className="text-xs text-neutral-500">{isAnalysisReady&&name.trim()?t("modelImport.footer.ready"):t("modelImport.footer.incomplete")}</p><div className="flex flex-col-reverse gap-3 sm:flex-row">
             <button
               type="button"
-              disabled={isSubmitting || !isAnalysisReady}
+              disabled={isSubmitting}
               onClick={handleClose}
               className="cursor-pointer rounded-full border border-white/10 px-5 py-3 text-sm font-medium text-neutral-300 transition hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -501,7 +538,7 @@ export function NewProjectModal({
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isAnalysisReady || !name.trim()}
               className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? (
@@ -516,8 +553,10 @@ export function NewProjectModal({
                 </>
               )}
             </button>
+            </div>
           </div>
         </form>
+        <ConfirmationModal isOpen={showDiscardConfirmation} title={t("modelImport.discard.title")} description={t("modelImport.discard.description")} confirmLabel={t("modelImport.discard.confirm")} variant="danger" onClose={()=>setShowDiscardConfirmation(false)} onConfirm={confirmClose}/>
       </div>
     </div>
   );

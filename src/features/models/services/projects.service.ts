@@ -31,6 +31,25 @@ type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
 };
 
+type StoredProjectPart = Omit<ProjectPart, "meshUuid" | "sourcePartKey"> & {
+  meshUuid?: string;
+  sourcePartKey?: string;
+};
+
+function serializeProjectPart(part: ProjectPart): StoredProjectPart {
+  return {
+    id: part.id,
+    ...(part.meshUuid ? { meshUuid: part.meshUuid } : {}),
+    ...(part.sourcePartKey ? { sourcePartKey: part.sourcePartKey } : {}),
+    name: part.name,
+    visible: part.visible,
+    includeInGuide: part.includeInGuide,
+    color: part.color,
+    paletteColorId: part.paletteColorId,
+    explodedOffset: part.explodedOffset,
+  };
+}
+
 function mapProjectDocument(
   snapshot: DocumentSnapshot<DocumentData>,
 ): Project {
@@ -266,7 +285,7 @@ export async function createProject({
     material,
     baseColor,
 
-    parts: parts ?? [],
+    parts: (parts ?? []).map(serializeProjectPart),
     importSchemaVersion: importSchemaVersion ?? null,
     palette: [],
     assemblySteps: [],
@@ -329,7 +348,7 @@ export async function saveProjectEditorState({
   }
 
   await updateDoc(projectReference, {
-    parts,
+    parts: parts.map(serializeProjectPart),
     palette,
     assemblySteps,
     updatedAt: serverTimestamp(),

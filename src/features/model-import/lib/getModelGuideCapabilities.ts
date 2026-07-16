@@ -1,0 +1,4 @@
+import type { ModelFormatCapabilities } from "../types/ModelFormat";
+export type GuideCapabilityCode="painting"|"numbered-guide"|"exploded-view"|"assembly-instructions"|"reference-images"|"pdf-export";
+export type GuideCapability={code:GuideCapabilityCode;available:boolean};
+export function getModelGuideCapabilities({formatCapabilities,includedPartsCount}:{formatCapabilities:ModelFormatCapabilities;includedPartsCount:number}):GuideCapability[]{const multipart=formatCapabilities.supportsMultipleParts&&includedPartsCount>1;return[{code:"painting",available:includedPartsCount>0},{code:"numbered-guide",available:includedPartsCount>0},{code:"exploded-view",available:multipart},{code:"assembly-instructions",available:multipart},{code:"reference-images",available:true},{code:"pdf-export",available:includedPartsCount>0}];}
