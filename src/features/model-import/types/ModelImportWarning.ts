@@ -1,0 +1,2 @@
+export type ModelImportWarningCode="large-file"|"high-triangle-count"|"many-parts"|"single-mesh"|"technical-names"|"duplicate-names"|"empty-objects"|"hidden-parts"|"transparent-materials"|"missing-materials"|"large-textures"|"model-off-center"|"extreme-scale"|"nested-meshes"|"skinned-meshes";
+export type ModelImportWarning={code:ModelImportWarningCode;severity:"info"|"warning"|"critical";messageKey:`modelImport.warnings.${ModelImportWarningCode}`;affectedPartIds?:string[]};

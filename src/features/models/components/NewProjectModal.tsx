@@ -21,7 +21,9 @@ import type {
   PrinterType,
   ProjectMaterial,
 } from "../types/Project";
-import { UploadZone } from "./UploadZone";
+import { ModelImportFlow } from "@/features/model-import/components/ModelImportFlow";
+import { useModelImport } from "@/features/model-import/hooks/useModelImport";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 type NewProjectModalProps = {
   userId: string;
@@ -51,7 +53,9 @@ export function NewProjectModal({
   isOpen,
   onClose,
 }: NewProjectModalProps) {
+  const { t } = useTranslation();
   const createProjectMutation = useCreateProject(userId);
+  const modelImport = useModelImport();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -63,10 +67,13 @@ export function NewProjectModal({
     DEFAULT_PROJECT_COLOR,
   );
   const [file, setFile] = useState<File | null>(null);
+  const [hasConfirmedHeavyModel, setHasConfirmedHeavyModel] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState<FormErrors>({});
 
   const isSubmitting = createProjectMutation.isPending;
+  const isAnalysisRunning = modelImport.status === "reading" || modelImport.status === "parsing" || modelImport.status === "analyzing";
+  const isAnalysisReady = modelImport.status === "review" && modelImport.analysis !== null && modelImport.errors.length === 0 && (modelImport.analysis.performanceLevel !== "very-heavy" || hasConfirmedHeavyModel);
 
   useEffect(() => {
     if (!isOpen) {
@@ -95,6 +102,8 @@ export function NewProjectModal({
     setMaterial(INITIAL_MATERIAL);
     setBaseColor(DEFAULT_PROJECT_COLOR);
     setFile(null);
+    setHasConfirmedHeavyModel(false);
+    modelImport.resetImport();
     setUploadProgress(0);
     setErrors({});
     createProjectMutation.reset();
@@ -120,7 +129,13 @@ export function NewProjectModal({
     }
 
     if (!file) {
-      nextErrors.file = "Select a GLB model file.";
+      nextErrors.file = t("modelImport.validation.fileMissing");
+    } else if (isAnalysisRunning) {
+      nextErrors.file = t("modelImport.validation.analysisInProgress");
+    } else if (modelImport.status === "error") {
+      nextErrors.file = t("modelImport.validation.analysisFailed");
+    } else if (!isAnalysisReady) {
+      nextErrors.file = t("modelImport.validation.analysisRequired");
     }
 
     setErrors(nextErrors);
@@ -131,7 +146,7 @@ export function NewProjectModal({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!validateForm() || !file) {
+    if (!validateForm() || !file || !isAnalysisReady) {
       return;
     }
 
@@ -388,21 +403,15 @@ export function NewProjectModal({
                 Model file
               </p>
 
-              <UploadZone
-                file={file}
-                disabled={isSubmitting}
-                error={errors.file}
-                onFileChange={(selectedFile) => {
-                  setFile(selectedFile);
-
-                  if (errors.file) {
-                    setErrors((current) => ({
-                      ...current,
-                      file: undefined,
-                    }));
-                  }
-                }}
+              <ModelImportFlow
+                file={file} status={modelImport.status} progress={modelImport.progress} stage={modelImport.currentStage} analysis={modelImport.analysis} warnings={modelImport.warnings} errors={modelImport.errors} disabled={isSubmitting} heavyConfirmed={hasConfirmedHeavyModel}
+                onFileSelected={(selectedFile) => { setFile(selectedFile); setHasConfirmedHeavyModel(false); setErrors(current => ({ ...current, file: undefined })); void modelImport.startImport(selectedFile); }}
+                onChooseAnother={() => { setFile(null); setHasConfirmedHeavyModel(false); modelImport.resetImport(); setErrors(current => ({ ...current, file: undefined })); }}
+                onTryAgain={() => { if (file) void modelImport.startImport(file); }}
+                onCancelAnalysis={() => { modelImport.cancelImport(); setFile(null); }}
+                onConfirmHeavy={() => setHasConfirmedHeavyModel(true)}
               />
+              {errors.file ? <p className="mt-2 text-sm text-red-400">{errors.file}</p> : null}
             </div>
 
             {isSubmitting ? (
@@ -445,11 +454,11 @@ export function NewProjectModal({
           <div className="sticky bottom-0 flex flex-col-reverse gap-3 border-t border-white/10 bg-neutral-950/95 px-6 py-5 backdrop-blur-xl sm:flex-row sm:justify-end sm:px-8">
             <button
               type="button"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isAnalysisReady}
               onClick={handleClose}
               className="cursor-pointer rounded-full border border-white/10 px-5 py-3 text-sm font-medium text-neutral-300 transition hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
 
             <button
@@ -460,12 +469,12 @@ export function NewProjectModal({
               {isSubmitting ? (
                 <>
                   <LoaderCircle className="h-4 w-4 animate-spin" />
-                  Creating...
+                  {t("models.creatingProject")}
                 </>
               ) : (
                 <>
                   <Plus className="h-4 w-4" />
-                  Create project
+                  {t("models.createProject")}
                 </>
               )}
             </button>
