@@ -74,6 +74,17 @@ function mapProjectDocument(
             typeof part.paletteColorId === "string"
               ? part.paletteColorId
               : null,
+          explodedOffset:
+            part.explodedOffset &&
+            Number.isFinite(part.explodedOffset.x) &&
+            Number.isFinite(part.explodedOffset.y) &&
+            Number.isFinite(part.explodedOffset.z)
+              ? {
+                  x: part.explodedOffset.x,
+                  y: part.explodedOffset.y,
+                  z: part.explodedOffset.z,
+                }
+              : null,
         }))
       : [],
     

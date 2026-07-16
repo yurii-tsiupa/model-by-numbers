@@ -25,6 +25,7 @@ function serializeParts(): ProjectPart[] {
       includeInGuide: part.includeInGuide,
       color: part.color,
       paletteColorId: part.paletteColorId,
+      explodedOffset: part.explodedOffset,
     }));
 }
 

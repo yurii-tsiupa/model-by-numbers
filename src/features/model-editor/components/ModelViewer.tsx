@@ -121,6 +121,7 @@ function Scene({
           }
           showAllPartsForCapture={showAllPartsForCapture}
           forceAssembled={forceAssembled}
+          controlsRef={controlsRef}
         />
 
         <Environment preset="studio" />
@@ -175,6 +176,7 @@ export const ModelViewer = forwardRef<
   ref,
 ) {
   const {t}=useTranslation();
+  const isExplodedLayoutEditing = useModelEditorStore((state) => state.isExplodedLayoutEditing);
   const controlsRef =
     useRef<OrbitControlsImpl | null>(null);
 
@@ -395,6 +397,7 @@ export const ModelViewer = forwardRef<
           selectedPartIds: [...editorState.selectedPartIds],
           highlightedPaletteColorId:
             editorState.highlightedPaletteColorId,
+          isExplodedLayoutEditing: editorState.isExplodedLayoutEditing,
         };
         const savedCameraState = {
           position: camera.position.clone(),
@@ -439,6 +442,12 @@ export const ModelViewer = forwardRef<
           return image;
         } finally {
           setViewerMode(savedEditorState.viewerMode);
+          if (
+            savedEditorState.viewerMode === "exploded" &&
+            savedEditorState.isExplodedLayoutEditing
+          ) {
+            useModelEditorStore.getState().startExplodedLayoutEditing();
+          }
           selectPart(savedEditorState.selectedPartId);
           setSelectedPartIds(savedEditorState.selectedPartIds);
           setHighlightedPaletteColorId(
@@ -588,6 +597,7 @@ export const ModelViewer = forwardRef<
         isGridVisible={isGridVisible}
         hasParts={parts.length > 0}
         hasSelectedPart={Boolean(selectedPartId)}
+        partActionsDisabled={isExplodedLayoutEditing}
         onResetCamera={handleResetCamera}
         onFitModel={handleFitModel}
         onShowAll={showAllParts}

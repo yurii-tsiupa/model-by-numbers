@@ -2,7 +2,7 @@ import type { Object3D } from "three";
 
 import { getModelBounds } from "./getModelBounds";
 
-const TARGET_MODEL_SIZE = 4;
+export const TARGET_MODEL_SIZE = 4;
 
 export function normalizeModel(
   sourceScene: Object3D,

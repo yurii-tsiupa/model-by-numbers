@@ -9,6 +9,8 @@ import { GeneratePaletteOptions } from "../types/PaletteGeneration";
 import { generatePalette } from "../utils/generatePalette";
 import { ViewerMode } from "../types/ViewerMode";
 import type { ExplodedLabelsMode } from "../types/ExplodedLabelsMode";
+import type { ExplodedOffset } from "../types/ExplodedOffset";
+import { MAX_EXPLODED_OFFSET } from "../lib/exploded/exploded.constants";
 
 export type EditorSaveStatus =
   | "saved"
@@ -49,9 +51,15 @@ type ModelEditorState = {
   viewerMode: ViewerMode;
   explosionFactor:number;
   explodedLabelsMode:ExplodedLabelsMode;
+  isExplodedLayoutEditing: boolean;
   setExplosionFactor:(factor:number)=>void;
   setExplodedLabelsMode:(mode:ExplodedLabelsMode)=>void;
   resetExplodedViewerState:()=>void;
+  startExplodedLayoutEditing: () => void;
+  stopExplodedLayoutEditing: () => void;
+  setPartExplodedOffset: (partId: string, offset: ExplodedOffset | null) => void;
+  resetPartExplodedOffset: (partId: string) => void;
+  resetAllExplodedOffsets: () => void;
 
   setViewerMode: (
     mode: ViewerMode,
@@ -217,9 +225,50 @@ export const useModelEditorStore =
     viewerMode: "painted",
     explosionFactor:1,
     explodedLabelsMode:"numbers",
+    isExplodedLayoutEditing: false,
     setExplosionFactor:(factor)=>set({explosionFactor:Math.min(1,Math.max(0,Number.isFinite(factor)?factor:1))}),
     setExplodedLabelsMode:(explodedLabelsMode)=>set({explodedLabelsMode}),
     resetExplodedViewerState:()=>set({explosionFactor:1,explodedLabelsMode:"numbers"}),
+    startExplodedLayoutEditing: () => set(() => ({
+      isExplodedLayoutEditing: true,
+      explosionFactor: 1,
+      selectionMode: "single",
+      selectedPartIds: [],
+      highlightedPaletteColorId: null,
+    })),
+    stopExplodedLayoutEditing: () => set({ isExplodedLayoutEditing: false }),
+    setPartExplodedOffset: (partId, offset) => {
+      set((state) => {
+        if (offset && (
+          !Number.isFinite(offset.x) ||
+          !Number.isFinite(offset.y) ||
+          !Number.isFinite(offset.z) ||
+          Math.hypot(offset.x, offset.y, offset.z) > MAX_EXPLODED_OFFSET
+        )) return state;
+        const part = state.parts.find((item) => item.id === partId);
+        if (!part) return state;
+        const current = part.explodedOffset;
+        const unchanged = current === offset || (
+          current !== null && offset !== null &&
+          current.x === offset.x && current.y === offset.y && current.z === offset.z
+        );
+        if (unchanged) return state;
+        return {
+          parts: state.parts.map((item) => item.id === partId ? { ...item, explodedOffset: offset } : item),
+          ...markStateDirty(state),
+        };
+      });
+    },
+    resetPartExplodedOffset: (partId) => {
+      useModelEditorStore.getState().setPartExplodedOffset(partId, null);
+    },
+    resetAllExplodedOffsets: () => set((state) => {
+      if (!state.parts.some((part) => part.explodedOffset !== null)) return state;
+      return {
+        parts: state.parts.map((part) => part.explodedOffset === null ? part : { ...part, explodedOffset: null }),
+        ...markStateDirty(state),
+      };
+    }),
 
     setSelectedPartIds: (selectedPartIds) => {
       set({
@@ -801,9 +850,12 @@ export const useModelEditorStore =
     },
 
     setViewerMode: (viewerMode) => {
-      set({
+      set((state) => ({
         viewerMode,
-      });
+        isExplodedLayoutEditing: viewerMode === "exploded"
+          ? state.isExplodedLayoutEditing
+          : false,
+      }));
     },
 
     resetEditor: () => {
@@ -818,6 +870,7 @@ export const useModelEditorStore =
         viewerMode: "painted",
         explosionFactor:1,
         explodedLabelsMode:"numbers",
+        isExplodedLayoutEditing: false,
         isDirty: false,
         saveStatus: "saved",
         changeVersion: 0,

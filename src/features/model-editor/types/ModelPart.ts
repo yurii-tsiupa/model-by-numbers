@@ -1,3 +1,5 @@
+import type { ExplodedOffset } from "./ExplodedOffset";
+
 export type ModelPart = {
   id: string;
   meshUuid: string;
@@ -15,4 +17,5 @@ export type ModelPart = {
   color: string | null;
 
   paletteColorId: string | null;
+  explodedOffset: ExplodedOffset | null;
 };

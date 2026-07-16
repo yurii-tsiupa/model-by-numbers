@@ -1,3 +1,5 @@
+import type { ExplodedOffset } from "@/features/model-editor/types/ExplodedOffset";
+
 export type ProjectPart = {
   id: string;
   name: string;
@@ -11,4 +13,5 @@ export type ProjectPart = {
   color: string | null;
 
   paletteColorId: string | null;
+  explodedOffset: ExplodedOffset | null;
 };

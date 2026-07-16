@@ -13,6 +13,7 @@ type ViewerToolbarProps = {
   isGridVisible: boolean;
   hasParts: boolean;
   hasSelectedPart: boolean;
+  partActionsDisabled?: boolean;
 
   onResetCamera: () => void;
   onShowAll: () => void;
@@ -34,6 +35,7 @@ export function ViewerToolbar({
   isGridVisible,
   hasParts,
   hasSelectedPart,
+  partActionsDisabled = false,
   onResetCamera,
   onShowAll,
   onHideSelected,
@@ -58,19 +60,19 @@ export function ViewerToolbar({
     {
       label: t("viewer.showAll"),
       icon: Eye,
-      disabled: !hasParts,
+      disabled: !hasParts || partActionsDisabled,
       onClick: onShowAll,
     },
     {
       label: t("viewer.hideSelected"),
       icon: EyeOff,
-      disabled: !hasSelectedPart,
+      disabled: !hasSelectedPart || partActionsDisabled,
       onClick: onHideSelected,
     },
     {
       label: t("viewer.isolate"),
       icon: Scan,
-      disabled: !hasSelectedPart,
+      disabled: !hasSelectedPart || partActionsDisabled,
       onClick: onIsolateSelected,
     },
     {

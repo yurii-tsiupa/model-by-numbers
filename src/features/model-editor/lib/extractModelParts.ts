@@ -68,6 +68,7 @@ export function extractModelParts(
       includeInGuide: true,
       color: null,
       paletteColorId: null,
+      explodedOffset: null,
       originalColor: getMeshOriginalColor(object),
     });
   });

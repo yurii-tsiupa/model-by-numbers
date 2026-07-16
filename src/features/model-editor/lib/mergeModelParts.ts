@@ -30,6 +30,7 @@ export function mergeModelParts(
 
       paletteColorId:
         savedPart.paletteColorId ?? null,
+      explodedOffset: savedPart.explodedOffset ?? null,
     };
   });
 }

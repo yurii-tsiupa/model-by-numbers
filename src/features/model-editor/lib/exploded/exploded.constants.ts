@@ -1,3 +1,5 @@
 export const EXPLOSION_DISTANCE_MULTIPLIER=0.42;
 export const EXPLOSION_DAMPING=8;
 export const EXPLOSION_EPSILON=1e-4;
+export const MAX_EXPLODED_OFFSET=TARGET_MODEL_SIZE*3;
+import {TARGET_MODEL_SIZE} from "../normalizeModel";
