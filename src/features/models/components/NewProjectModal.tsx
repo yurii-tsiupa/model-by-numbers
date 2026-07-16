@@ -24,6 +24,10 @@ import type {
 import { ModelImportFlow } from "@/features/model-import/components/ModelImportFlow";
 import { useModelImport } from "@/features/model-import/hooks/useModelImport";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
+import { useImportTransform } from "@/features/model-import/hooks/useImportTransform";
+import { ImportTransformPanel } from "@/features/model-import/components/ImportTransformPanel";
+import { ImportTransformPreviewProvider } from "@/features/model-import/context/ImportTransformPreviewContext";
+import { createTransformedGlbFile } from "@/features/model-import/lib/createTransformedGlbFile";
 
 type NewProjectModalProps = {
   userId: string;
@@ -56,6 +60,7 @@ export function NewProjectModal({
   const { t } = useTranslation();
   const createProjectMutation = useCreateProject(userId);
   const modelImport = useModelImport();
+  const importTransform = useImportTransform(modelImport.analysis);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -104,6 +109,7 @@ export function NewProjectModal({
     setFile(null);
     setHasConfirmedHeavyModel(false);
     modelImport.resetImport();
+    importTransform.reset();
     setUploadProgress(0);
     setErrors({});
     createProjectMutation.reset();
@@ -154,6 +160,8 @@ export function NewProjectModal({
       setErrors({});
       setUploadProgress(0);
 
+      if (!modelImport.importedModel) return;
+      const transformedFile = await createTransformedGlbFile(file, modelImport.importedModel, importTransform.transform);
       await createProjectMutation.mutateAsync({
         userId,
         name,
@@ -161,7 +169,7 @@ export function NewProjectModal({
         printerType,
         material,
         baseColor,
-        file,
+        file: transformedFile,
         importSchemaVersion: 1,
         parts: modelImport.reviewedParts.filter(part=>part.includeInProject).map((part)=>({id:`part-${Math.max(0,Number(part.id.slice(5))-1)}`,meshUuid:part.meshUuid,name:part.editedName.trim().replace(/\s+/g," "),visible:true,includeInGuide:true,color:null,paletteColorId:null,explodedOffset:null})),
         onUploadProgress: setUploadProgress,
@@ -405,15 +413,15 @@ export function NewProjectModal({
                 Model file
               </p>
 
-              <ModelImportFlow
+              <ImportTransformPreviewProvider value={importTransform.transform}><ModelImportFlow
                 file={file} status={modelImport.status} progress={modelImport.progress} stage={modelImport.currentStage} analysis={modelImport.analysis} warnings={modelImport.warnings} errors={modelImport.errors} importedModel={modelImport.importedModel} reviewedParts={modelImport.reviewedParts} disabled={isSubmitting} heavyConfirmed={hasConfirmedHeavyModel}
-                onFileSelected={(selectedFile) => { setFile(selectedFile); setHasConfirmedHeavyModel(false); setErrors(current => ({ ...current, file: undefined })); void modelImport.startImport(selectedFile); }}
-                onChooseAnother={() => { setFile(null); setHasConfirmedHeavyModel(false); modelImport.resetImport(); setErrors(current => ({ ...current, file: undefined })); }}
+                onFileSelected={(selectedFile) => { importTransform.reset(); setFile(selectedFile); setHasConfirmedHeavyModel(false); setErrors(current => ({ ...current, file: undefined })); void modelImport.startImport(selectedFile); }}
+                onChooseAnother={() => { importTransform.reset(); setFile(null); setHasConfirmedHeavyModel(false); modelImport.resetImport(); setErrors(current => ({ ...current, file: undefined })); }}
                 onTryAgain={() => { if (file) void modelImport.startImport(file); }}
-                onCancelAnalysis={() => { modelImport.cancelImport(); setFile(null); }}
+                onCancelAnalysis={() => { importTransform.reset(); modelImport.cancelImport(); setFile(null); }}
                 onConfirmHeavy={() => setHasConfirmedHeavyModel(true)}
                 onUpdatePart={modelImport.updateReviewedPart} onBulkParts={modelImport.setReviewedInclusion} onResetParts={modelImport.resetReviewedParts} onApplySuggestedNames={modelImport.applySuggestedNames}
-              />
+              />{modelImport.status==="review"&&modelImport.analysis&&importTransform.bounds?<ImportTransformPanel analysis={modelImport.analysis} transform={importTransform.transform} bounds={importTransform.bounds} onRotate={importTransform.rotate} onView={importTransform.setView} onResetRotation={importTransform.resetRotation} onReset={importTransform.reset} onCenter={importTransform.autoCenter} onNormalize={importTransform.autoNormalize}/>:null}</ImportTransformPreviewProvider>
               {errors.file ? <p className="mt-2 text-sm text-red-400">{errors.file}</p> : null}
             </div>
 
