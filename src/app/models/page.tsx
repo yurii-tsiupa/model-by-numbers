@@ -35,6 +35,7 @@ export default function ModelsPage() {
   const [deleteError, setDeleteError] = useState<string | null>(
     null,
   );
+  const [thumbnailWarning,setThumbnailWarning]=useState(false);
 
   const projectsQuery = useProjects(user?.uid);
   const deleteProjectMutation = useDeleteProject(user?.uid);
@@ -98,6 +99,7 @@ export default function ModelsPage() {
         />
 
         <section className="mx-auto max-w-7xl px-5 py-8 sm:px-6 sm:py-10 lg:px-8">
+          {thumbnailWarning?<p role="alert" className="mb-5 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-sm text-amber-300">{t("modelImport.thumbnail.warning")}</p>:null}
           {projectsQuery.isLoading ? (
             <ModelsSkeleton />
           ) : projectsQuery.isError ? (
@@ -126,6 +128,7 @@ export default function ModelsPage() {
         userId={user.uid}
         isOpen={isNewProjectModalOpen}
         onClose={() => setIsNewProjectModalOpen(false)}
+        onThumbnailWarning={() => setThumbnailWarning(true)}
       />
 
       <DeleteProjectModal

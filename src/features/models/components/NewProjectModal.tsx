@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import {
   useEffect,
+  useMemo,
+  useRef,
   useState,
   type FormEvent,
 } from "react";
@@ -28,11 +30,15 @@ import { useImportTransform } from "@/features/model-import/hooks/useImportTrans
 import { ImportTransformPanel } from "@/features/model-import/components/ImportTransformPanel";
 import { ImportTransformPreviewProvider } from "@/features/model-import/context/ImportTransformPreviewContext";
 import { createTransformedGlbFile } from "@/features/model-import/lib/createTransformedGlbFile";
+import type { ImportPreviewCapture } from "@/features/model-import/context/ImportTransformPreviewContext";
+import { useSaveProjectThumbnail } from "../hooks/useSaveProjectThumbnail";
+import { createThumbnailBlob } from "../lib/createThumbnailBlob";
 
 type NewProjectModalProps = {
   userId: string;
   isOpen: boolean;
   onClose: () => void;
+  onThumbnailWarning?: () => void;
 };
 
 type FormErrors = {
@@ -56,11 +62,14 @@ export function NewProjectModal({
   userId,
   isOpen,
   onClose,
+  onThumbnailWarning,
 }: NewProjectModalProps) {
   const { t } = useTranslation();
   const createProjectMutation = useCreateProject(userId);
   const modelImport = useModelImport();
   const importTransform = useImportTransform(modelImport.analysis);
+  const saveThumbnail = useSaveProjectThumbnail();
+  const importPreviewCaptureRef = useRef<ImportPreviewCapture | null>(null);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -75,8 +84,10 @@ export function NewProjectModal({
   const [hasConfirmedHeavyModel, setHasConfirmedHeavyModel] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [creationStage,setCreationStage]=useState<"idle"|"creating"|"thumbnail"|"opening">("idle");
+  const includedMeshUuids=useMemo(()=>new Set(modelImport.reviewedParts.filter(part=>part.includeInProject).map(part=>part.meshUuid)),[modelImport.reviewedParts]);
 
-  const isSubmitting = createProjectMutation.isPending;
+  const isSubmitting = createProjectMutation.isPending || creationStage !== "idle";
   const isAnalysisRunning = modelImport.status === "reading" || modelImport.status === "parsing" || modelImport.status === "analyzing";
   const isAnalysisReady = modelImport.status === "review" && modelImport.analysis !== null && modelImport.errors.length === 0 && modelImport.reviewedPartsValid && (modelImport.analysis.performanceLevel !== "very-heavy" || hasConfirmedHeavyModel);
 
@@ -112,6 +123,7 @@ export function NewProjectModal({
     importTransform.reset();
     setUploadProgress(0);
     setErrors({});
+    setCreationStage("idle");
     createProjectMutation.reset();
   }
 
@@ -159,10 +171,11 @@ export function NewProjectModal({
     try {
       setErrors({});
       setUploadProgress(0);
+      setCreationStage("creating");
 
       if (!modelImport.importedModel) return;
       const transformedFile = await createTransformedGlbFile(file, modelImport.importedModel, importTransform.transform);
-      await createProjectMutation.mutateAsync({
+      const createdProject=await createProjectMutation.mutateAsync({
         userId,
         name,
         description,
@@ -175,9 +188,14 @@ export function NewProjectModal({
         onUploadProgress: setUploadProgress,
       });
 
+      setCreationStage("thumbnail");
+      try{const capture=importPreviewCaptureRef.current;if(!capture)throw new Error("Preview unavailable");const dataUrl=await capture();const image=await createThumbnailBlob(dataUrl);const now=new Date();await saveThumbnail.mutateAsync({projectId:createdProject.id,...image,createdAt:now,updatedAt:now});}catch{onThumbnailWarning?.();console.warn("Initial project thumbnail generation failed.");}
+      setCreationStage("opening");
+
       resetForm();
       onClose();
     } catch (error) {
+      setCreationStage("idle");
       setErrors({
         submit: getErrorMessage(error),
       });
@@ -413,7 +431,7 @@ export function NewProjectModal({
                 Model file
               </p>
 
-              <ImportTransformPreviewProvider value={importTransform.transform}><ModelImportFlow
+              <ImportTransformPreviewProvider transform={importTransform.transform} includedMeshUuids={includedMeshUuids} captureRef={importPreviewCaptureRef}><ModelImportFlow
                 file={file} status={modelImport.status} progress={modelImport.progress} stage={modelImport.currentStage} analysis={modelImport.analysis} warnings={modelImport.warnings} errors={modelImport.errors} importedModel={modelImport.importedModel} reviewedParts={modelImport.reviewedParts} disabled={isSubmitting} heavyConfirmed={hasConfirmedHeavyModel}
                 onFileSelected={(selectedFile) => { importTransform.reset(); setFile(selectedFile); setHasConfirmedHeavyModel(false); setErrors(current => ({ ...current, file: undefined })); void modelImport.startImport(selectedFile); }}
                 onChooseAnother={() => { importTransform.reset(); setFile(null); setHasConfirmedHeavyModel(false); modelImport.resetImport(); setErrors(current => ({ ...current, file: undefined })); }}
@@ -430,7 +448,7 @@ export function NewProjectModal({
                 <div className="flex items-center justify-between gap-4 text-sm">
                   <span className="flex items-center gap-2 text-neutral-300">
                     <LoaderCircle className="h-4 w-4 animate-spin text-orange-400" />
-                    Preparing project...
+                    {creationStage==="thumbnail"?t("modelImport.thumbnail.preparing"):creationStage==="opening"?t("modelImport.thumbnail.opening"):t("models.creatingProject")}
                   </span>
 
                   <span className="font-medium text-orange-400">
