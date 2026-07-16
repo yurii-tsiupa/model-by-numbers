@@ -5,6 +5,7 @@ import {
   FolderCog,
   Palette,
   Images,
+  Wrench,
 } from "lucide-react";
 
 import type { Project } from "@/features/models/types/Project";
@@ -16,6 +17,7 @@ import { PartsTab } from "./sidebar/PartsTab";
 import { ProjectTab } from "./sidebar/ProjectTab";
 import { ReferencesTab } from "@/features/references/components/ReferencesTab";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
+import { AssemblyTab } from "./assembly/AssemblyTab";
 
 type EditorSidebarProps = {
   project: Project;
@@ -24,6 +26,7 @@ type EditorSidebarProps = {
   onRegenerateThumbnail: () => void;
   onOpenReferenceMode: (mode: "split" | "reference", preferredReferenceId?: string) => void;
   onReferenceDeleted: (id: string) => void;
+  onShowAssemblyParts: (partIds: string[]) => void;
 };
 
 export function EditorSidebar({
@@ -33,9 +36,10 @@ export function EditorSidebar({
   onRegenerateThumbnail,
   onOpenReferenceMode,
   onReferenceDeleted,
+  onShowAssemblyParts,
 }: EditorSidebarProps) {
   const {t}=useTranslation();
-  const tabs:Array<{id:EditorSidebarTab;label:string;icon:typeof Box}>=[{id:"parts",label:t("editor.tabs.parts"),icon:Box},{id:"palette",label:t("editor.tabs.palette"),icon:Palette},{id:"project",label:t("editor.tabs.project"),icon:FolderCog},{id:"references",label:t("editor.tabs.references"),icon:Images}];
+  const tabs:Array<{id:EditorSidebarTab;label:string;icon:typeof Box}>=[{id:"parts",label:t("editor.tabs.parts"),icon:Box},{id:"palette",label:t("editor.tabs.palette"),icon:Palette},{id:"project",label:t("editor.tabs.project"),icon:FolderCog},{id:"references",label:t("editor.tabs.references"),icon:Images},{id:"assembly",label:t("editor.tabs.assembly"),icon:Wrench}];
   const activeTab = useModelEditorStore(
     (state) => state.activeSidebarTab,
   );
@@ -47,7 +51,7 @@ export function EditorSidebar({
 
   return (
     <aside className="flex max-h-[20rem] min-h-0 w-full shrink-0 flex-col overflow-hidden border-b border-white/10 bg-neutral-950/70 lg:h-full lg:max-h-none lg:w-72 lg:border-b-0 lg:border-r">
-      <div className="grid shrink-0 grid-cols-4 border-b border-white/10 p-2">
+      <div className="grid shrink-0 grid-cols-5 border-b border-white/10 p-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive =
@@ -85,6 +89,7 @@ export function EditorSidebar({
         <ProjectTab project={project} isGeneratingThumbnail={isGeneratingThumbnail} thumbnailError={thumbnailError} onRegenerateThumbnail={onRegenerateThumbnail} />
       ) : null}
       {activeTab === "references" ? <ReferencesTab projectId={project.id} onOpenReferenceMode={onOpenReferenceMode} onReferenceDeleted={onReferenceDeleted} /> : null}
+      {activeTab === "assembly" ? <AssemblyTab onShowParts={onShowAssemblyParts} /> : null}
     </aside>
   );
 }

@@ -2,4 +2,5 @@ export type EditorSidebarTab =
   | "parts"
   | "palette"
   | "project"
-  | "references";
+  | "references"
+  | "assembly";

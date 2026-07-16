@@ -48,6 +48,11 @@ export function ModelEditor({
   const selectedReference=references.find(reference=>reference.id===selectedReferenceId)??null;
   const effectiveReferenceViewMode=selectedReference?referenceViewMode:"viewer";
 
+  function showAssemblyParts(partIds: string[]) {
+    useModelEditorStore.getState().showOnlyParts(partIds);
+    window.setTimeout(() => viewerRef.current?.fitView(), 450);
+  }
+
   function openReferenceMode(mode: "split" | "reference", preferredReferenceId?: string) {
     const preferredReference = preferredReferenceId ? references.find((reference) => reference.id === preferredReferenceId) : null;
     const currentReference = references.find((reference) => reference.id === selectedReferenceId);
@@ -92,6 +97,7 @@ export function ModelEditor({
   const setPalette = useModelEditorStore(
     (state) => state.setPalette,
   );
+  const setAssemblySteps = useModelEditorStore((state) => state.setAssemblySteps);
 
   const parts = useModelEditorStore(
     (state) => state.parts,
@@ -222,6 +228,7 @@ export function ModelEditor({
 
     resetEditor();
     setPalette(project.palette);
+    setAssemblySteps(project.assemblySteps);
 
     initializedProjectIdRef.current = project.id;
   }, [
@@ -229,6 +236,8 @@ export function ModelEditor({
     project.palette,
     resetEditor,
     setPalette,
+    setAssemblySteps,
+    project.assemblySteps,
   ]);
 
   useEffect(() => {
@@ -253,7 +262,7 @@ export function ModelEditor({
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-        <EditorSidebar project={project} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} />
+        <EditorSidebar project={project} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onShowAssemblyParts={showAssemblyParts} />
 
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
           <div className={`${effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-0 min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} /></div>

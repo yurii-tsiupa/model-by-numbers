@@ -11,6 +11,7 @@ import { ViewerMode } from "../types/ViewerMode";
 import type { ExplodedLabelsMode } from "../types/ExplodedLabelsMode";
 import type { ExplodedOffset } from "../types/ExplodedOffset";
 import { MAX_EXPLODED_OFFSET } from "../lib/exploded/exploded.constants";
+import type { AssemblyStep, CreateAssemblyStepInput, UpdateAssemblyStepInput } from "@/features/models/types/AssemblyStep";
 
 export type EditorSaveStatus =
   | "saved"
@@ -24,6 +25,7 @@ export type SelectionMode =
 
 type ModelEditorState = {
   parts: ModelPart[];
+  assemblySteps: AssemblyStep[];
   selectedPartId: string | null;
 
   isDirty: boolean;
@@ -85,6 +87,12 @@ type ModelEditorState = {
   syncPaletteFromParts: () => void;
 
   setParts: (parts: ModelPart[]) => void;
+  setAssemblySteps: (steps: AssemblyStep[]) => void;
+  addAssemblyStep: (input: CreateAssemblyStepInput) => void;
+  updateAssemblyStep: (stepId: string, changes: UpdateAssemblyStepInput) => void;
+  deleteAssemblyStep: (stepId: string) => void;
+  moveAssemblyStep: (stepId: string, direction: "up" | "down") => void;
+  showOnlyParts: (partIds: string[]) => void;
   selectPart: (partId: string | null) => void;
 
   togglePartVisibility: (
@@ -211,6 +219,7 @@ function createPaletteColorName(
 export const useModelEditorStore =
   create<ModelEditorState>()((set) => ({
     parts: [],
+    assemblySteps: [],
     selectedPartId: null,
 
     palette: [],
@@ -352,6 +361,62 @@ export const useModelEditorStore =
         ...markStateDirty(state),
       }));
     },
+
+    setAssemblySteps: (assemblySteps) => set({ assemblySteps: assemblySteps.map((step) => ({ ...step, partIds: [...step.partIds] })) }),
+    addAssemblyStep: (input) => set((state) => {
+      const title = input.title.trim();
+      const description = input.description.trim();
+      const validPartIds = new Set(state.parts.map((part) => part.id));
+      const partIds = [...new Set(input.partIds)].filter((id) => validPartIds.has(id));
+      if (!title || title.length > 120 || description.length > 1000 || partIds.length === 0) return state;
+      const now = new Date().toISOString();
+      const nextStep = { id: crypto.randomUUID(), order: state.assemblySteps.length + 1, title, description, partIds, createdAt: now, updatedAt: now };
+      return {
+        assemblySteps: [...state.assemblySteps, nextStep].map((step, index) => ({ ...step, order: index + 1 })),
+        ...markStateDirty(state),
+      };
+    }),
+    updateAssemblyStep: (stepId, changes) => set((state) => {
+      const step = state.assemblySteps.find((item) => item.id === stepId);
+      if (!step) return state;
+      const title = changes.title === undefined ? step.title : changes.title.trim();
+      const description = changes.description === undefined ? step.description : changes.description.trim();
+      const validPartIds = new Set(state.parts.map((part) => part.id));
+      const partIds = changes.partIds === undefined ? step.partIds : [...new Set(changes.partIds)].filter((id) => validPartIds.has(id));
+      if (!title || title.length > 120 || description.length > 1000 || partIds.length === 0) return state;
+      if (title === step.title && description === step.description && partIds.length === step.partIds.length && partIds.every((id, index) => id === step.partIds[index])) return state;
+      return {
+        assemblySteps: state.assemblySteps.map((item) => item.id === stepId ? { ...item, title, description, partIds, updatedAt: new Date().toISOString() } : item),
+        ...markStateDirty(state),
+      };
+    }),
+    deleteAssemblyStep: (stepId) => set((state) => {
+      if (!state.assemblySteps.some((step) => step.id === stepId)) return state;
+      return {
+        assemblySteps: state.assemblySteps.filter((step) => step.id !== stepId).map((step, index) => ({ ...step, order: index + 1 })),
+        ...markStateDirty(state),
+      };
+    }),
+    moveAssemblyStep: (stepId, direction) => set((state) => {
+      const index = state.assemblySteps.findIndex((step) => step.id === stepId);
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (index < 0 || targetIndex < 0 || targetIndex >= state.assemblySteps.length) return state;
+      const assemblySteps = [...state.assemblySteps];
+      [assemblySteps[index], assemblySteps[targetIndex]] = [assemblySteps[targetIndex], assemblySteps[index]];
+      return { assemblySteps: assemblySteps.map((step, stepIndex) => ({ ...step, order: stepIndex + 1, updatedAt: step.id === stepId ? new Date().toISOString() : step.updatedAt })), ...markStateDirty(state) };
+    }),
+    showOnlyParts: (partIds) => set((state) => {
+      const ids = new Set(partIds);
+      const hasChanges = state.parts.some((part) => part.visible !== ids.has(part.id));
+      const firstPartId = state.parts.find((part) => ids.has(part.id))?.id ?? null;
+      return {
+        parts: hasChanges ? state.parts.map((part) => ({ ...part, visible: ids.has(part.id) })) : state.parts,
+        viewerMode: "exploded",
+        isExplodedLayoutEditing: false,
+        selectedPartId: firstPartId,
+        ...(hasChanges ? markStateDirty(state) : {}),
+      };
+    }),
 
     setPartIncludedInGuide: (partId, included) => {
       set((state) => {
@@ -861,6 +926,7 @@ export const useModelEditorStore =
     resetEditor: () => {
       set({
         parts: [],
+        assemblySteps: [],
         selectedPartId: null,
         palette: [],
         activeSidebarTab: "parts",

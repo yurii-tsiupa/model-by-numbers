@@ -23,6 +23,7 @@ import type {
 import { deleteModelFile, uploadModel } from "./storage.service";
 import { ProjectPart } from "../types/ProjectPart";
 import { PaletteColor } from "../types/PaletteColor";
+import type { AssemblyStep } from "../types/AssemblyStep";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -118,6 +119,18 @@ function mapProjectDocument(
               firstColor.number -
               secondColor.number,
           )
+      : [],
+
+    assemblySteps: Array.isArray(data.assemblySteps)
+      ? data.assemblySteps.map((step: Partial<AssemblyStep>, index: number): AssemblyStep => ({
+          id: String(step.id ?? ""),
+          order: typeof step.order === "number" ? step.order : index + 1,
+          title: String(step.title ?? ""),
+          description: String(step.description ?? ""),
+          partIds: Array.isArray(step.partIds) ? [...new Set(step.partIds.filter((id): id is string => typeof id === "string"))] : [],
+          createdAt: typeof step.createdAt === "string" ? step.createdAt : new Date(0).toISOString(),
+          updatedAt: typeof step.updatedAt === "string" ? step.updatedAt : new Date(0).toISOString(),
+        }))
       : [],
 
     createdAt:
@@ -234,6 +247,7 @@ export async function createProject({
 
     parts: [],
     palette: [],
+    assemblySteps: [],
 
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -256,11 +270,13 @@ export async function saveProjectEditorState({
   userId,
   parts,
   palette,
+  assemblySteps,
 }: {
   projectId: string;
   userId: string;
   parts: ProjectPart[];
   palette: PaletteColor[];
+  assemblySteps: AssemblyStep[];
 }): Promise<void> {
   if (!projectId || !userId) {
     throw new Error(
@@ -293,6 +309,7 @@ export async function saveProjectEditorState({
   await updateDoc(projectReference, {
     parts,
     palette,
+    assemblySteps,
     updatedAt: serverTimestamp(),
   });
 }

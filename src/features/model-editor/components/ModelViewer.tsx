@@ -48,6 +48,7 @@ type ModelViewerProps = {
 
 export type ModelViewerHandle = {
   captureView: (mode: ViewerMode) => Promise<string>;
+  fitView: () => void;
 };
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
@@ -313,13 +314,13 @@ export const ModelViewer = forwardRef<
     [fitFullModel],
   );
 
-  function handleFitModel() {
+  const handleFitModel = useCallback(() => {
     try {
       fitFullModel();
     } catch {
       // Toolbar fitting is unavailable until the model is ready.
     }
-  }
+  }, [fitFullModel]);
 
   function handleResetCamera() {
     const model = modelRef.current;
@@ -355,6 +356,7 @@ export const ModelViewer = forwardRef<
   useImperativeHandle (
     ref,
     () => ({
+      fitView: handleFitModel,
       captureView: async (mode) => {
         if (isCaptureInProgressRef.current) {
           throw new Error(
@@ -475,6 +477,7 @@ export const ModelViewer = forwardRef<
       },
     }),
     [
+      handleFitModel,
       isAssetLoading,
       isGridVisible,
       localModel.isLoading,
