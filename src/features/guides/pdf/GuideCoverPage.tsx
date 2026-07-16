@@ -29,6 +29,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     textTransform: "uppercase",
   },
+  accentRule:{backgroundColor:pdfColors.accent,height:4,marginTop:12,width:48},
   titleBlock: {
     marginTop: 30,
   },
@@ -44,7 +45,9 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     ...guidePdfStyles.placeholder,
-    height: 300,
+    backgroundColor:"#fafafa",
+    borderColor:"#d4d4d4",
+    height: 310,
     marginTop: 28,
     overflow: "hidden",
   },
@@ -78,7 +81,7 @@ export function GuideCoverPage({ guide }: GuideCoverPageProps) {
   return (
     <Page size="A4" orientation="portrait" style={styles.page}>
       <View>
-        <Text style={styles.brand}>Model by Numbers</Text>
+        <Text style={styles.brand}>Model by Numbers · Classic</Text><View style={styles.accentRule}/>
         <View style={styles.titleBlock}>
           <Text style={styles.title}>{guide.title}</Text>
           <Text style={styles.subtitle}>Painting Guide</Text>

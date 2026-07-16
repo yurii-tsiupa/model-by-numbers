@@ -36,22 +36,22 @@ export function GuideProjectOverview({
   ];
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
-      <h2 className="text-lg font-semibold text-white">
-        Project overview
-      </h2>
+    <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-orange-400/[0.09] via-white/[0.035] to-transparent p-6 shadow-2xl shadow-black/30 sm:p-10">
+      <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-orange-400/10 blur-3xl"/>
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-400">Classic painting guide</p>
+      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Project overview</h2>
 
       {guide.description ? (
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
+        <p className="mt-4 max-w-3xl text-base leading-7 text-neutral-400">
           {guide.description}
         </p>
       ) : null}
 
-      <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="relative mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {details.map((detail) => (
           <div
             key={detail.label}
-            className="rounded-2xl border border-white/[0.07] bg-neutral-950/50 p-4"
+            className="rounded-2xl border border-white/[0.08] bg-neutral-950/60 p-4 shadow-lg shadow-black/10"
           >
             <dt className="text-xs uppercase tracking-wider text-neutral-600">
               {detail.label}

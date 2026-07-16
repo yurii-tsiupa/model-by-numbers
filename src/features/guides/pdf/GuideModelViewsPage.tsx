@@ -34,11 +34,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   viewCard: {
+    backgroundColor:"#fafafa",
+    borderColor:"#e5e5e5",
+    borderRadius:9,
+    borderStyle:"solid",
+    borderWidth:1,
+    padding:7,
     width: "48.7%",
   },
   imageContainer: {
     ...guidePdfStyles.placeholder,
-    height: 205,
+    height: 190,
     overflow: "hidden",
   },
   image: {
@@ -49,7 +55,8 @@ const styles = StyleSheet.create({
   viewLabel: {
     fontSize: 10,
     fontWeight: 700,
-    marginTop: 7,
+    marginTop: 8,
+    paddingBottom:2,
   },
 });
 

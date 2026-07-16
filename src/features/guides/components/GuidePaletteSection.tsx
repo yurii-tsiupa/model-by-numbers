@@ -12,32 +12,32 @@ export function GuidePaletteSection({
   palette,
 }: GuidePaletteSectionProps) {
   return (
-    <section>
+    <section className="scroll-mt-24">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-400">
           Paint reference
         </p>
-        <h2 className="mt-2 text-2xl font-semibold text-white">
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
           Palette
         </h2>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <p className="mt-2 text-sm text-neutral-500">A numbered color key for every visible painted part.</p><div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {palette.map((color) => (
           <article
             key={color.id}
-            className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4"
+            className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.015] p-4 shadow-lg shadow-black/15 transition hover:border-white/15"
           >
             <span
-              className="h-12 w-12 shrink-0 rounded-xl border border-white/20"
+              className="h-16 w-16 shrink-0 rounded-2xl border border-white/20 shadow-inner"
               style={{ backgroundColor: color.hex }}
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-mono text-sm font-semibold text-orange-300">
+                <p className="rounded-full border border-orange-400/20 bg-orange-400/10 px-2.5 py-1 font-mono text-xs font-bold text-orange-300">
                   {formatColorNumber(color.number)}
                 </p>
-                <p className="text-xs text-neutral-600">
+                <p className="rounded-full bg-white/[0.05] px-2.5 py-1 text-xs text-neutral-400">
                   {color.usageCount} {color.usageCount === 1 ? "part" : "parts"}
                 </p>
               </div>
