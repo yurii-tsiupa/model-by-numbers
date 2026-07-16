@@ -1,0 +1,3 @@
+import {Box3,Mesh,Sphere,Vector3,type Object3D} from "three";
+import type {ModelBounds} from "./getModelBounds";
+export function getVisibleModelBounds(model:Object3D):ModelBounds{model.updateWorldMatrix(true,true);const box=new Box3();let found=false;model.traverse(object=>{if(object instanceof Mesh&&object.visible){box.union(new Box3().setFromObject(object,true));found=true;}});if(!found||box.isEmpty())throw new Error("Unable to calculate visible model bounds.");const center=box.getCenter(new Vector3()),size=box.getSize(new Vector3()),sphere=box.getBoundingSphere(new Sphere());return{box,center,size,sphere,radius:sphere.radius};}

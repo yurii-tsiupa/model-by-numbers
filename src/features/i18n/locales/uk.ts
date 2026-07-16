@@ -1,5 +1,7 @@
 import type { TranslationDictionary } from "./en";
 export const uk:TranslationDictionary={
+ "viewer.numbersHint":"Виберіть пофарбовану деталь, щоб переглянути її номер.",
+ "viewer.exploded":"Розібрана","exploded.title":"Розібраний вигляд","exploded.distance":"Відстань розбирання","exploded.labels":"Позначки","exploded.labels.none":"Без позначок","exploded.labels.numbers":"Номери деталей","exploded.labels.names":"Номери та назви","exploded.reset":"Скинути вигляд","exploded.fit":"Вписати модель","exploded.unavailable":"Розібраний вигляд недоступний","exploded.singlePart":"У цій моделі знайдено лише одну деталь.","exploded.layoutFailed":"Не вдалося підготувати розібраний вигляд.",
  "palette.editNamed":"Редагувати {name}","palette.deleteNamed":"Видалити {name}","palette.usedBy":"Використовують: {count}",
  "viewer.model":"Модель","viewer.split":"Розділено","viewer.reference":"Референс",
  "properties.originalMaterial":"Оригінальний матеріал","properties.materialBase":"Базовий колір матеріалу",

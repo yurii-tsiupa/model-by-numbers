@@ -8,6 +8,7 @@ import { EditorSidebarTab } from "../types/EditorSidebarTab";
 import { GeneratePaletteOptions } from "../types/PaletteGeneration";
 import { generatePalette } from "../utils/generatePalette";
 import { ViewerMode } from "../types/ViewerMode";
+import type { ExplodedLabelsMode } from "../types/ExplodedLabelsMode";
 
 export type EditorSaveStatus =
   | "saved"
@@ -46,6 +47,11 @@ type ModelEditorState = {
   ) => void;
 
   viewerMode: ViewerMode;
+  explosionFactor:number;
+  explodedLabelsMode:ExplodedLabelsMode;
+  setExplosionFactor:(factor:number)=>void;
+  setExplodedLabelsMode:(mode:ExplodedLabelsMode)=>void;
+  resetExplodedViewerState:()=>void;
 
   setViewerMode: (
     mode: ViewerMode,
@@ -209,6 +215,11 @@ export const useModelEditorStore =
     selectedPartIds: [],
 
     viewerMode: "painted",
+    explosionFactor:1,
+    explodedLabelsMode:"numbers",
+    setExplosionFactor:(factor)=>set({explosionFactor:Math.min(1,Math.max(0,Number.isFinite(factor)?factor:1))}),
+    setExplodedLabelsMode:(explodedLabelsMode)=>set({explodedLabelsMode}),
+    resetExplodedViewerState:()=>set({explosionFactor:1,explodedLabelsMode:"numbers"}),
 
     setSelectedPartIds: (selectedPartIds) => {
       set({
@@ -805,6 +816,8 @@ export const useModelEditorStore =
         selectionMode: "single",
         selectedPartIds: [],
         viewerMode: "painted",
+        explosionFactor:1,
+        explodedLabelsMode:"numbers",
         isDirty: false,
         saveStatus: "saved",
         changeVersion: 0,

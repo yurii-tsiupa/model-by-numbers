@@ -35,9 +35,11 @@ import { ViewerToolbar } from "./ViewerToolbar";
 import { useModelEditorStore } from "../store/modelEditorStore";
 import { fitCameraToBounds } from "../lib/fitCameraToBounds";
 import { getModelBounds } from "../lib/getModelBounds";
+import {getVisibleModelBounds} from "../lib/getVisibleModelBounds";
 import { ViewerModeSwitcher } from "./ViewerModeSwitcher";
 import type { ViewerMode } from "../types/ViewerMode";
 import { waitForAnimationFrames } from "../lib/waitForAnimationFrames";
+import {ExplodedViewToolbar} from "./ExplodedViewToolbar";
 
 type ModelViewerProps = {
   project: Project;
@@ -66,6 +68,7 @@ type SceneProps = {
   viewerMode: ViewerMode;
   showAllNumberCalloutsForCapture: boolean;
   showAllPartsForCapture: boolean;
+  forceAssembled:boolean;
 };
 
 function Scene({
@@ -78,6 +81,7 @@ function Scene({
   viewerMode,
   showAllNumberCalloutsForCapture,
   showAllPartsForCapture,
+  forceAssembled,
 }: SceneProps) {
   return (
     <>
@@ -116,6 +120,7 @@ function Scene({
             showAllNumberCalloutsForCapture
           }
           showAllPartsForCapture={showAllPartsForCapture}
+          forceAssembled={forceAssembled}
         />
 
         <Environment preset="studio" />
@@ -187,6 +192,7 @@ export const ModelViewer = forwardRef<
 
   const [showAllPartsForCapture, setShowAllPartsForCapture] =
     useState(false);
+  const [forceAssembled,setForceAssembled]=useState(false);
 
   const [viewerError, setViewerError] =
     useState<Error | null>(null);
@@ -277,7 +283,7 @@ export const ModelViewer = forwardRef<
     }
 
     model.updateWorldMatrix(true, true);
-    const bounds = getModelBounds(model);
+    const bounds = getVisibleModelBounds(model);
 
     fitCameraToBounds({
       camera,
@@ -327,7 +333,7 @@ export const ModelViewer = forwardRef<
       return;
     }
 
-    const bounds = getModelBounds(model);
+    const bounds = getVisibleModelBounds(model);
 
     fitCameraToBounds({
       camera,
@@ -410,6 +416,7 @@ export const ModelViewer = forwardRef<
           setSelectedPartIds([]);
           setHighlightedPaletteColorId(null);
           setShowAllPartsForCapture(true);
+          setForceAssembled(true);
           setIsGridVisible(false);
           setShowAllNumberCalloutsForCapture(mode === "numbers");
 
@@ -438,6 +445,7 @@ export const ModelViewer = forwardRef<
             savedEditorState.highlightedPaletteColorId,
           );
           setShowAllPartsForCapture(false);
+          setForceAssembled(false);
           setIsGridVisible(savedGridVisibility);
           setShowAllNumberCalloutsForCapture(false);
 
@@ -546,6 +554,7 @@ export const ModelViewer = forwardRef<
                 showAllNumberCalloutsForCapture
               }
               showAllPartsForCapture={showAllPartsForCapture}
+              forceAssembled={forceAssembled}
             />
           </Canvas>
         </ViewerErrorBoundary>
@@ -558,10 +567,12 @@ export const ModelViewer = forwardRef<
       {shouldShowNumbersHint ? (
         <div className="pointer-events-none absolute inset-x-0 top-20 z-10 flex justify-center px-4">
           <div className="rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs text-neutral-400 shadow-xl backdrop-blur-xl">
-            Select a painted part to preview its number.
+            {t("viewer.numbersHint")}
           </div>
         </div>
       ) : null}
+
+      {viewerMode==="exploded"&&parts.length>1?<div className="absolute left-0 top-20 z-10"><ExplodedViewToolbar onFit={handleFitModel}/></div>:null}
 
       <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[calc(100%-2rem)] rounded-2xl border border-white/10 bg-black/45 px-4 py-3 backdrop-blur-xl">
         <p className="truncate text-sm font-medium text-white">

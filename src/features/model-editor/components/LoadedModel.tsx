@@ -1,7 +1,7 @@
 "use client";
 
-import { useGLTF } from "@react-three/drei";
-import type { ThreeEvent } from "@react-three/fiber";
+import {Html,useGLTF} from "@react-three/drei";
+import {useFrame,type ThreeEvent} from "@react-three/fiber";
 import {
   useEffect,
   useMemo,
@@ -9,6 +9,7 @@ import {
 } from "react";
 import {
   Mesh,
+  MathUtils,
   type Object3D,
 } from "three";
 import type { GLTF } from "three-stdlib";
@@ -25,6 +26,10 @@ import type { ProjectPart } from "@/features/models/types/ProjectPart";
 import { mergeModelParts } from "../lib/mergeModelParts";
 import type { ViewerMode } from "../types/ViewerMode";
 import { ModelNumberLabels } from "./ModelNumberLabels";
+import {buildExplodedLayout} from "../lib/exploded/buildExplodedLayout";
+import {EXPLOSION_DAMPING} from "../lib/exploded/exploded.constants";
+import {ExplodedPartLabels} from "./ExplodedPartLabels";
+import {useTranslation} from "@/features/i18n/hooks/useTranslation";
 
 type LoadedModelProps = {
   modelUrl: string;
@@ -33,6 +38,7 @@ type LoadedModelProps = {
   baseColor: string;
   showAllNumberCalloutsForCapture: boolean;
   showAllPartsForCapture: boolean;
+  forceAssembled:boolean;
   onModelReady?: (
     model: Object3D,
   ) => void;
@@ -45,8 +51,10 @@ export function LoadedModel({
   baseColor,
   showAllNumberCalloutsForCapture,
   showAllPartsForCapture,
+  forceAssembled,
   onModelReady,
 }: LoadedModelProps) {
+  const {t}=useTranslation();
   const gltf = useGLTF(modelUrl) as GLTF;
 
   const hasInitializedPartsRef = useRef(false);
@@ -91,6 +99,8 @@ export function LoadedModel({
     useModelEditorStore(
       (state) => state.selectedPartIds,
     );
+  const explosionFactor=useModelEditorStore(state=>state.explosionFactor);
+  const explodedLabelsMode=useModelEditorStore(state=>state.explodedLabelsMode);
 
   const model = useMemo(() => {
     const normalizedModel = normalizeModel(
@@ -112,6 +122,23 @@ export function LoadedModel({
         : parts,
     [parts, showAllPartsForCapture],
   );
+  const partStructure=parts.map(part=>`${part.id}:${part.meshUuid}`).join("|");
+  const explodedLayout=useMemo(() => {
+    if (parts.length <= 1) {
+      return [];
+    }
+
+    try {
+      return buildExplodedLayout(model, parts);
+    } catch (error) {
+      console.warn("Unable to build exploded model layout", error);
+      return [];
+    }
+    // Only identity/mapping changes rebuild the immutable runtime layout.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model, partStructure]);
+  useEffect(()=>()=>{for(const runtime of explodedLayout){runtime.mesh.position.set(...runtime.originalTransform.position);runtime.mesh.rotation.set(...runtime.originalTransform.rotation);runtime.mesh.scale.set(...runtime.originalTransform.scale);}},[explodedLayout]);
+  useFrame((_,delta)=>{const factor=viewerMode==="exploded"&&!forceAssembled?explosionFactor:0;for(const runtime of explodedLayout){const target=runtime.originalTransform.position.map((value,index)=>MathUtils.lerp(value,runtime.explodedTransform.position[index],factor)) as [number,number,number];if(forceAssembled){runtime.mesh.position.set(...runtime.originalTransform.position);}else{runtime.mesh.position.set(MathUtils.damp(runtime.mesh.position.x,target[0],EXPLOSION_DAMPING,delta),MathUtils.damp(runtime.mesh.position.y,target[1],EXPLOSION_DAMPING,delta),MathUtils.damp(runtime.mesh.position.z,target[2],EXPLOSION_DAMPING,delta));}runtime.mesh.rotation.set(...runtime.originalTransform.rotation);runtime.mesh.scale.set(...runtime.originalTransform.scale);}});
 
   useEffect(() => {
     if (hasInitializedPartsRef.current) {
@@ -211,6 +238,8 @@ export function LoadedModel({
         }
       />
     ) : null}
+    {viewerMode==="exploded"&&!forceAssembled?<ExplodedPartLabels layout={explodedLayout} parts={presentationParts} mode={explodedLabelsMode}/>:null}
+    {viewerMode==="exploded"&&parts.length>1&&explodedLayout.length===0?<Html center><div className="whitespace-nowrap rounded-xl border border-red-400/20 bg-black/85 px-4 py-3 text-sm text-red-300">{t("exploded.layoutFailed")}</div></Html>:null}
     </>
   );
 }

@@ -88,7 +88,8 @@ function updateMaterialDisplayColor({
     }
 
     case "painted":
-    case "numbers": {
+    case "numbers":
+    case "exploded": {
       material.color.set(
         paintedColor ?? baseColor,
       );

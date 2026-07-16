@@ -1,4 +1,6 @@
 export const en={
+ "viewer.numbersHint":"Select a painted part to preview its number.",
+ "viewer.exploded":"Exploded","exploded.title":"Exploded View","exploded.distance":"Explosion Distance","exploded.labels":"Labels","exploded.labels.none":"No labels","exploded.labels.numbers":"Part numbers","exploded.labels.names":"Numbers and names","exploded.reset":"Reset View","exploded.fit":"Fit Model","exploded.unavailable":"Exploded view is unavailable","exploded.singlePart":"This model contains only one detected part.","exploded.layoutFailed":"Unable to prepare the exploded view.",
  "palette.editNamed":"Edit {name}","palette.deleteNamed":"Delete {name}","palette.usedBy":"Used by {count}",
  "viewer.model":"Model","viewer.split":"Split","viewer.reference":"Reference",
  "properties.originalMaterial":"Original material","properties.materialBase":"Material base color",
