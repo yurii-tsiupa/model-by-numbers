@@ -28,6 +28,7 @@ import { useModelImport } from "@/features/model-import/hooks/useModelImport";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { useImportTransform } from "@/features/model-import/hooks/useImportTransform";
 import { ImportTransformPanel } from "@/features/model-import/components/ImportTransformPanel";
+import { OrientationSuggestionBanner } from "@/features/model-import/components/OrientationSuggestionBanner";
 import { ImportTransformPreviewProvider } from "@/features/model-import/context/ImportTransformPreviewContext";
 import { createTransformedGlbFile } from "@/features/model-import/lib/createTransformedGlbFile";
 import type { ImportPreviewCapture } from "@/features/model-import/context/ImportTransformPreviewContext";
@@ -67,7 +68,7 @@ export function NewProjectModal({
   const { t } = useTranslation();
   const createProjectMutation = useCreateProject(userId);
   const modelImport = useModelImport();
-  const importTransform = useImportTransform(modelImport.analysis);
+  const importTransform = useImportTransform(modelImport.analysis, modelImport.orientationSuggestion);
   const saveThumbnail = useSaveProjectThumbnail();
   const importPreviewCaptureRef = useRef<ImportPreviewCapture | null>(null);
 
@@ -120,7 +121,7 @@ export function NewProjectModal({
     setFile(null);
     setHasConfirmedHeavyModel(false);
     modelImport.resetImport();
-    importTransform.reset();
+    importTransform.resetSession();
     setUploadProgress(0);
     setErrors({});
     setCreationStage("idle");
@@ -431,15 +432,15 @@ export function NewProjectModal({
                 Model file
               </p>
 
-              <ImportTransformPreviewProvider transform={importTransform.transform} includedMeshUuids={includedMeshUuids} captureRef={importPreviewCaptureRef}><ModelImportFlow
+              <ImportTransformPreviewProvider transform={importTransform.transform} includedMeshUuids={includedMeshUuids} captureRef={importPreviewCaptureRef}>{modelImport.status==="review"?<OrientationSuggestionBanner suggestion={modelImport.orientationSuggestion} hasManualOverride={importTransform.hasManualOrientationOverride} onReset={importTransform.resetSuggestedOrientation} onReview={()=>document.getElementById("import-transform-panel")?.scrollIntoView({behavior:"smooth",block:"start"})}/>:null}<ModelImportFlow
                 file={file} status={modelImport.status} progress={modelImport.progress} stage={modelImport.currentStage} analysis={modelImport.analysis} warnings={modelImport.warnings} errors={modelImport.errors} importedModel={modelImport.importedModel} reviewedParts={modelImport.reviewedParts} disabled={isSubmitting} heavyConfirmed={hasConfirmedHeavyModel}
-                onFileSelected={(selectedFile) => { importTransform.reset(); setFile(selectedFile); setHasConfirmedHeavyModel(false); setErrors(current => ({ ...current, file: undefined })); void modelImport.startImport(selectedFile); }}
-                onChooseAnother={() => { importTransform.reset(); setFile(null); setHasConfirmedHeavyModel(false); modelImport.resetImport(); setErrors(current => ({ ...current, file: undefined })); }}
+                onFileSelected={(selectedFile) => { importTransform.resetSession(); setFile(selectedFile); setHasConfirmedHeavyModel(false); setErrors(current => ({ ...current, file: undefined })); void modelImport.startImport(selectedFile); }}
+                onChooseAnother={() => { importTransform.resetSession(); setFile(null); setHasConfirmedHeavyModel(false); modelImport.resetImport(); setErrors(current => ({ ...current, file: undefined })); }}
                 onTryAgain={() => { if (file) void modelImport.startImport(file); }}
-                onCancelAnalysis={() => { importTransform.reset(); modelImport.cancelImport(); setFile(null); }}
+                onCancelAnalysis={() => { importTransform.resetSession(); modelImport.cancelImport(); setFile(null); }}
                 onConfirmHeavy={() => setHasConfirmedHeavyModel(true)}
                 onUpdatePart={modelImport.updateReviewedPart} onBulkParts={modelImport.setReviewedInclusion} onResetParts={modelImport.resetReviewedParts} onApplySuggestedNames={modelImport.applySuggestedNames}
-              />{modelImport.status==="review"&&modelImport.analysis&&importTransform.bounds?<ImportTransformPanel analysis={modelImport.analysis} transform={importTransform.transform} bounds={importTransform.bounds} onRotate={importTransform.rotate} onView={importTransform.setView} onResetRotation={importTransform.resetRotation} onReset={importTransform.reset} onCenter={importTransform.autoCenter} onNormalize={importTransform.autoNormalize}/>:null}</ImportTransformPreviewProvider>
+              />{modelImport.status==="review"&&modelImport.analysis&&importTransform.bounds?<div id="import-transform-panel" className="scroll-mt-24"><ImportTransformPanel analysis={modelImport.analysis} transform={importTransform.transform} bounds={importTransform.bounds} onRotate={importTransform.rotate} onView={importTransform.setView} onResetRotation={importTransform.resetRotation} onReset={importTransform.reset} onCenter={importTransform.autoCenter} onNormalize={importTransform.autoNormalize}/></div>:null}</ImportTransformPreviewProvider>
               {errors.file ? <p className="mt-2 text-sm text-red-400">{errors.file}</p> : null}
             </div>
 
