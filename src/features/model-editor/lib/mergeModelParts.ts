@@ -12,8 +12,9 @@ export function mergeModelParts(
   );
 
   const savedPartsByMeshUuid = new Map(savedParts.filter(part=>part.meshUuid).map(part=>[part.meshUuid,part]));
+  const savedPartsBySourceKey = new Map(savedParts.filter((part)=>part.sourcePartKey).map((part)=>[part.sourcePartKey,part]));
   return extractedParts.flatMap((part) => {
-    const savedPart = savedPartsByMeshUuid.get(part.meshUuid) ?? savedPartsById.get(part.id);
+    const savedPart = (part.sourcePartKey ? savedPartsBySourceKey.get(part.sourcePartKey) : undefined) ?? savedPartsByMeshUuid.get(part.meshUuid) ?? savedPartsById.get(part.id);
 
     if (!savedPart) {
       return authoritativeImport ? [] : [part];

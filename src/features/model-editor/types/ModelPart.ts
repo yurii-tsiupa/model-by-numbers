@@ -3,6 +3,7 @@ import type { ExplodedOffset } from "./ExplodedOffset";
 export type ModelPart = {
   id: string;
   meshUuid: string;
+  sourcePartKey?: string;
 
   name: string;
   index: number;

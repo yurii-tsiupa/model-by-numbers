@@ -25,6 +25,7 @@ import { ProjectPart } from "../types/ProjectPart";
 import { PaletteColor } from "../types/PaletteColor";
 import type { AssemblyStep } from "../types/AssemblyStep";
 import { MAX_EXPLODED_OFFSET } from "@/features/model-editor/lib/exploded/exploded.constants";
+import { getModelFileExtension } from "@/features/model-import/lib/getModelFileExtension";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -51,6 +52,7 @@ function mapProjectDocument(
     originalFileName: data.originalFileName ?? "",
     originalFileSize: data.originalFileSize ?? 0,
     originalFileType: data.originalFileType ?? "",
+    modelFormat: data.modelFormat === "stl" ? "stl" : getModelFileExtension(String(data.originalFileName ?? "")) === "stl" ? "stl" : "glb",
 
     thumbnailUrl: data.thumbnailUrl ?? null,
 
@@ -64,6 +66,7 @@ function mapProjectDocument(
       ? data.parts.map((part: Partial<ProjectPart>) => ({
           id: String(part.id ?? ""),
           meshUuid: typeof part.meshUuid === "string" ? part.meshUuid : undefined,
+          sourcePartKey: typeof part.sourcePartKey === "string" ? part.sourcePartKey : undefined,
           name: String(part.name ?? "Unnamed part"),
           visible: part.visible !== false,
           includeInGuide: part.includeInGuide !== false,
@@ -211,6 +214,7 @@ export async function createProject({
   name,
   description,
   file,
+  modelFormat,
   printerType,
   material,
   baseColor,
@@ -246,6 +250,7 @@ export async function createProject({
     originalFileName: localModel.originalFileName,
     originalFileSize: localModel.originalFileSize,
     originalFileType: localModel.originalFileType,
+    modelFormat,
 
     thumbnailUrl: null,
 

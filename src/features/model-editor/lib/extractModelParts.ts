@@ -60,6 +60,7 @@ export function extractModelParts(
     parts.push({
       id: `part-${index}`,
       meshUuid: object.uuid,
+      sourcePartKey: typeof object.userData.sourcePartKey === "string" ? object.userData.sourcePartKey : undefined,
       name:
         trimmedName ||
         createFallbackPartName(index),

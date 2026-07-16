@@ -88,14 +88,22 @@ export function useModelImport() {
       modelRef.current = imported;
       setImportedModel(imported);
       setProgress(40); setStatus("analyzing");
-      const result = await analyzeImportedModel(imported, controller.signal, (nextStage, nextProgress) => {
+      const analyzed = await analyzeImportedModel(imported, controller.signal, (nextStage, nextProgress) => {
         setStage(nextStage); setProgress(nextProgress);
       });
+      const result: ModelAnalysis = { ...analyzed, format: imported.format, capabilities: imported.capabilities, materials: imported.capabilities.supportsMaterials ? analyzed.materials : { ...analyzed.materials, materialsCount: 0, texturedMaterialsCount: 0 }, textures: imported.capabilities.supportsTextures ? analyzed.textures : { ...analyzed.textures, texturesCount: 0, estimatedMemoryBytes: 0, oversizedTexturesCount: 0 } };
       const suggestion = analyzeModelOrientation(imported.scene);
       setAnalysis(result);
       setOrientationSuggestion(suggestion);
       setReviewedParts(result.parts.map((part) => ({ ...part, includeInProject: !part.empty, editedName: part.suggestedName })));
-      setWarnings([...validation.warnings, ...result.warnings.filter((warning) => !validation.warnings.some((item) => item.code === warning.code))]);
+      const capabilityWarnings: ModelImportWarning[] = [
+        ...(!imported.capabilities.supportsMultipleParts ? [{ code: "stl-single-mesh", severity: "info", messageKey: "modelImport.warnings.stl-single-mesh" } as const] : []),
+        ...(!imported.capabilities.supportsMaterials ? [{ code: "format-no-materials", severity: "info", messageKey: "modelImport.warnings.format-no-materials" } as const] : []),
+        ...(!imported.capabilities.supportsTextures ? [{ code: "format-no-textures", severity: "info", messageKey: "modelImport.warnings.format-no-textures" } as const] : []),
+        ...(imported.capabilities.requiresManualUnits ? [{ code: "units-unknown", severity: "warning", messageKey: "modelImport.warnings.units-unknown" } as const] : []),
+      ];
+      const sharedWarnings = result.warnings.filter((warning) => !(warning.code === "single-mesh" && !imported.capabilities.supportsMultipleParts));
+      setWarnings([...validation.warnings, ...capabilityWarnings, ...sharedWarnings.filter((warning) => !validation.warnings.some((item) => item.code === warning.code))]);
       setErrors(result.errors);
       setProgress(100); setStage("report"); setStatus(result.errors.length ? "error" : "review");
     } catch (error) {

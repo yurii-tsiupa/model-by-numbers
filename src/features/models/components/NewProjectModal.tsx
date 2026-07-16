@@ -184,8 +184,9 @@ export function NewProjectModal({
         material,
         baseColor,
         file: transformedFile,
+        modelFormat: modelImport.importedModel.format,
         importSchemaVersion: 1,
-        parts: modelImport.reviewedParts.filter(part=>part.includeInProject).map((part)=>({id:`part-${Math.max(0,Number(part.id.slice(5))-1)}`,meshUuid:part.meshUuid,name:part.editedName.trim().replace(/\s+/g," "),visible:true,includeInGuide:true,color:null,paletteColorId:null,explodedOffset:null})),
+        parts: modelImport.reviewedParts.filter(part=>part.includeInProject).map((part)=>({id:`part-${Math.max(0,Number(part.id.slice(5))-1)}`,meshUuid:part.meshUuid,sourcePartKey:modelImport.importedModel?.format==="stl"?"stl:0":undefined,name:part.editedName.trim().replace(/\s+/g," "),visible:true,includeInGuide:true,color:null,paletteColorId:null,explodedOffset:null})),
         onUploadProgress: setUploadProgress,
       });
 
@@ -236,7 +237,7 @@ export function NewProjectModal({
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-neutral-500">
-              Add the project details and select a GLB model file.
+              {t("modelImport.upload.modalDescription")}
             </p>
           </div>
 

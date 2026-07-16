@@ -66,6 +66,7 @@ const INITIAL_CAMERA_TARGET: [number, number, number] = [
 
 type SceneProps = {
   modelUrl: string;
+  modelFormat: Project["modelFormat"];
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
   isGridVisible: boolean;
   onModelReady: (model: Object3D) => void;
@@ -81,6 +82,7 @@ type SceneProps = {
 
 function Scene({
   modelUrl,
+  modelFormat,
   savedParts,
   importSchemaVersion,
   controlsRef,
@@ -122,6 +124,7 @@ function Scene({
       <Suspense fallback={null}>
         <LoadedModel
           modelUrl={modelUrl}
+          modelFormat={modelFormat}
           savedParts={savedParts}
           importSchemaVersion={importSchemaVersion}
           viewerMode={viewerMode}
@@ -626,6 +629,7 @@ export const ModelViewer = forwardRef<
           >
             <Scene
               modelUrl={localModel.modelUrl}
+              modelFormat={project.modelFormat}
               savedParts={project.parts}
               importSchemaVersion={project.importSchemaVersion}
               viewerMode={viewerMode}

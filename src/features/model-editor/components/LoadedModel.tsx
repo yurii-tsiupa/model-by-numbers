@@ -1,6 +1,6 @@
 "use client";
 
-import {Html,TransformControls,useGLTF} from "@react-three/drei";
+import {Html,TransformControls} from "@react-three/drei";
 import {useFrame,type ThreeEvent} from "@react-three/fiber";
 import {
   useEffect,
@@ -14,7 +14,6 @@ import {
   Vector3,
   type Object3D,
 } from "three";
-import type { GLTF } from "three-stdlib";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { extractModelParts } from "../lib/extractModelParts";
@@ -34,9 +33,12 @@ import {EXPLOSION_DAMPING} from "../lib/exploded/exploded.constants";
 import {ExplodedPartLabels} from "./ExplodedPartLabels";
 import {useTranslation} from "@/features/i18n/hooks/useTranslation";
 import {MAX_EXPLODED_OFFSET} from "../lib/exploded/exploded.constants";
+import {useRuntimeModelScene} from "../hooks/useRuntimeModelScene";
+import type {ModelFormat} from "@/features/model-import/types/ModelFormat";
 
 type LoadedModelProps = {
   modelUrl: string;
+  modelFormat: ModelFormat;
   savedParts: ProjectPart[];
   importSchemaVersion?: 1;
   viewerMode: ViewerMode;
@@ -51,8 +53,13 @@ type LoadedModelProps = {
   ) => void;
 };
 
-export function LoadedModel({
-  modelUrl,
+export function LoadedModel(props: LoadedModelProps) {
+  const sourceScene = useRuntimeModelScene(props.modelUrl, props.modelFormat);
+  return sourceScene ? <LoadedModelContent {...props} sourceScene={sourceScene} /> : null;
+}
+
+function LoadedModelContent({
+  sourceScene,
   savedParts,
   importSchemaVersion,
   viewerMode,
@@ -63,10 +70,8 @@ export function LoadedModel({
   forceFullyExploded,
   controlsRef,
   onModelReady,
-}: LoadedModelProps) {
+}: LoadedModelProps & { sourceScene: Object3D }) {
   const {t}=useTranslation();
-  const gltf = useGLTF(modelUrl) as GLTF;
-
   const hasInitializedPartsRef = useRef(false);
   const isTransformDraggingRef = useRef(false);
   const [transformError, setTransformError] = useState(false);
@@ -118,14 +123,12 @@ export function LoadedModel({
   const stopExplodedLayoutEditing=useModelEditorStore(state=>state.stopExplodedLayoutEditing);
 
   const model = useMemo(() => {
-    const normalizedModel = normalizeModel(
-      gltf.scene,
-    );
+    const normalizedModel = normalizeModel(sourceScene);
 
     prepareModelMeshes(normalizedModel);
 
     return normalizedModel;
-  }, [gltf.scene]);
+  }, [sourceScene]);
 
   const presentationParts = useMemo(
     () =>
