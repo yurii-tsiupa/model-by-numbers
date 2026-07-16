@@ -53,6 +53,8 @@ function mapProjectDocument(
     originalFileSize: data.originalFileSize ?? 0,
     originalFileType: data.originalFileType ?? "",
     modelFormat: data.modelFormat === "stl" ? "stl" : getModelFileExtension(String(data.originalFileName ?? "")) === "stl" ? "stl" : "glb",
+    modelUnits: ["mm", "cm", "m", "inch"].includes(data.modelUnits) ? data.modelUnits : null,
+    originalDimensions: data.originalDimensions && [data.originalDimensions.width, data.originalDimensions.height, data.originalDimensions.depth].every((value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= 0) ? { width: data.originalDimensions.width, height: data.originalDimensions.height, depth: data.originalDimensions.depth } : null,
 
     thumbnailUrl: data.thumbnailUrl ?? null,
 
@@ -215,6 +217,8 @@ export async function createProject({
   description,
   file,
   modelFormat,
+  modelUnits,
+  originalDimensions,
   printerType,
   material,
   baseColor,
@@ -251,6 +255,8 @@ export async function createProject({
     originalFileSize: localModel.originalFileSize,
     originalFileType: localModel.originalFileType,
     modelFormat,
+    modelUnits,
+    originalDimensions,
 
     thumbnailUrl: null,
 

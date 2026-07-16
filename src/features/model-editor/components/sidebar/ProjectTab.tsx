@@ -13,6 +13,7 @@ import { GuideReadinessPanel } from "./GuideReadinessPanel";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import type { GuideSettings } from "@/features/guides/types/ModelGuide";
 import { useModelEditorStore } from "../../store/modelEditorStore";
+import { formatModelDimension } from "@/features/model-import/lib/modelDimensions";
 
 type ProjectTabProps = {
   project: Project;
@@ -29,7 +30,7 @@ export function ProjectTab({
   onRegenerateThumbnail,
   guideSettings,
 }: ProjectTabProps) {
-  const {t}=useTranslation();
+  const {t,locale}=useTranslation();
   const printerLabels={fdm:t("domain.fdm"),resin:t("domain.resin"),other:t("domain.other")};
   const materialLabels={pla:t("domain.pla"),petg:t("domain.petg"),abs:t("domain.abs"),tpu:"TPU",resin:t("domain.resin"),other:t("domain.other")};
   const parts=useModelEditorStore(state=>state.parts),labelsMode=useModelEditorStore(state=>state.explodedLabelsMode),setViewerMode=useModelEditorStore(state=>state.setViewerMode);
@@ -90,6 +91,14 @@ export function ProjectTab({
           </div>
         </div>
       </div>
+
+      <section className="mt-4 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+        <div className="flex items-center gap-2 text-xs text-neutral-600"><Box className="h-4 w-4" />{t("projectInfo.physicalModel")}</div>
+        <dl className="mt-3 space-y-3 text-xs">
+          <div><dt className="text-neutral-600">{t("projectInfo.units")}</dt><dd className="mt-1 text-neutral-300">{project.modelUnits?t(`modelImport.units.${project.modelUnits}`):t("projectInfo.unknown")}</dd></div>
+          <div><dt className="text-neutral-600">{t("projectInfo.originalDimensions")}</dt><dd className="mt-1 text-neutral-300">{project.originalDimensions&&project.modelUnits?`${formatModelDimension(project.originalDimensions.width,locale)} × ${formatModelDimension(project.originalDimensions.height,locale)} × ${formatModelDimension(project.originalDimensions.depth,locale)} ${t(`modelImport.units.symbol.${project.modelUnits}`)}`:t("projectInfo.notRecorded")}</dd></div>
+        </dl>
+      </section>
 
       <GuideReadinessPanel project={project} guideSettings={guideSettings} />
       <section className="mt-4 rounded-xl border border-white/10 bg-white/[0.02] p-3"><p className="text-xs font-medium text-neutral-300">{t("exploded.summary.title")}</p><p className="mt-1 text-[11px] text-neutral-500">{t("exploded.summary.parts",{count:parts.length})}</p><p className="mt-1 text-[11px] text-neutral-500">{t("exploded.summary.adjusted",{count:customOffsets})}</p><p className="mt-1 text-[11px] text-neutral-500">{t("exploded.summary.labels",{mode:labelsText})}</p>{parts.length<2?<p className="mt-2 text-xs text-amber-300">{t("exploded.singlePart")}</p>:<button type="button" onClick={()=>setViewerMode("exploded")} className="mt-2 text-xs text-orange-300">{t("exploded.reviewLayout")}</button>}</section>

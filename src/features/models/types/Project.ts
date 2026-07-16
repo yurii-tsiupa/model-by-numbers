@@ -3,6 +3,7 @@ import type { ProjectPart } from "./ProjectPart";
 import { PaletteColor } from "./PaletteColor";
 import type { AssemblyStep } from "./AssemblyStep";
 import type { ModelFormat } from "@/features/model-import/types/ModelFormat";
+import type { ModelDimensions, ModelUnits } from "@/features/model-import/types/ModelUnits";
 
 export type PrinterType = "fdm" | "resin" | "other";
 
@@ -27,6 +28,8 @@ export type Project = {
   originalFileSize: number;
   originalFileType: string;
   modelFormat: ModelFormat;
+  modelUnits: ModelUnits | null;
+  originalDimensions: ModelDimensions | null;
 
   thumbnailUrl: string | null;
 
@@ -53,6 +56,8 @@ export type CreateProjectInput = {
 
   file: File;
   modelFormat: ModelFormat;
+  modelUnits: ModelUnits;
+  originalDimensions: ModelDimensions;
 
   printerType: PrinterType;
   material: ProjectMaterial;
