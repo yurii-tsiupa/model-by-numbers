@@ -62,7 +62,7 @@ export function ViewerModeSwitcher() {
             onClick={() =>
               setViewerMode(mode.id)
             }
-            title={unavailable?`${t("exploded.unavailable")} — ${t("exploded.singlePart")}`:t("viewer.mode",{mode:t(`viewer.${mode.id}`)})}
+            title={unavailable?`${t("exploded.unavailable")} — ${t("exploded.singlePart")}`:mode.id==="exploded"?t("shortcuts.exploded"):t("viewer.mode",{mode:t(`viewer.${mode.id}`)})}
             aria-label={unavailable?t("exploded.unavailable"):t("viewer.mode",{mode:t(`viewer.${mode.id}`)})}
             aria-pressed={isActive}
             className={`flex h-9 cursor-pointer items-center gap-2 rounded-full px-3 text-xs font-medium transition ${

@@ -12,6 +12,7 @@ import {
   forwardRef,
   Suspense,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -42,6 +43,7 @@ import { waitForAnimationFrames } from "../lib/waitForAnimationFrames";
 import {ExplodedViewToolbar} from "./ExplodedViewToolbar";
 import type { ExplodedLabelsMode } from "../types/ExplodedLabelsMode";
 import { captureAssemblyCanvas } from "../lib/captureAssemblyCanvas";
+import { isEditableKeyboardTarget } from "../lib/isEditableKeyboardTarget";
 
 type ModelViewerProps = {
   project: Project;
@@ -194,6 +196,18 @@ export const ModelViewer = forwardRef<
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isCaptureInProgressRef = useRef(false);
 
+  useEffect(() => () => {
+    isCaptureInProgressRef.current = false;
+    if (controlsRef.current) controlsRef.current.enabled = true;
+    controlsRef.current = null;
+    modelRef.current = null;
+    canvasRef.current = null;
+    const state = useModelEditorStore.getState();
+    if (state.focusedAssemblyStepId) state.exitAssemblyStepFocus();
+    state.stopExplodedLayoutEditing();
+    state.resetExplodedViewerState();
+  }, []);
+
   const [isGridVisible, setIsGridVisible] =
     useState(true);
 
@@ -253,6 +267,8 @@ export const ModelViewer = forwardRef<
   const setViewerMode = useModelEditorStore(
     (state) => state.setViewerMode,
   );
+  const setExplodedLabelsMode = useModelEditorStore((state) => state.setExplodedLabelsMode);
+
 
   const setSelectedPartIds = useModelEditorStore(
     (state) => state.setSelectedPartIds,
@@ -331,6 +347,27 @@ export const ModelViewer = forwardRef<
       // Toolbar fitting is unavailable until the model is ready.
     }
   }, [fitFullModel]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey || isEditableKeyboardTarget(event.target)) return;
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+      const state = useModelEditorStore.getState();
+      if (event.key === "Escape") {
+        if (state.isExplodedLayoutEditing) state.stopExplodedLayoutEditing();
+        else if (state.focusedAssemblyStepId) state.exitAssemblyStepFocus();
+        return;
+      }
+      if (event.repeat) return;
+      if (event.key.toLowerCase() === "e" && state.parts.length > 1) setViewerMode(state.viewerMode === "exploded" ? "painted" : "exploded");
+      else if (event.key.toLowerCase() === "l" && state.viewerMode === "exploded") {
+        const modes: readonly ExplodedLabelsMode[] = ["none", "numbers", "numbers-and-names"];
+        setExplodedLabelsMode(modes[(modes.indexOf(state.explodedLabelsMode) + 1) % modes.length]);
+      } else if (event.key.toLowerCase() === "f") handleFitModel();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleFitModel, setExplodedLabelsMode, setViewerMode]);
 
   function handleResetCamera() {
     const model = modelRef.current;

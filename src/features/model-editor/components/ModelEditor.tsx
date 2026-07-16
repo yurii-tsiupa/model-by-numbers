@@ -284,7 +284,7 @@ export function ModelEditor({
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-        <EditorSidebar project={project} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onFocusAssemblyStep={focusAssemblyStep} onExitAssemblyFocus={exitAssemblyFocus} onCaptureAssemblyImage={captureAssemblyImage} onDeleteAssemblyImage={deleteAssemblyImage} onDeleteAssemblyStep={deleteAssemblyStepWithImage} />
+        <EditorSidebar guideSettings={lastGuideSettings??defaultSettings} project={project} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onFocusAssemblyStep={focusAssemblyStep} onExitAssemblyFocus={exitAssemblyFocus} onCaptureAssemblyImage={captureAssemblyImage} onDeleteAssemblyImage={deleteAssemblyImage} onDeleteAssemblyStep={deleteAssemblyStepWithImage} />
 
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
           <div className={`${effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-0 min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} /></div>

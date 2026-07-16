@@ -8,6 +8,8 @@ import {
 import { useMemo } from "react";
 
 import type { Project } from "@/features/models/types/Project";
+import type { GuideSettings } from "@/features/guides/types/ModelGuide";
+import { getAssemblyGuideReadiness } from "@/features/guides/lib/getAssemblyGuideReadiness";
 
 import { getGuideReadiness } from "../../lib/getGuideReadiness";
 import { useModelEditorStore } from "../../store/modelEditorStore";
@@ -15,10 +17,12 @@ import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 type GuideReadinessPanelProps = {
   project: Project;
+  guideSettings: GuideSettings;
 };
 
 export function GuideReadinessPanel({
   project,
+  guideSettings,
 }: GuideReadinessPanelProps) {
   const {t,locale}=useTranslation();
   const parts = useModelEditorStore(
@@ -28,6 +32,13 @@ export function GuideReadinessPanel({
   const palette = useModelEditorStore(
     (state) => state.palette,
   );
+  const assemblySteps = useModelEditorStore((state) => state.assemblySteps);
+  const setActiveTab = useModelEditorStore((state) => state.setActiveSidebarTab);
+  const assemblyReadiness = useMemo(() => getAssemblyGuideReadiness({ settings: guideSettings, assemblySteps, parts }), [assemblySteps, guideSettings, parts]);
+  const openAssemblyIssue = (stepId: string | null) => {
+    setActiveTab("assembly");
+    if (stepId) window.setTimeout(() => document.getElementById(`assembly-step-${stepId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+  };
 
   const readiness = useMemo(
     () =>
@@ -66,6 +77,13 @@ export function GuideReadinessPanel({
         >
           {readiness.progress}%
         </span>
+      </div>
+
+      <div className={`mt-4 rounded-xl border px-3 py-3 ${assemblyReadiness.blockingIssues.length ? "border-red-400/20 bg-red-400/5" : assemblyReadiness.warnings.some((issue) => issue.severity === "warning") ? "border-amber-400/20 bg-amber-400/5" : assemblyReadiness.isEnabled ? "border-emerald-400/20 bg-emerald-400/5" : "border-white/10 bg-white/[0.02]"}`}>
+        <p className="text-xs font-medium">{!assemblyReadiness.isEnabled ? t("readiness.assembly.disabled") : assemblyReadiness.blockingIssues.length ? t("readiness.assembly.attention", { count: new Set(assemblyReadiness.blockingIssues.map((issue) => issue.stepId)).size }) : t("readiness.assembly.ready")}</p>
+        {assemblyReadiness.warnings.filter((issue) => issue.code === "missing-step-image").length ? <p className="mt-1 text-[11px] text-amber-300">{t("readiness.assembly.missingImages", { count: assemblyReadiness.warnings.filter((issue) => issue.code === "missing-step-image").length })}</p> : null}
+        {assemblyReadiness.warnings.filter((issue) => issue.code === "stale-step-image").length ? <p className="mt-1 text-[11px] text-amber-300">{t("readiness.assembly.staleImages", { count: assemblyReadiness.warnings.filter((issue) => issue.code === "stale-step-image").length })}</p> : null}
+        {assemblyReadiness.isEnabled && (assemblyReadiness.blockingIssues.length || assemblyReadiness.warnings.length) ? <div className="mt-2 flex flex-wrap gap-1">{[...assemblyReadiness.blockingIssues, ...assemblyReadiness.warnings.filter((issue) => issue.severity === "warning")].slice(0, 3).map((issue, index) => <button key={`${issue.code}-${issue.stepId}-${index}`} type="button" onClick={() => openAssemblyIssue(issue.stepId)} className="rounded-lg border border-white/10 px-2 py-1 text-[10px] text-orange-300">{t(`readiness.assembly.issue.${issue.code}`)}</button>)}</div> : null}
       </div>
 
       <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">

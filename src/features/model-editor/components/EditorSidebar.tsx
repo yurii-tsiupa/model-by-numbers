@@ -19,6 +19,7 @@ import { ReferencesTab } from "@/features/references/components/ReferencesTab";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { AssemblyTab } from "./assembly/AssemblyTab";
 import type { AssemblyStep } from "@/features/models/types/AssemblyStep";
+import type { GuideSettings } from "@/features/guides/types/ModelGuide";
 
 type EditorSidebarProps = {
   project: Project;
@@ -32,6 +33,7 @@ type EditorSidebarProps = {
   onCaptureAssemblyImage: (step: AssemblyStep) => Promise<Blob>;
   onDeleteAssemblyImage: (step: AssemblyStep) => Promise<void>;
   onDeleteAssemblyStep: (step: AssemblyStep) => Promise<void>;
+  guideSettings: GuideSettings;
 };
 
 export function EditorSidebar({
@@ -46,6 +48,7 @@ export function EditorSidebar({
   onCaptureAssemblyImage,
   onDeleteAssemblyImage,
   onDeleteAssemblyStep,
+  guideSettings,
 }: EditorSidebarProps) {
   const {t}=useTranslation();
   const tabs:Array<{id:EditorSidebarTab;label:string;icon:typeof Box}>=[{id:"parts",label:t("editor.tabs.parts"),icon:Box},{id:"palette",label:t("editor.tabs.palette"),icon:Palette},{id:"project",label:t("editor.tabs.project"),icon:FolderCog},{id:"references",label:t("editor.tabs.references"),icon:Images},{id:"assembly",label:t("editor.tabs.assembly"),icon:Wrench}];
@@ -95,7 +98,7 @@ export function EditorSidebar({
       ) : null}
 
       {activeTab === "project" ? (
-        <ProjectTab project={project} isGeneratingThumbnail={isGeneratingThumbnail} thumbnailError={thumbnailError} onRegenerateThumbnail={onRegenerateThumbnail} />
+        <ProjectTab project={project} guideSettings={guideSettings} isGeneratingThumbnail={isGeneratingThumbnail} thumbnailError={thumbnailError} onRegenerateThumbnail={onRegenerateThumbnail} />
       ) : null}
       {activeTab === "references" ? <ReferencesTab projectId={project.id} onOpenReferenceMode={onOpenReferenceMode} onReferenceDeleted={onReferenceDeleted} /> : null}
       {activeTab === "assembly" ? <AssemblyTab projectId={project.id} onFocusStep={onFocusAssemblyStep} onExitFocus={onExitAssemblyFocus} onCaptureImage={onCaptureAssemblyImage} onDeleteImage={onDeleteAssemblyImage} onDeleteStep={onDeleteAssemblyStep} /> : null}

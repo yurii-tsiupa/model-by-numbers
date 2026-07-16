@@ -307,13 +307,23 @@ export const useModelEditorStore =
     saveError: null,
 
     setParts: (parts) => {
-      set({
+      set((state) => {
+        const validIds = new Set(parts.map((part) => part.id));
+        const assemblySteps = state.assemblySteps.map((step) => {
+          const partIds = step.partIds.filter((id) => validIds.has(id));
+          return partIds.length === step.partIds.length ? step : { ...step, partIds, contentVersion: step.contentVersion + 1, updatedAt: new Date().toISOString() };
+        });
+        const focusedStep = assemblySteps.find((step) => step.id === state.focusedAssemblyStepId);
+        return {
         parts,
+        assemblySteps,
+        ...(focusedStep && focusedStep.partIds.length > 0 ? {} : { focusedAssemblyStepId: null, assemblyFocusSnapshot: null }),
         selectedPartId: null,
         isDirty: false,
         saveStatus: "saved",
         changeVersion: 0,
         saveError: null,
+        };
       });
     },
 
@@ -380,7 +390,7 @@ export const useModelEditorStore =
       const partIds = [...new Set(input.partIds)].filter((id) => validPartIds.has(id));
       if (!title || title.length > 120 || description.length > 1000 || partIds.length === 0) return state;
       const now = new Date().toISOString();
-      const nextStep = { id: crypto.randomUUID(), order: state.assemblySteps.length + 1, title, description, partIds, createdAt: now, updatedAt: now, imageKey: null };
+      const nextStep = { id: crypto.randomUUID(), order: state.assemblySteps.length + 1, title, description, partIds, createdAt: now, updatedAt: now, imageKey: null, imageCapturedAt: null, imageContentVersion: null, contentVersion: 1 };
       return {
         assemblySteps: [...state.assemblySteps, nextStep].map((step, index) => ({ ...step, order: index + 1 })),
         ...markStateDirty(state),
@@ -397,7 +407,7 @@ export const useModelEditorStore =
       if (title === step.title && description === step.description && partIds.length === step.partIds.length && partIds.every((id, index) => id === step.partIds[index])) return state;
       const focusedPartIds = state.focusedAssemblyStepId === stepId ? new Set(partIds) : null;
       return {
-        assemblySteps: state.assemblySteps.map((item) => item.id === stepId ? { ...item, title, description, partIds, updatedAt: new Date().toISOString() } : item),
+        assemblySteps: state.assemblySteps.map((item) => item.id === stepId ? { ...item, title, description, partIds, contentVersion: item.contentVersion + 1, updatedAt: new Date().toISOString() } : item),
         ...(focusedPartIds ? { parts: state.parts.map((part) => ({ ...part, visible: focusedPartIds.has(part.id) })) } : {}),
         ...markStateDirty(state),
       };
@@ -423,7 +433,8 @@ export const useModelEditorStore =
     setAssemblyStepImageKey: (stepId, imageKey) => set((state) => {
       const step = state.assemblySteps.find((item) => item.id === stepId);
       if (!step || step.imageKey === imageKey) return state;
-      return { assemblySteps: state.assemblySteps.map((item) => item.id === stepId ? { ...item, imageKey, updatedAt:new Date().toISOString() } : item), ...markStateDirty(state) };
+      const capturedAt = imageKey ? new Date().toISOString() : null;
+      return { assemblySteps: state.assemblySteps.map((item) => item.id === stepId ? { ...item, imageKey, imageCapturedAt: capturedAt, imageContentVersion: imageKey ? item.contentVersion : null, updatedAt:capturedAt ?? new Date().toISOString() } : item), ...markStateDirty(state) };
     }),
     focusAssemblyStep: (stepId) => set((state) => {
       const step = state.assemblySteps.find((item) => item.id === stepId);

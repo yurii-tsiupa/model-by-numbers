@@ -7,6 +7,9 @@ export type AssemblyStep = {
   createdAt: string;
   updatedAt: string;
   imageKey: string | null;
+  imageCapturedAt: string | null;
+  imageContentVersion: number | null;
+  contentVersion: number;
 };
 
 export type CreateAssemblyStepInput = Pick<AssemblyStep, "title" | "description" | "partIds">;

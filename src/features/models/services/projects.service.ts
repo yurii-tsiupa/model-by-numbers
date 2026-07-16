@@ -24,6 +24,7 @@ import { deleteModelFile, uploadModel } from "./storage.service";
 import { ProjectPart } from "../types/ProjectPart";
 import { PaletteColor } from "../types/PaletteColor";
 import type { AssemblyStep } from "../types/AssemblyStep";
+import { MAX_EXPLODED_OFFSET } from "@/features/model-editor/lib/exploded/exploded.constants";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -80,6 +81,7 @@ function mapProjectDocument(
             Number.isFinite(part.explodedOffset.x) &&
             Number.isFinite(part.explodedOffset.y) &&
             Number.isFinite(part.explodedOffset.z)
+            && Math.hypot(part.explodedOffset.x, part.explodedOffset.y, part.explodedOffset.z) <= MAX_EXPLODED_OFFSET
               ? {
                   x: part.explodedOffset.x,
                   y: part.explodedOffset.y,
@@ -131,6 +133,9 @@ function mapProjectDocument(
           createdAt: typeof step.createdAt === "string" ? step.createdAt : new Date(0).toISOString(),
           updatedAt: typeof step.updatedAt === "string" ? step.updatedAt : new Date(0).toISOString(),
           imageKey: typeof step.imageKey === "string" ? step.imageKey : null,
+          imageCapturedAt: typeof step.imageCapturedAt === "string" ? step.imageCapturedAt : null,
+          contentVersion: typeof step.contentVersion === "number" && Number.isInteger(step.contentVersion) && step.contentVersion > 0 ? step.contentVersion : 1,
+          imageContentVersion: typeof step.imageContentVersion === "number" && Number.isInteger(step.imageContentVersion) && step.imageContentVersion > 0 ? step.imageContentVersion : (typeof step.imageKey === "string" ? 1 : null),
         }))
       : [],
 
