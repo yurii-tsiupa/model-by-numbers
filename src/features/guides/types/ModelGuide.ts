@@ -14,6 +14,7 @@ export type GuidePart = {
   colorName: string | null;
   colorHex: string | null;
   notes: string | null;
+  paintingWorkflow?: import("@/features/model-editor/types/PaintingWorkflow").PartPaintingWorkflow;
 };
 
 export type GuideImages = {
@@ -48,4 +49,7 @@ export type ModelGuide = {
   settings?: GuideSettings;
   explodedView?: GuideExplodedView | null;
   assemblySteps?: GuideAssemblyStep[];
+  workflowPalette?: GuidePaletteColor[];
+  workflowParts?: GuidePart[];
+  paintingSummary?: { modelName:string; createdAt:Date; stagesCount:number; estimatedTimeMinutes:number; difficulties:import("@/features/model-editor/types/PaintingWorkflow").PaintingDifficulty[]; isReady:boolean };
 };

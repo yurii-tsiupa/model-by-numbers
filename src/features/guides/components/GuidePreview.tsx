@@ -8,6 +8,7 @@ import type { ModelGuide } from "../types/ModelGuide";
 import { defaultGuideTemplate } from "../templates/registry/guideTemplates";
 import { translate } from "@/features/i18n/lib/i18n";
 import { GuidePreviewHeader } from "./GuidePreviewHeader";
+import { GuidePaintingWorkflowPreview } from "./GuidePaintingWorkflowPreview";
 
 type GuidePreviewProps = {
   guide: ModelGuide;
@@ -78,6 +79,11 @@ export function GuidePreview({ guide, savedFileName, savedPdfBlob, skipSave = fa
       {saveWarning ? <p role="alert" className="mx-auto max-w-7xl px-5 pt-5 text-sm text-amber-300 sm:px-6 lg:px-8">{saveWarning}</p> : null}
 
       <TemplatePreview guide={guide}/>
+      {guide.paintingSummary ? (
+        <div className="[&>div>section:nth-child(1)]:hidden [&>div>section:nth-child(2)]:hidden">
+          <GuidePaintingWorkflowPreview guide={{...guide,parts:guide.workflowParts??guide.parts}} locale={locale}/>
+        </div>
+      ) : null}
     </main>
   );
 }

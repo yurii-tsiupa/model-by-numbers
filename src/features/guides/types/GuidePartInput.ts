@@ -5,4 +5,5 @@ export type GuidePartInput = {
   includeInGuide?: boolean;
   paletteColorId: string | null;
   index?: number;
+  paintingWorkflow?: import("@/features/model-editor/types/PaintingWorkflow").PartPaintingWorkflow;
 };

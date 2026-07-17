@@ -14,6 +14,8 @@ import type {
 import { getGuidePalette } from "./getGuidePalette";
 import { isPartIncludedInGuide } from "./isPartIncludedInGuide";
 import type { Locale } from "@/features/i18n/types/Locale";
+import { getPartsInPaintingOrder } from "@/features/model-editor/lib/paintingOrder";
+import { getPaintingPreviewSummary, getWorkflowPalette } from "./getPaintingGuidePreviewData";
 
 type BuildGuideDataParams = {
   project: Project;
@@ -44,16 +46,14 @@ export function buildGuideData({
     palette.map((color) => [color.id, color]),
   );
 
-  const guideParts: GuidePart[] = parts
+  const orderedParts=getPartsInPaintingOrder({parts,paintingOrder:project.paintingOrder,includeExcluded:false});
+  const workflowParts: GuidePart[] = orderedParts
     .map((part, savedIndex) => ({
       part,
       guideIndex: part.index ?? savedIndex,
     }))
     .filter(({ part }) => isPartIncludedInGuide(part))
-    .sort((firstPart, secondPart) =>
-      firstPart.guideIndex - secondPart.guideIndex,
-    )
-    .map(({ part, guideIndex }) => {
+    .map(({ part }, orderedIndex) => {
       const color = part.paletteColorId
         ? paletteById.get(part.paletteColorId)
         : undefined;
@@ -61,15 +61,19 @@ export function buildGuideData({
       return {
         id: part.id,
         name: part.name,
-        number: guideIndex + 1,
+        number: orderedIndex + 1,
         colorNumber: color?.number ?? null,
         colorName: color?.name ?? null,
         colorHex: color?.hex ?? null,
         notes: null,
+        paintingWorkflow:part.paintingWorkflow?{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>({...stage}))}:undefined,
       };
     });
 
+  const guideParts:GuidePart[]=parts.map((part,savedIndex)=>({part,guideIndex:part.index??savedIndex})).filter(({part})=>isPartIncludedInGuide(part)).sort((a,b)=>a.guideIndex-b.guideIndex).map(({part,guideIndex})=>{const color=part.paletteColorId?paletteById.get(part.paletteColorId):undefined;return{id:part.id,name:part.name,number:guideIndex+1,colorNumber:color?.number??null,colorName:color?.name??null,colorHex:color?.hex??null,notes:null};});
+
   const guidePalette = getGuidePalette(parts, palette);
+  const previewSummary=getPaintingPreviewSummary(orderedParts);
 
   return {
     locale,
@@ -90,5 +94,8 @@ export function buildGuideData({
     settings,
     explodedView: explodedView ? { ...explodedView } : null,
     assemblySteps: assemblySteps.map(step=>({...step,parts:step.parts.map(part=>({...part}))})).sort((a,b)=>a.order-b.order),
+    workflowPalette:getWorkflowPalette(orderedParts,palette),
+    workflowParts,
+    paintingSummary:{modelName:project.originalFileName,createdAt:project.createdAt,stagesCount:previewSummary.stagesCount,estimatedTimeMinutes:previewSummary.estimatedTimeMinutes,difficulties:previewSummary.difficulties,isReady:true},
   };
 }
