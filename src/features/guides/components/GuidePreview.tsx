@@ -82,11 +82,11 @@ export function GuidePreview({ guide, savedFileName, savedPdfBlob, skipSave = fa
 
       {saveWarning ? <p role="alert" className="mx-auto max-w-7xl px-5 pt-5 text-sm text-amber-300 sm:px-6 lg:px-8">{saveWarning}</p> : null}
 
-      <div className="mx-auto grid max-w-[96rem] items-start lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-6 lg:px-6">
+      <div className="guide-layout mx-auto grid max-w-[82rem] items-start lg:grid-cols-[14rem_minmax(0,56rem)] lg:justify-center lg:gap-6 lg:px-6 lg:py-8">
         <GuideNavigation sections={sections} locale={locale}/>
-        <div className="min-w-0"><TemplatePreview guide={guide}/>
+        <article className="guide-document min-w-0 overflow-hidden bg-neutral-950 sm:mx-5 sm:my-6 sm:rounded-xl sm:border sm:border-white/10 sm:shadow-2xl sm:shadow-black/30 lg:m-0"><TemplatePreview guide={guide}/>
           {hasPaintingWorkflow ? <GuideSectionAnchor id="painting-workflow"><GuidePaintingWorkflowSection guide={workflowGuide} locale={locale}/></GuideSectionAnchor> : null}
-        </div>
+        </article>
       </div>
     </main>
   );

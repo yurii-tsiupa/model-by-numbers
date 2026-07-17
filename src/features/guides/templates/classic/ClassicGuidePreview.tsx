@@ -9,12 +9,14 @@ import { ClassicExplodedSection } from "./sections/ClassicExplodedSection";
 import { ClassicModelViewsSection } from "./sections/ClassicModelViewsSection";
 import { ClassicReferencesSection } from "./sections/ClassicReferencesSection";
 import { GuideSectionAnchor } from "../../components/GuideSectionAnchor";
+import { GuideCoverSection } from "../../components/GuidePreview/sections/GuideCoverSection";
 
 export function ClassicGuidePreview({guide}:{guide:ModelGuide}){
   const viewModel=getGuideViewModel(guide);
   const{locale,settings,modelViews}=viewModel;
   const t=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values);
-  return <div className="mx-auto max-w-7xl space-y-20 px-5 py-10">
+  return <div className="space-y-16 px-5 py-6 sm:px-10 sm:py-10">
+    <GuideCoverSection guide={guide} locale={locale}/>
     <GuideSectionAnchor id="project-overview"><GuideProjectSection guide={guide} locale={locale}/></GuideSectionAnchor>
     {modelViews.length?<GuideSectionAnchor id="model-views"><ClassicModelViewsSection guide={guide} views={modelViews} t={t}/></GuideSectionAnchor>:null}
     {settings.includeExplodedView&&guide.explodedView?<GuideSectionAnchor id="exploded-view"><ClassicExplodedSection view={guide.explodedView} t={t}/></GuideSectionAnchor>:null}

@@ -31,7 +31,7 @@ export function GuidePreviewHeader({
   const isGenerating = downloadStatus === "generating";
 
   return (
-    <header className="border-b border-white/10 bg-neutral-950/90 backdrop-blur-xl">
+    <header data-guide-controls className="border-b border-white/10 bg-neutral-950/90 backdrop-blur-xl print:hidden">
       <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-6 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <div className="flex min-w-0 items-start gap-4">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-orange-400/20 bg-orange-400/10">

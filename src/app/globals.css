@@ -23,3 +23,94 @@ button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
+
+.guide-document {
+  line-height: 1.6;
+}
+
+.guide-document img {
+  max-width: 100%;
+  height: auto;
+}
+
+.guide-chapter {
+  position: relative;
+}
+
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
+@media print {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body {
+    background: white !important;
+  }
+
+  [data-guide-controls],
+  [data-guide-navigation] {
+    display: none !important;
+  }
+
+  .guide-layout {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .guide-document {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: white !important;
+    color: #171717 !important;
+    box-shadow: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .guide-document * {
+    color: #171717 !important;
+    text-shadow: none !important;
+  }
+
+  .guide-document section,
+  .guide-document article,
+  .guide-document header,
+  .guide-document div {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  .guide-cover {
+    min-height: calc(297mm - 28mm);
+    break-after: page;
+  }
+
+  .guide-chapter {
+    break-before: page;
+    scroll-margin-top: 0;
+  }
+
+  .guide-document article,
+  .guide-document table,
+  .guide-document img,
+  .guide-document dl,
+  .guide-document tr {
+    break-inside: avoid;
+  }
+
+  .guide-document button {
+    display: none !important;
+  }
+}

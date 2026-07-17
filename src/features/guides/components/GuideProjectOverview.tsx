@@ -41,7 +41,7 @@ export function GuideProjectOverview({
   ];
 
   return (
-    <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-orange-400/[0.09] via-white/[0.035] to-transparent p-6 shadow-2xl shadow-black/30 sm:p-10">
+    <section className="relative overflow-hidden border-t border-white/10 pt-8">
       <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-orange-400/10 blur-3xl"/>
       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-400">{t("guide.classic")}</p>
       <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{t("guide.overview")}</h2>
