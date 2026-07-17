@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import type { Project } from "@/features/models/types/Project";
+import { useEffect, useRef, type KeyboardEvent, type WheelEvent } from "react";
 
 import { useModelEditorStore } from "../store/modelEditorStore";
 import type { EditorSidebarTab } from "../types/EditorSidebarTab";
@@ -63,10 +64,43 @@ export function EditorSidebar({
       state.setActiveSidebarTab,
   );
 
+  const tabListRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    tabListRef.current
+      ?.querySelector<HTMLElement>(`[data-tab-id="${activeTab}"]`)
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  }, [activeTab]);
+
+  function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+    if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = tabs.length - 1;
+    if (nextIndex === null) return;
+    event.preventDefault();
+    const nextTab = tabs[nextIndex];
+    setActiveTab(nextTab.id);
+    tabListRef.current?.querySelector<HTMLButtonElement>(`[data-tab-id="${nextTab.id}"]`)?.focus();
+  }
+
+  function handleTabWheel(event: WheelEvent<HTMLDivElement>) {
+    if (!tabListRef.current || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+    event.preventDefault();
+    tabListRef.current.scrollLeft += event.deltaY;
+  }
+
   return (
     <aside className="flex max-h-[20rem] min-h-0 w-full shrink-0 flex-col overflow-hidden border-b border-white/10 bg-neutral-950/70 lg:h-full lg:max-h-none lg:w-72 lg:border-b-0 lg:border-r">
-      <div className="grid shrink-0 grid-cols-6 border-b border-white/10 p-2">
-        {tabs.map((tab) => {
+      <div
+        ref={tabListRef}
+        role="tablist"
+        aria-orientation="horizontal"
+        onWheel={handleTabWheel}
+        className="flex shrink-0 gap-1 overflow-x-auto overscroll-x-contain border-b border-white/10 p-2 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.14)_transparent]"
+      >
+        {tabs.map((tab, index) => {
           const Icon = tab.icon;
           const isActive =
             activeTab === tab.id;
@@ -75,17 +109,22 @@ export function EditorSidebar({
             <button
               key={tab.id}
               type="button"
+              role="tab"
+              aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
+              data-tab-id={tab.id}
               onClick={() =>
                 setActiveTab(tab.id)
               }
-              className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-medium transition ${
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
+              className={`flex min-h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-orange-400/60 ${
                 isActive
                   ? "bg-white/[0.07] text-white"
                   : "text-neutral-600 hover:bg-white/[0.035] hover:text-neutral-300"
               }`}
             >
-              <Icon className="h-4 w-4" />
-              {tab.label}
+              <Icon className="h-4 w-4 shrink-0" />
+              <span>{tab.label}</span>
             </button>
           );
         })}
