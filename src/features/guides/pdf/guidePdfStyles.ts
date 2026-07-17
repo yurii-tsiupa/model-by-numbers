@@ -1,4 +1,5 @@
 import { StyleSheet } from "@react-pdf/renderer";
+import { PDF_PAGE_POINTS } from "./printPageConstants";
 
 export const pdfColors = {
   accent: "#f97316",
@@ -17,10 +18,10 @@ export const guidePdfStyles = StyleSheet.create({
     fontFamily: "Roboto",
     fontSize: 10,
     lineHeight: 1.5,
-    paddingTop: 48,
-    paddingRight: 46,
-    paddingBottom: 58,
-    paddingLeft: 46,
+    paddingTop: PDF_PAGE_POINTS.marginTop,
+    paddingRight: PDF_PAGE_POINTS.marginRight,
+    paddingBottom: PDF_PAGE_POINTS.marginBottom,
+    paddingLeft: PDF_PAGE_POINTS.marginLeft,
   },
   pageTitle: {
     fontSize: 25,

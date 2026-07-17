@@ -89,8 +89,8 @@ a {
   }
 
   .guide-document {
-    width: 100% !important;
-    max-width: none !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
     margin: 0 !important;
     overflow: visible !important;
     border: 0 !important;
@@ -132,6 +132,31 @@ a {
   .guide-document dl,
   .guide-document tr {
     break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-page {
+    width: 210mm;
+    min-height: 297mm;
+    overflow: hidden;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .print-keep-together {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-section-start {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .guide-document img {
+    max-width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
   }
 
   .guide-document button {
