@@ -1,6 +1,6 @@
 import type { GuideViewModel } from "../../lib/getGuideViewModel";
 
-export type PdfExportStatus="idle"|"preparing"|"loadingAssets"|"rendering"|"generating"|"success"|"error";
+export type PdfExportStatus="idle"|"awaitingConfirmation"|"preparing"|"loadingAssets"|"rendering"|"generating"|"success"|"error";
 export type PdfExportActiveStatus=Extract<PdfExportStatus,"preparing"|"loadingAssets"|"rendering"|"generating">;
 export type PdfExportProgress={status:PdfExportActiveStatus;progress:15|40|65|85};
 export type PdfExportWarning={code:"IMAGE_LOAD_FAILED";count:number};

@@ -12,6 +12,7 @@ import { GuideNavigation } from "./GuideNavigation";
 import { GuideSectionAnchor } from "./GuideSectionAnchor";
 import { useGuidePdfExport } from "../hooks/useGuidePdfExport";
 import { GuideExportDocument } from "./GuideExportDocument";
+import { GuideExportWarningDialog } from "./GuideExportWarningDialog";
 
 type GuidePreviewProps = {
   guide: ModelGuide;
@@ -47,6 +48,7 @@ export function GuidePreview({ guide, savedFileName, savedPdfBlob, skipSave = fa
         locale={locale}
       />
       {pdfExport.isExporting?<GuideExportDocument viewModel={viewModel}/>:null}
+      {pdfExport.status==="awaitingConfirmation"?<GuideExportWarningDialog locale={locale} warnings={pdfExport.warnings} onConfirm={()=>{void pdfExport.confirmExport();}} onReview={()=>{pdfExport.resetExport();document.querySelector(".guide-document")?.scrollIntoView({behavior:"smooth",block:"start"});}}/>:null}
 
       {saveWarning ? <p role="alert" className="mx-auto max-w-7xl px-5 pt-5 text-sm text-amber-300 sm:px-6 lg:px-8">{saveWarning}</p> : null}
 
