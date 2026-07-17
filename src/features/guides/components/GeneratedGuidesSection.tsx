@@ -11,6 +11,7 @@ import { generateGuidePdf } from "../pdf/generateGuidePdf";
 import type { GeneratedGuide } from "../types/GeneratedGuide";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { formatCount,formatLocalizedDate } from "@/features/i18n/lib/i18n";
+import { getGuideViewModel } from "../lib/getGuideViewModel";
 
 export function GeneratedGuidesSection({ projectId }: { projectId: string }) {
   const {t,locale}=useTranslation();
@@ -21,7 +22,7 @@ export function GeneratedGuidesSection({ projectId }: { projectId: string }) {
 
   async function download(guide: GeneratedGuide) {
     setActionError(null);
-    try { downloadGuidePdf(guide.pdfBlob ?? await generateGuidePdf(guide.snapshot), guide.fileName); }
+    try { downloadGuidePdf(guide.pdfBlob ?? await generateGuidePdf(getGuideViewModel(guide.snapshot)), guide.fileName); }
     catch { setActionError(t("history.downloadError")); }
   }
 

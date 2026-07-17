@@ -102,6 +102,7 @@ export function GuidePartsPage({
       {Array.from({ length: pageCount }, (_, pageIndex) => (
         <Page
           key={pageIndex}
+          id={pageIndex===0?"parts-overview":undefined}
           size="A4"
           orientation="portrait"
           style={guidePdfStyles.page}

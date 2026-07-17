@@ -1,13 +1,13 @@
-import type { ModelGuide } from "../types/ModelGuide";
+import type { GuideViewModel } from "../lib/getGuideViewModel";
 import { defaultGuideTemplate } from "../templates/registry/guideTemplates";
 
 export type ModelGuideDocumentProps = {
-  guide: ModelGuide;
+  viewModel: GuideViewModel;
 };
 
 export function ModelGuideDocument({
-  guide,
+  viewModel,
 }: ModelGuideDocumentProps) {
   const PdfDocument=defaultGuideTemplate.PdfDocument;
-  return <PdfDocument guide={guide}/>;
+  return <PdfDocument guide={viewModel.guide} viewModel={viewModel}/>;
 }

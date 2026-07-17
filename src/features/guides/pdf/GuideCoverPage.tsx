@@ -71,6 +71,7 @@ const styles = StyleSheet.create({
 
 export function GuideCoverPage({ guide }: GuideCoverPageProps) {
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
+  const coverImage=guide.images.painted??guide.images.base??guide.images.original??guide.images.numbers;
   const metadata = [
     [t("guide.author"), guide.author],
     [t("guide.parts"), String(guide.partsCount)],
@@ -90,10 +91,10 @@ export function GuideCoverPage({ guide }: GuideCoverPageProps) {
         </View>
 
         <View style={styles.imageContainer}>
-          {guide.images.painted ? (
+          {coverImage ? (
             // React PDF Image does not expose an HTML alt prop.
             // eslint-disable-next-line jsx-a11y/alt-text
-            <Image src={guide.images.painted} style={styles.image} />
+            <Image src={coverImage} style={styles.image} />
           ) : (
             <Text>{t("pdf.missingPainted")}</Text>
           )}

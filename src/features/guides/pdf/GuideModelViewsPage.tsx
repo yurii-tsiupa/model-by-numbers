@@ -57,7 +57,7 @@ export function GuideModelViewsPage({
 }: GuideModelViewsPageProps) {
   const locale=guide.locale??"en",settings=getGuideSettings(guide);const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);const enabled:Record<keyof GuideImages,boolean>={original:settings.includeOriginalView,base:settings.includeBaseView,painted:settings.includePaintedView,numbers:settings.includeNumbersView};const modelViews=([{key:"original",label:t("guide.original")},{key:"base",label:t("guide.base")},{key:"painted",label:t("guide.painted")},{key:"numbers",label:t("guide.numbers")}] as Array<{key:keyof GuideImages;label:string}>).filter(view=>enabled[view.key]);
   return (
-    <Page size="A4" orientation="portrait" style={guidePdfStyles.page}>
+    <Page id="model-views" size="A4" orientation="portrait" style={guidePdfStyles.page}>
       <Text style={guidePdfStyles.eyebrow}>{t("guide.visual")}</Text>
       <Text style={guidePdfStyles.pageTitle}>{t("guide.modelViews")}</Text>
       <Text style={guidePdfStyles.sectionDescription}>

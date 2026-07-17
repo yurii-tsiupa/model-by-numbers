@@ -1,13 +1,14 @@
 import { pdf } from "@react-pdf/renderer";
 
-import type { ModelGuide } from "../types/ModelGuide";
+import type { GuideViewModel } from "../lib/getGuideViewModel";
 import { ModelGuideDocument } from "./ModelGuideDocument";
 import { prepareGuideImagesForPdf } from "./prepareGuideImagesForPdf";
 
 export async function generateGuidePdf(
-  guide: ModelGuide,
+  viewModel: GuideViewModel,
   onImageWarning?: () => void,
 ): Promise<Blob> {
+  const {guide}=viewModel;
   if (!guide.projectId || !guide.title || guide.partsCount < 0) {
     throw new Error("Guide data is unavailable or invalid.");
   }
@@ -15,7 +16,7 @@ export async function generateGuidePdf(
   const prepared = await prepareGuideImagesForPdf(guide);
   if (prepared.hasFailures) onImageWarning?.();
   const blob = await pdf(
-    <ModelGuideDocument guide={prepared.guide} />,
+    <ModelGuideDocument viewModel={{...viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts}}} />,
   ).toBlob();
 
   if (!blob || blob.size === 0 || blob.type !== "application/pdf") {

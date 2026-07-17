@@ -58,7 +58,7 @@ export function GuideProjectPage({
   ];
 
   return (
-    <Page size="A4" orientation="portrait" style={guidePdfStyles.page}>
+    <Page id="project-overview" size="A4" orientation="portrait" style={guidePdfStyles.page}>
       <Text style={guidePdfStyles.eyebrow}>{t("guide.projectReference")}</Text>
       <Text style={guidePdfStyles.pageTitle}>{guide.title}</Text>
 

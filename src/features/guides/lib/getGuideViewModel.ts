@@ -14,3 +14,4 @@ export function getGuideViewModel(guide:ModelGuide){const locale=guide.locale??"
   ...(settings.includePartsTable?[{id:"parts-overview" as const,titleKey:"guide.parts" as const,order:6}]:[]),
   ...(hasPaintingWorkflow?[{id:"painting-workflow" as const,titleKey:"guide.workflow.instructions" as const,order:7}]:[]),
 ];return{guide,locale,settings,modelViews:visibleModelViews,workflowGuide:{...guide,parts:guide.workflowParts??guide.parts},hasPaintingWorkflow,sections} as const;}
+export type GuideViewModel=ReturnType<typeof getGuideViewModel>;
