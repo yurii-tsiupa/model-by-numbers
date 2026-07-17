@@ -1,0 +1,5 @@
+import type { PaintingStageType } from "./PaintingWorkflow";
+export type PaintingReadinessCheckId="painting-order"|"palette"|"workflows"|"palette-references"|"order-duplicates"|"order-missing"|"assembly";
+export type PaintingReadinessCheck={id:PaintingReadinessCheckId;status:"completed"|"warning";count:number};
+export type PaintingProjectReadiness={status:"ready"|"attention";checks:PaintingReadinessCheck[];warnings:PaintingReadinessCheck[];completedCount:number;warningCount:number;percentage:number};
+export type PaintingProjectStatistics={totalParts:number;includedParts:number;excludedParts:number;paintingWorkflows:number;workflowCompletionPercentage:number;totalStages:number;averageStagesPerPart:number;estimatedTotalTimeMinutes:number;averagePaintingTimeMinutes:number;paintBeforeAssemblyCount:number;mostUsedPaletteColor:{id:string;name:string;hex:string;usageCount:number}|null;mostCommonStageType:{type:PaintingStageType;count:number}|null;stageTypeDistribution:Record<PaintingStageType,number>};
