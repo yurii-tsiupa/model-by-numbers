@@ -13,6 +13,7 @@ import type { ExplodedOffset } from "../types/ExplodedOffset";
 import { MAX_EXPLODED_OFFSET } from "../lib/exploded/exploded.constants";
 import type { AssemblyStep, CreateAssemblyStepInput, UpdateAssemblyStepInput } from "@/features/models/types/AssemblyStep";
 import type { CreatePaintingStageInput, PaintingDifficulty, PartPaintingWorkflow, UpdatePaintingStageInput } from "../types/PaintingWorkflow";
+import { normalizePaintingOrder } from "../lib/paintingOrder";
 
 export type EditorSaveStatus =
   | "saved"
@@ -26,6 +27,7 @@ export type SelectionMode =
 
 type ModelEditorState = {
   parts: ModelPart[];
+  paintingOrder:string[];
   assemblySteps: AssemblyStep[];
   focusedAssemblyStepId: string | null;
   assemblyFocusSnapshot: {
@@ -94,6 +96,11 @@ type ModelEditorState = {
   syncPaletteFromParts: () => void;
 
   setParts: (parts: ModelPart[]) => void;
+  hydratePaintingOrder:(partIds:string[])=>void;
+  setPaintingOrder:(partIds:string[])=>void;
+  movePaintingOrderPart:(partId:string,direction:"up"|"down")=>void;
+  movePaintingOrderPartToIndex:(partId:string,targetIndex:number)=>void;
+  resetPaintingOrder:()=>void;
   setPartPaintingWorkflow: (partId:string, workflow:PartPaintingWorkflow)=>void;
   addPaintingStage: (partId:string,input:CreatePaintingStageInput)=>void;
   updatePaintingStage: (partId:string,stageId:string,changes:UpdatePaintingStageInput)=>void;
@@ -239,6 +246,7 @@ function createPaletteColorName(
 export const useModelEditorStore =
   create<ModelEditorState>()((set) => ({
     parts: [],
+    paintingOrder:[],
     assemblySteps: [],
     focusedAssemblyStepId: null,
     assemblyFocusSnapshot: null,
@@ -340,6 +348,7 @@ export const useModelEditorStore =
         const focusedStep = assemblySteps.find((step) => step.id === state.focusedAssemblyStepId);
         return {
         parts,
+        paintingOrder:normalizePaintingOrder({paintingOrder:state.paintingOrder,parts}),
         assemblySteps,
         ...(focusedStep && focusedStep.partIds.length > 0 ? {} : { focusedAssemblyStepId: null, assemblyFocusSnapshot: null }),
         selectedPartId: null,
@@ -492,6 +501,11 @@ export const useModelEditorStore =
         };
       });
     },
+    hydratePaintingOrder:(paintingOrder)=>set({paintingOrder:[...paintingOrder]}),
+    setPaintingOrder:(partIds)=>set((state)=>{const paintingOrder=normalizePaintingOrder({paintingOrder:partIds,parts:state.parts});if(paintingOrder.length===state.paintingOrder.length&&paintingOrder.every((id,i)=>id===state.paintingOrder[i]))return state;return{paintingOrder,...markStateDirty(state)}}),
+    movePaintingOrderPart:(partId,direction)=>{const state=useModelEditorStore.getState(),index=state.paintingOrder.indexOf(partId);state.movePaintingOrderPartToIndex(partId,direction==="up"?index-1:index+1)},
+    movePaintingOrderPartToIndex:(partId,targetIndex)=>set((state)=>{const current=normalizePaintingOrder({paintingOrder:state.paintingOrder,parts:state.parts}),index=current.indexOf(partId);if(index<0||targetIndex<0||targetIndex>=current.length||index===targetIndex)return state;const next=[...current];next.splice(index,1);next.splice(targetIndex,0,partId);return{paintingOrder:next,...markStateDirty(state)}}),
+    resetPaintingOrder:()=>{const state=useModelEditorStore.getState();state.setPaintingOrder(state.parts.map(p=>p.id))},
 
     setPartsIncludedInGuide: (partIds, included) => {
       set((state) => {
@@ -991,6 +1005,7 @@ export const useModelEditorStore =
     resetEditor: () => {
       set({
         parts: [],
+        paintingOrder:[],
         assemblySteps: [],
         focusedAssemblyStepId: null,
         assemblyFocusSnapshot: null,

@@ -43,6 +43,7 @@ export function ModelEditor({
   const router = useRouter();
   const {locale,t}=useTranslation();
   const initializedProjectIdRef = useRef<string | null>(null);
+  const hydratePaintingOrder=useModelEditorStore(state=>state.hydratePaintingOrder);
   const viewerRef = useRef<ModelViewerHandle | null>(null);
   const isGeneratingRef = useRef(false);
   const autoThumbnailAttemptedRef = useRef(false);
@@ -245,6 +246,7 @@ export function ModelEditor({
     }
 
     resetEditor();
+    hydratePaintingOrder(project.paintingOrder);
     setPalette(project.palette);
     setAssemblySteps(project.assemblySteps);
 
@@ -255,6 +257,8 @@ export function ModelEditor({
     resetEditor,
     setPalette,
     setAssemblySteps,
+    hydratePaintingOrder,
+    project.paintingOrder,
     project.assemblySteps,
   ]);
 

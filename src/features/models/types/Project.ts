@@ -42,6 +42,7 @@ export type Project = {
   parts: ProjectPart[];
   palette: PaletteColor[];
   assemblySteps: AssemblyStep[];
+  paintingOrder: string[];
   importSchemaVersion?: 1;
 
   createdAt: Date;
@@ -63,5 +64,6 @@ export type CreateProjectInput = {
   material: ProjectMaterial;
   baseColor: string;
   parts?: ProjectPart[];
+  paintingOrder?: string[];
   importSchemaVersion?: 1;
 };

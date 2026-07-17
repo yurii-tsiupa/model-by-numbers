@@ -166,6 +166,7 @@ function mapProjectDocument(
           imageContentVersion: typeof step.imageContentVersion === "number" && Number.isInteger(step.imageContentVersion) && step.imageContentVersion > 0 ? step.imageContentVersion : (typeof step.imageKey === "string" ? 1 : null),
         }))
       : [],
+    paintingOrder: Array.isArray(data.paintingOrder) ? [...new Set(data.paintingOrder.filter((id:unknown):id is string=>typeof id==="string"))] : [],
     importSchemaVersion: data.importSchemaVersion === 1 ? 1 : undefined,
 
     createdAt:
@@ -245,6 +246,7 @@ export async function createProject({
   material,
   baseColor,
   parts,
+  paintingOrder,
   importSchemaVersion,
   onUploadProgress,
 }: CreateProjectParams): Promise<Project> {
@@ -292,6 +294,7 @@ export async function createProject({
     importSchemaVersion: importSchemaVersion ?? null,
     palette: [],
     assemblySteps: [],
+    paintingOrder: paintingOrder ?? (parts ?? []).map((part)=>part.id),
 
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -315,12 +318,14 @@ export async function saveProjectEditorState({
   parts,
   palette,
   assemblySteps,
+  paintingOrder,
 }: {
   projectId: string;
   userId: string;
   parts: ProjectPart[];
   palette: PaletteColor[];
   assemblySteps: AssemblyStep[];
+  paintingOrder:string[];
 }): Promise<void> {
   if (!projectId || !userId) {
     throw new Error(
@@ -354,6 +359,7 @@ export async function saveProjectEditorState({
     parts: parts.map(serializeProjectPart),
     palette,
     assemblySteps,
+    paintingOrder,
     updatedAt: serverTimestamp(),
   });
 }
