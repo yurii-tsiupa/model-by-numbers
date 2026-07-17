@@ -1,26 +1,39 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata } from 'next';
+import {
+  Inter,
+  JetBrains_Mono,
+  Space_Grotesk,
+} from 'next/font/google';
 
-import { AuthProvider } from "@/providers/AuthProvider";
+import { I18nProvider } from '@/features/i18n/context/I18nProvider';
+import { AuthProvider } from '@/providers/AuthProvider';
+import { QueryProvider } from '@/providers/QueryProvider';
+import { ThemeProvider } from '@/providers/ThemeProvider';
 
-import "./globals.css";
-import { QueryProvider } from "@/providers/QueryProvider";
-import { I18nProvider } from "@/features/i18n/context/I18nProvider";
+import './globals.css';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const inter = Inter({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-body',
+  display: 'swap',
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-heading',
+  display: 'swap',
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-mono',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "Model by Numbers",
+  title: 'Model by Numbers',
   description:
-    "Create professional painting guides for physical 3D models.",
+    'Create professional painting guides for physical 3D models.',
 };
 
 type RootLayoutProps = Readonly<{
@@ -31,13 +44,25 @@ export default function RootLayout({
   children,
 }: RootLayoutProps) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      suppressHydrationWarning
+    >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${spaceGrotesk.variable} ${jetBrainsMono.variable}`}
       >
-        <QueryProvider>
-          <I18nProvider><AuthProvider>{children}</AuthProvider></I18nProvider>
-        </QueryProvider>
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <QueryProvider>
+            <I18nProvider>
+              <AuthProvider>{children}</AuthProvider>
+            </I18nProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

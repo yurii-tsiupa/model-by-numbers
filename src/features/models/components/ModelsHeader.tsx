@@ -6,6 +6,7 @@ import { Box, Plus } from "lucide-react";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { LanguageSwitcher } from "@/features/i18n/components/LanguageSwitcher";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 type ModelsHeaderProps = {
   user: User;
@@ -63,7 +64,7 @@ export function ModelsHeader({
                 {fallbackLetter}
               </div>
             )}
-
+            <ThemeToggle />
             <SignOutButton />
           </div>
         </div>
