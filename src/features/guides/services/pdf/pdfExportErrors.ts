@@ -1,0 +1,6 @@
+import type { TranslationKey } from "@/features/i18n/locales/en";
+
+export type PdfExportErrorCode="GUIDE_DATA_UNAVAILABLE"|"DOCUMENT_NOT_FOUND"|"PREPARATION_FAILED"|"RENDER_FAILED"|"PDF_GENERATION_FAILED"|"DOWNLOAD_FAILED"|"UNKNOWN";
+export class PdfExportError extends Error{readonly code:PdfExportErrorCode;override readonly cause?:unknown;constructor(code:PdfExportErrorCode,cause?:unknown){super(code);this.name="PdfExportError";this.code=code;this.cause=cause;}}
+export function normalizePdfExportError(error:unknown,fallback:PdfExportErrorCode="UNKNOWN"){return error instanceof PdfExportError?error:new PdfExportError(fallback,error);}
+export function getPdfExportErrorTranslationKey(code:PdfExportErrorCode):TranslationKey{const keys:Record<PdfExportErrorCode,TranslationKey>={GUIDE_DATA_UNAVAILABLE:"guide.pdfExport.errors.guideData",DOCUMENT_NOT_FOUND:"guide.pdfExport.errors.document",PREPARATION_FAILED:"guide.pdfExport.errors.preparation",RENDER_FAILED:"guide.pdfExport.errors.render",PDF_GENERATION_FAILED:"guide.pdfExport.errors.generation",DOWNLOAD_FAILED:"guide.pdfExport.errors.download",UNKNOWN:"guide.pdfExport.errors.unknown"};return keys[code];}

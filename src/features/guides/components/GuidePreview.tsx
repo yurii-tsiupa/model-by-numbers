@@ -2,8 +2,6 @@
 import { useRef, useState } from "react";
 import { useSaveGeneratedGuide } from "../hooks/useSaveGeneratedGuide";
 
-import { createGuideFileName } from "../lib/createGuideFileName";
-import { downloadGuidePdf } from "../lib/downloadGuidePdf";
 import type { ModelGuide } from "../types/ModelGuide";
 import { defaultGuideTemplate } from "../templates/registry/guideTemplates";
 import { translate } from "@/features/i18n/lib/i18n";
@@ -12,6 +10,7 @@ import { GuidePaintingWorkflowSection } from "./GuidePreview/sections/GuidePaint
 import { useGuideViewModel } from "../hooks/useGuideViewModel";
 import { GuideNavigation } from "./GuideNavigation";
 import { GuideSectionAnchor } from "./GuideSectionAnchor";
+import { useGuidePdfExport } from "../hooks/useGuidePdfExport";
 
 type GuidePreviewProps = {
   guide: ModelGuide;
@@ -21,61 +20,28 @@ type GuidePreviewProps = {
   onDelete?: () => void;
 };
 
-type DownloadStatus = "idle" | "generating" | "error";
-
 export function GuidePreview({ guide, savedFileName, savedPdfBlob, skipSave = false, onDelete }: GuidePreviewProps) {
   const viewModel=useGuideViewModel(guide);
   const{locale,workflowGuide,hasPaintingWorkflow,sections}=viewModel;
   const text=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values);
-  const [downloadStatus, setDownloadStatus] =
-    useState<DownloadStatus>("idle");
-  const isDownloadingRef = useRef(false);
   const savedGuideIdRef = useRef<string | null>(null);
   const saveGuide = useSaveGeneratedGuide();
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
+  const pdfExport=useGuidePdfExport({viewModel,existingBlob:savedPdfBlob,fileName:savedFileName,onImageWarning:()=>setSaveWarning(text("guide.pdfImageWarning")),beforeDownload:async({blob,fileName})=>{if(skipSave||savedGuideIdRef.current)return;try{const saved=await saveGuide.mutateAsync({projectId:guide.projectId,snapshot:guide,pdfBlob:blob,fileName});savedGuideIdRef.current=saved.id;}catch{setSaveWarning(text("guide.saveWarning"));}}});
 
   const TemplatePreview=defaultGuideTemplate.Preview;
-
-  async function handleDownloadPdf() {
-    if (isDownloadingRef.current) {
-      return;
-    }
-
-    isDownloadingRef.current = true;
-    setDownloadStatus("generating");
-
-    try {
-      let blob = savedPdfBlob;
-      if (!blob) {
-        const { generateGuidePdf } = await import("../pdf/generateGuidePdf");
-        blob = await generateGuidePdf(viewModel, () => {
-          setSaveWarning(text("guide.pdfImageWarning"));
-        });
-      }
-      const fileName = savedFileName ?? createGuideFileName(guide.title);
-      if (!skipSave && !savedGuideIdRef.current) {
-        try { const saved = await saveGuide.mutateAsync({ projectId: guide.projectId, snapshot: guide, pdfBlob: blob, fileName }); savedGuideIdRef.current = saved.id; }
-        catch { setSaveWarning(text("guide.saveWarning")); }
-      }
-      downloadGuidePdf(blob, fileName);
-      setDownloadStatus("idle");
-    } catch (error) {
-      console.error("Failed to generate guide PDF:", error);
-      setDownloadStatus("error");
-    } finally {
-      isDownloadingRef.current = false;
-    }
-  }
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
       <GuidePreviewHeader
         projectId={guide.projectId}
         title={guide.title}
-        downloadStatus={downloadStatus}
-        onDownload={() => {
-          void handleDownloadPdf();
-        }}
+        exportStatus={pdfExport.status}
+        exportProgress={pdfExport.progress}
+        exportError={pdfExport.error}
+        onDownload={() => {void pdfExport.exportPdf();}}
+        onRetry={() => {void pdfExport.retryExport();}}
+        onReset={pdfExport.resetExport}
         onDelete={onDelete}
         locale={locale}
       />

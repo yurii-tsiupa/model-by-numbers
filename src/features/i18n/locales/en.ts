@@ -55,6 +55,20 @@ export const en={
   "guide.cover.document":"Model painting guide",
   "guide.navigation.contents":"Contents",
   "guide.navigation.label":"Guide contents",
+  "guide.pdfExport.preparing":"Preparing guide...",
+  "guide.pdfExport.rendering":"Rendering guide...",
+  "guide.pdfExport.generating":"Generating PDF...",
+  "guide.pdfExport.exporting":"Exporting PDF...",
+  "guide.pdfExport.success":"PDF exported successfully.",
+  "guide.pdfExport.failed":"PDF export failed.",
+  "guide.pdfExport.retry":"Try Again",
+  "guide.pdfExport.errors.guideData":"Guide data is unavailable.",
+  "guide.pdfExport.errors.document":"The printable document could not be found.",
+  "guide.pdfExport.errors.preparation":"The guide could not be prepared for export.",
+  "guide.pdfExport.errors.render":"The guide could not be rendered.",
+  "guide.pdfExport.errors.generation":"The PDF file could not be generated.",
+  "guide.pdfExport.errors.download":"The PDF could not be downloaded.",
+  "guide.pdfExport.errors.unknown":"An unknown export error occurred.",
 } as const;
 export type TranslationKey=keyof typeof en;
 export type TranslationDictionary={readonly [K in TranslationKey]:string};
