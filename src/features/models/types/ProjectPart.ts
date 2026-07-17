@@ -1,4 +1,5 @@
 import type { ExplodedOffset } from "@/features/model-editor/types/ExplodedOffset";
+import type { PartPaintingWorkflow } from "@/features/model-editor/types/PaintingWorkflow";
 
 export type ProjectPart = {
   id: string;
@@ -16,4 +17,5 @@ export type ProjectPart = {
 
   paletteColorId: string | null;
   explodedOffset: ExplodedOffset | null;
+  paintingWorkflow: PartPaintingWorkflow;
 };

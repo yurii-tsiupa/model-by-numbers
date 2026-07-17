@@ -12,6 +12,7 @@ import type { ExplodedLabelsMode } from "../types/ExplodedLabelsMode";
 import type { ExplodedOffset } from "../types/ExplodedOffset";
 import { MAX_EXPLODED_OFFSET } from "../lib/exploded/exploded.constants";
 import type { AssemblyStep, CreateAssemblyStepInput, UpdateAssemblyStepInput } from "@/features/models/types/AssemblyStep";
+import type { CreatePaintingStageInput, PaintingDifficulty, PartPaintingWorkflow, UpdatePaintingStageInput } from "../types/PaintingWorkflow";
 
 export type EditorSaveStatus =
   | "saved"
@@ -93,6 +94,15 @@ type ModelEditorState = {
   syncPaletteFromParts: () => void;
 
   setParts: (parts: ModelPart[]) => void;
+  setPartPaintingWorkflow: (partId:string, workflow:PartPaintingWorkflow)=>void;
+  addPaintingStage: (partId:string,input:CreatePaintingStageInput)=>void;
+  updatePaintingStage: (partId:string,stageId:string,changes:UpdatePaintingStageInput)=>void;
+  deletePaintingStage: (partId:string,stageId:string)=>void;
+  movePaintingStage: (partId:string,stageId:string,direction:"up"|"down")=>void;
+  setPartPaintingNotes:(partId:string,notes:string)=>void;
+  setPartPaintBeforeAssembly:(partId:string,value:boolean)=>void;
+  setPartPaintingDifficulty:(partId:string,difficulty:PaintingDifficulty|null)=>void;
+  setPartEstimatedPaintingTime:(partId:string,minutes:number|null)=>void;
   setAssemblySteps: (steps: AssemblyStep[]) => void;
   addAssemblyStep: (input: CreateAssemblyStepInput) => void;
   updateAssemblyStep: (stepId: string, changes: UpdateAssemblyStepInput) => void;
@@ -305,6 +315,16 @@ export const useModelEditorStore =
     saveStatus: "saved",
     changeVersion: 0,
     saveError: null,
+
+    setPartPaintingWorkflow:(partId,workflow)=>set((state)=>{const part=state.parts.find(p=>p.id===partId);if(!part||JSON.stringify(part.paintingWorkflow)===JSON.stringify(workflow))return state;return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:workflow}:p),...markStateDirty(state)}}),
+    addPaintingStage:(partId,input)=>set((state)=>{const part=state.parts.find(p=>p.id===partId);const name=input.name.trim(),notes=input.notes.trim();if(!part||!name||name.length>100||notes.length>500||(input.paletteColorId&&!state.palette.some(c=>c.id===input.paletteColorId))||(input.recommendedCoats!==null&&(!Number.isInteger(input.recommendedCoats)||input.recommendedCoats<1||input.recommendedCoats>10)))return state;const now=new Date().toISOString();const stage={...input,name,notes,id:crypto.randomUUID(),order:part.paintingWorkflow.stages.length+1,createdAt:now,updatedAt:now};return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:[...p.paintingWorkflow.stages,stage]}}:p),...markStateDirty(state)}}),
+    updatePaintingStage:(partId,stageId,changes)=>set((state)=>{const part=state.parts.find(p=>p.id===partId),stage=part?.paintingWorkflow.stages.find(s=>s.id===stageId);if(!part||!stage)return state;const next={...stage,...changes,name:(changes.name??stage.name).trim(),notes:(changes.notes??stage.notes).trim()};if(!next.name||next.name.length>100||next.notes.length>500||(next.paletteColorId&&!state.palette.some(c=>c.id===next.paletteColorId))||(next.recommendedCoats!==null&&(!Number.isInteger(next.recommendedCoats)||next.recommendedCoats<1||next.recommendedCoats>10)))return state;if(JSON.stringify({...next,updatedAt:stage.updatedAt})===JSON.stringify(stage))return state;next.updatedAt=new Date().toISOString();return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:p.paintingWorkflow.stages.map(s=>s.id===stageId?next:s)}}:p),...markStateDirty(state)}}),
+    deletePaintingStage:(partId,stageId)=>set((state)=>{const part=state.parts.find(p=>p.id===partId);if(!part?.paintingWorkflow.stages.some(s=>s.id===stageId))return state;return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:p.paintingWorkflow.stages.filter(s=>s.id!==stageId).map((s,i)=>({...s,order:i+1}))}}:p),...markStateDirty(state)}}),
+    movePaintingStage:(partId,stageId,direction)=>set((state)=>{const part=state.parts.find(p=>p.id===partId);if(!part)return state;const stages=[...part.paintingWorkflow.stages],i=stages.findIndex(s=>s.id===stageId),j=direction==="up"?i-1:i+1;if(i<0||j<0||j>=stages.length)return state;[stages[i],stages[j]]=[stages[j],stages[i]];const normalized=stages.map((s,index)=>({...s,order:index+1}));return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:normalized}}:p),...markStateDirty(state)}}),
+    setPartPaintingNotes:(partId,notes)=>{const part=useModelEditorStore.getState().parts.find(p=>p.id===partId);if(part&&notes.trim().length<=1500)useModelEditorStore.getState().setPartPaintingWorkflow(partId,{...part.paintingWorkflow,notes:notes.trim()})},
+    setPartPaintBeforeAssembly:(partId,value)=>{const part=useModelEditorStore.getState().parts.find(p=>p.id===partId);if(part)useModelEditorStore.getState().setPartPaintingWorkflow(partId,{...part.paintingWorkflow,paintBeforeAssembly:value})},
+    setPartPaintingDifficulty:(partId,difficulty)=>{const part=useModelEditorStore.getState().parts.find(p=>p.id===partId);if(part)useModelEditorStore.getState().setPartPaintingWorkflow(partId,{...part.paintingWorkflow,difficulty})},
+    setPartEstimatedPaintingTime:(partId,minutes)=>{const part=useModelEditorStore.getState().parts.find(p=>p.id===partId);if(part&&(minutes===null||(Number.isInteger(minutes)&&minutes>=1&&minutes<=1440)))useModelEditorStore.getState().setPartPaintingWorkflow(partId,{...part.paintingWorkflow,estimatedTimeMinutes:minutes})},
 
     setParts: (parts) => {
       set((state) => {
@@ -702,6 +722,7 @@ export const useModelEditorStore =
           palette: state.palette.filter(
             (color) => color.id !== colorId,
           ),
+          parts: state.parts.map((part)=>part.paintingWorkflow.stages.some(stage=>stage.paletteColorId===colorId)?{...part,paintingWorkflow:{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>stage.paletteColorId===colorId?{...stage,paletteColorId:null,updatedAt:new Date().toISOString()}:stage)}}:part),
           ...markStateDirty(state),
         };
       });

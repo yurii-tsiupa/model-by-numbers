@@ -1,6 +1,7 @@
 import type { ReviewedDetectedModelPart } from "@/features/model-import/types/ReviewedDetectedModelPart";
 
 import type { ProjectPart } from "../types/ProjectPart";
+import { DEFAULT_PART_PAINTING_WORKFLOW } from "@/features/model-editor/types/PaintingWorkflow";
 
 export function buildInitialProjectParts(
   reviewedParts: ReviewedDetectedModelPart[],
@@ -19,5 +20,6 @@ export function buildInitialProjectParts(
       color: null,
       paletteColorId: null,
       explodedOffset: null,
+      paintingWorkflow: { ...DEFAULT_PART_PAINTING_WORKFLOW, stages: [] },
     }));
 }

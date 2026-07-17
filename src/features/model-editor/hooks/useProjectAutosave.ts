@@ -26,6 +26,7 @@ function serializeParts(): ProjectPart[] {
       color: part.color,
       paletteColorId: part.paletteColorId,
       explodedOffset: part.explodedOffset,
+      paintingWorkflow: { ...part.paintingWorkflow, stages: part.paintingWorkflow.stages.map((stage) => ({ ...stage })) },
     }));
 }
 

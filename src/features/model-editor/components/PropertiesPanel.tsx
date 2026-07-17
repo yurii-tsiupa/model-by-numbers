@@ -17,6 +17,7 @@ import { PAINT_COLORS } from "../constants/paintColors";
 import { normalizeHexColor } from "../lib/normalizeHexColor";
 import { useModelEditorStore } from "../store/modelEditorStore";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
+import { PaintingWorkflowSection } from "./painting/PaintingWorkflowSection";
 
 export function PropertiesPanel() {
   const {t}=useTranslation();
@@ -420,6 +421,7 @@ export function PropertiesPanel() {
               </div>
             </div>
           ) : null}
+          <PaintingWorkflowSection part={selectedPart} />
         </div>
       )}
     </aside>

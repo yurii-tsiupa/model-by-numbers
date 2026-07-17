@@ -26,6 +26,7 @@ import { PaletteColor } from "../types/PaletteColor";
 import type { AssemblyStep } from "../types/AssemblyStep";
 import { MAX_EXPLODED_OFFSET } from "@/features/model-editor/lib/exploded/exploded.constants";
 import { getModelFileExtension } from "@/features/model-import/lib/getModelFileExtension";
+import { normalizePaintingWorkflow } from "@/features/model-editor/lib/paintingWorkflow";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -47,6 +48,7 @@ function serializeProjectPart(part: ProjectPart): StoredProjectPart {
     color: part.color,
     paletteColorId: part.paletteColorId,
     explodedOffset: part.explodedOffset,
+    paintingWorkflow: part.paintingWorkflow,
   };
 }
 
@@ -113,6 +115,7 @@ function mapProjectDocument(
                   z: part.explodedOffset.z,
                 }
               : null,
+          paintingWorkflow: normalizePaintingWorkflow(part.paintingWorkflow),
         }))
       : [],
     

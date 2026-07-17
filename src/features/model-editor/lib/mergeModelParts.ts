@@ -1,6 +1,7 @@
 import type { ProjectPart } from "@/features/models/types/ProjectPart";
 
 import type { ModelPart } from "../types/ModelPart";
+import { normalizePaintingWorkflow } from "./paintingWorkflow";
 
 export function mergeModelParts(
   extractedParts: ModelPart[],
@@ -34,6 +35,7 @@ export function mergeModelParts(
       paletteColorId:
         savedPart.paletteColorId ?? null,
       explodedOffset: savedPart.explodedOffset ?? null,
+      paintingWorkflow: normalizePaintingWorkflow(savedPart.paintingWorkflow),
     }];
   });
 }

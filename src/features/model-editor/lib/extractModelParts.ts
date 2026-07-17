@@ -6,6 +6,7 @@ import {
 } from "three";
 
 import type { ModelPart } from "../types/ModelPart";
+import { DEFAULT_PART_PAINTING_WORKFLOW } from "../types/PaintingWorkflow";
 
 type MaterialWithColor = Material & {
   color: Color;
@@ -70,6 +71,7 @@ export function extractModelParts(
       color: null,
       paletteColorId: null,
       explodedOffset: null,
+      paintingWorkflow: { ...DEFAULT_PART_PAINTING_WORKFLOW, stages: [] },
       originalColor: getMeshOriginalColor(object),
     });
   });
