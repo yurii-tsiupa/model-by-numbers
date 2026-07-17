@@ -1,11 +1,25 @@
-/* eslint-disable @next/next/no-img-element */
-import {ImageIcon} from "lucide-react";
-import {GuidePaletteSection} from "../../components/GuidePaletteSection";
-import {GuidePartsSection} from "../../components/GuidePartsSection";
-import {GuideProjectOverview} from "../../components/GuideProjectOverview";
-import type {GuideImages,ModelGuide} from "../../types/ModelGuide";
-import {getGuideSettings} from "../../lib/guideSettings";
-import {classicPreviewStyles as styles} from "./classic.styles";
-import {translate} from "@/features/i18n/lib/i18n";
-const Heading=({eyebrow,title,description}:{eyebrow:string;title:string;description:string})=><header><p className={styles.eyebrow}>{eyebrow}</p><h2 className={styles.title}>{title}</h2><p className={styles.description}>{description}</p></header>;
-export function ClassicGuidePreview({guide}:{guide:ModelGuide}){const locale=guide.locale??"en",settings=getGuideSettings(guide),t=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values);const enabled:Record<keyof GuideImages,boolean>={original:settings.includeOriginalView,base:settings.includeBaseView,painted:settings.includePaintedView,numbers:settings.includeNumbersView};const views=([{key:"original",label:t("guide.original"),caption:t("guide.originalCaption")},{key:"base",label:t("guide.base"),caption:t("guide.baseCaption")},{key:"painted",label:t("guide.painted"),caption:t("guide.paintedCaption")},{key:"numbers",label:t("guide.numbers"),caption:t("guide.numbersCaption")}] as Array<{key:keyof GuideImages;label:string;caption:string}>).filter(view=>enabled[view.key]);return <div className="mx-auto max-w-7xl space-y-20 px-5 py-10"><GuideProjectOverview guide={guide} locale={locale}/><section className={styles.section}><Heading eyebrow={t("guide.visual")} title={t("guide.modelViews")} description={t("guide.modelViewsDescription")}/><div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{views.map(view=><article key={view.key} className={styles.card}><div className="flex aspect-[4/3] items-center justify-center bg-black/25 p-2">{guide.images[view.key]?<img src={guide.images[view.key]??""} alt={view.label} className="h-full w-full object-contain"/>:<ImageIcon className="text-neutral-600"/>}</div><div className="p-4"><h3>{view.label}</h3><p className="text-xs text-neutral-500">{view.caption}</p></div></article>)}</div></section>{settings.includeExplodedView&&guide.explodedView?<section className={styles.section}><Heading eyebrow={t("guide.visual")} title={t("guide.exploded.title")} description={t("guide.exploded.description")}/><div className="mt-8 rounded-2xl border border-white/10 bg-black/25 p-4">{guide.explodedView.image?<img src={guide.explodedView.image} alt={t("guide.exploded.title")} className="mx-auto aspect-[4/3] w-full object-contain"/>:<p className="py-20 text-center text-neutral-500">{t("guide.exploded.imageMissing")}</p>}<p className="mt-3 text-sm text-neutral-400">{t("guide.exploded.partsCount",{count:guide.explodedView.partsCount})}</p></div></section>:null}{settings.includeAssemblyInstructions&&(guide.assemblySteps?.length??0)>0?<section className={styles.section}><Heading eyebrow={t("guide.assembly.eyebrow")} title={t("guide.assembly.title")} description={t("guide.assembly.description")}/><div className="mt-8 grid gap-5 lg:grid-cols-2">{guide.assemblySteps?.map(step=><article key={step.id} className={styles.card}>{settings.includeAssemblyStepImages?(step.image?<img src={step.image} alt={step.title} className="aspect-[4/3] w-full bg-black/20 object-contain"/>:<div className="flex aspect-[4/3] items-center justify-center text-neutral-500">{t("guide.assembly.imageMissing")}</div>):null}<div className="p-5"><p className="text-xs text-orange-300">{t("guide.assembly.step",{number:String(step.order).padStart(2,"0")})}</p><h3 className="mt-2 text-lg font-semibold">{step.title}</h3>{step.description?<p className="mt-2 text-sm text-neutral-400">{step.description}</p>:null}<div className="mt-4 flex flex-wrap gap-2">{step.parts.map(part=><span key={part.id} className="rounded-full border border-white/10 px-2 py-1 text-xs">{String(part.number).padStart(2,"0")} — {part.name}</span>)}</div></div></article>)}</div></section>:null}{(guide.references?.length??0)>0?<section className={styles.section}><Heading eyebrow={t("guide.source")} title={t("guide.references")} description={t("guide.referencesDescription")}/><div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{guide.references?.map(reference=><article key={reference.id} className={styles.card}><img src={reference.dataUrl} alt={reference.name} className="aspect-[4/3] w-full object-contain"/><div className="p-4">{reference.name}</div></article>)}</div></section>:null}<GuidePaletteSection palette={guide.palette} locale={locale}/>{settings.includePartsTable?<GuidePartsSection parts={guide.parts} locale={locale}/>:null}</div>}
+import { GuidePalettePreviewSection } from "../../components/GuidePreview/sections/GuidePalettePreviewSection";
+import { GuidePartsPreviewSection } from "../../components/GuidePreview/sections/GuidePartsPreviewSection";
+import { GuideProjectSection } from "../../components/GuidePreview/sections/GuideProjectSection";
+import { getGuideViewModel } from "../../lib/getGuideViewModel";
+import type { ModelGuide } from "../../types/ModelGuide";
+import { translate } from "@/features/i18n/lib/i18n";
+import { ClassicAssemblySection } from "./sections/ClassicAssemblySection";
+import { ClassicExplodedSection } from "./sections/ClassicExplodedSection";
+import { ClassicModelViewsSection } from "./sections/ClassicModelViewsSection";
+import { ClassicReferencesSection } from "./sections/ClassicReferencesSection";
+
+export function ClassicGuidePreview({guide}:{guide:ModelGuide}){
+  const viewModel=getGuideViewModel(guide);
+  const{locale,settings,modelViews}=viewModel;
+  const t=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values);
+  return <div className="mx-auto max-w-7xl space-y-20 px-5 py-10">
+    <GuideProjectSection guide={guide} locale={locale}/>
+    <ClassicModelViewsSection guide={guide} views={modelViews} t={t}/>
+    {settings.includeExplodedView&&guide.explodedView?<ClassicExplodedSection view={guide.explodedView} t={t}/>:null}
+    {settings.includeAssemblyInstructions&&(guide.assemblySteps?.length??0)>0?<ClassicAssemblySection steps={guide.assemblySteps??[]} showImages={settings.includeAssemblyStepImages} t={t}/>:null}
+    {(guide.references?.length??0)>0?<ClassicReferencesSection references={guide.references??[]} t={t}/>:null}
+    <GuidePalettePreviewSection palette={guide.palette} locale={locale}/>
+    {settings.includePartsTable?<GuidePartsPreviewSection parts={guide.parts} locale={locale}/>:null}
+  </div>;
+}

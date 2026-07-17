@@ -8,7 +8,8 @@ import type { ModelGuide } from "../types/ModelGuide";
 import { defaultGuideTemplate } from "../templates/registry/guideTemplates";
 import { translate } from "@/features/i18n/lib/i18n";
 import { GuidePreviewHeader } from "./GuidePreviewHeader";
-import { GuidePaintingWorkflowPreview } from "./GuidePaintingWorkflowPreview";
+import { GuidePaintingWorkflowSection } from "./GuidePreview/sections/GuidePaintingWorkflowSection";
+import { useGuideViewModel } from "../hooks/useGuideViewModel";
 
 type GuidePreviewProps = {
   guide: ModelGuide;
@@ -21,7 +22,8 @@ type GuidePreviewProps = {
 type DownloadStatus = "idle" | "generating" | "error";
 
 export function GuidePreview({ guide, savedFileName, savedPdfBlob, skipSave = false, onDelete }: GuidePreviewProps) {
-  const locale=guide.locale??"en";
+  const viewModel=useGuideViewModel(guide);
+  const{locale,workflowGuide,hasPaintingWorkflow}=viewModel;
   const text=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values);
   const [downloadStatus, setDownloadStatus] =
     useState<DownloadStatus>("idle");
@@ -79,10 +81,8 @@ export function GuidePreview({ guide, savedFileName, savedPdfBlob, skipSave = fa
       {saveWarning ? <p role="alert" className="mx-auto max-w-7xl px-5 pt-5 text-sm text-amber-300 sm:px-6 lg:px-8">{saveWarning}</p> : null}
 
       <TemplatePreview guide={guide}/>
-      {guide.paintingSummary ? (
-        <div className="[&>div>section:nth-child(1)]:hidden [&>div>section:nth-child(2)]:hidden">
-          <GuidePaintingWorkflowPreview guide={{...guide,parts:guide.workflowParts??guide.parts}} locale={locale}/>
-        </div>
+      {hasPaintingWorkflow ? (
+        <GuidePaintingWorkflowSection guide={workflowGuide} locale={locale}/>
       ) : null}
     </main>
   );
