@@ -103,6 +103,8 @@ type ModelEditorState = {
   setPartPaintBeforeAssembly:(partId:string,value:boolean)=>void;
   setPartPaintingDifficulty:(partId:string,difficulty:PaintingDifficulty|null)=>void;
   setPartEstimatedPaintingTime:(partId:string,minutes:number|null)=>void;
+  replacePartPaintingWorkflow:(partId:string,workflow:PartPaintingWorkflow)=>void;
+  copyPaintingWorkflowFromPart:(sourcePartId:string,targetPartId:string,replaceDetails:boolean)=>void;
   setAssemblySteps: (steps: AssemblyStep[]) => void;
   addAssemblyStep: (input: CreateAssemblyStepInput) => void;
   updateAssemblyStep: (stepId: string, changes: UpdateAssemblyStepInput) => void;
@@ -325,6 +327,8 @@ export const useModelEditorStore =
     setPartPaintBeforeAssembly:(partId,value)=>{const part=useModelEditorStore.getState().parts.find(p=>p.id===partId);if(part)useModelEditorStore.getState().setPartPaintingWorkflow(partId,{...part.paintingWorkflow,paintBeforeAssembly:value})},
     setPartPaintingDifficulty:(partId,difficulty)=>{const part=useModelEditorStore.getState().parts.find(p=>p.id===partId);if(part)useModelEditorStore.getState().setPartPaintingWorkflow(partId,{...part.paintingWorkflow,difficulty})},
     setPartEstimatedPaintingTime:(partId,minutes)=>{const part=useModelEditorStore.getState().parts.find(p=>p.id===partId);if(part&&(minutes===null||(Number.isInteger(minutes)&&minutes>=1&&minutes<=1440)))useModelEditorStore.getState().setPartPaintingWorkflow(partId,{...part.paintingWorkflow,estimatedTimeMinutes:minutes})},
+    replacePartPaintingWorkflow:(partId,workflow)=>{useModelEditorStore.getState().setPartPaintingWorkflow(partId,workflow)},
+    copyPaintingWorkflowFromPart:(sourcePartId,targetPartId,replaceDetails)=>set((state)=>{const source=state.parts.find(p=>p.id===sourcePartId),target=state.parts.find(p=>p.id===targetPartId);if(!source||!target||source.id===target.id||source.paintingWorkflow.stages.length===0)return state;const valid=new Set(state.palette.map(c=>c.id)),now=new Date().toISOString();const stages=source.paintingWorkflow.stages.map((s,i)=>({...s,id:crypto.randomUUID(),order:i+1,paletteColorId:s.paletteColorId&&valid.has(s.paletteColorId)?s.paletteColorId:null,createdAt:now,updatedAt:now}));const workflow=replaceDetails?{...source.paintingWorkflow,stages}:{...target.paintingWorkflow,stages};return{parts:state.parts.map(p=>p.id===targetPartId?{...p,paintingWorkflow:workflow}:p),...markStateDirty(state)}}),
 
     setParts: (parts) => {
       set((state) => {

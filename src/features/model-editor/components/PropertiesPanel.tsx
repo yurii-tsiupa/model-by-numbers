@@ -18,6 +18,7 @@ import { normalizeHexColor } from "../lib/normalizeHexColor";
 import { useModelEditorStore } from "../store/modelEditorStore";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { PaintingWorkflowSection } from "./painting/PaintingWorkflowSection";
+import { PaintingWorkflowReuseActions } from "./painting/PaintingWorkflowReuseActions";
 
 export function PropertiesPanel() {
   const {t}=useTranslation();
@@ -422,6 +423,7 @@ export function PropertiesPanel() {
             </div>
           ) : null}
           <PaintingWorkflowSection part={selectedPart} />
+          <PaintingWorkflowReuseActions part={selectedPart} />
         </div>
       )}
     </aside>
