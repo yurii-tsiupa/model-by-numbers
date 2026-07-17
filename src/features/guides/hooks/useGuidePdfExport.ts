@@ -4,7 +4,7 @@ import {exportGuidePdf} from "../services/pdf/exportGuidePdf";
 import {normalizePdfExportError,type PdfExportError} from "../services/pdf/pdfExportErrors";
 import type {ExportGuidePdfOptions,PdfExportStatus} from "../services/pdf/types";
 
-const ACTIVE=new Set<PdfExportStatus>(["preparing","rendering","generating"]);
+const ACTIVE=new Set<PdfExportStatus>(["preparing","loadingAssets","rendering","generating"]);
 
 export function useGuidePdfExport(options:Omit<ExportGuidePdfOptions,"onProgress">){
   const optionsRef=useRef(options);
@@ -20,7 +20,7 @@ export function useGuidePdfExport(options:Omit<ExportGuidePdfOptions,"onProgress
   const exportPdf=useCallback(async()=>{
     if(runningRef.current)return null;
     runningRef.current=true;
-    setError(null);setStatus("preparing");setProgress(20);
+    setError(null);setStatus("preparing");setProgress(15);
     try{
       const result=await exportGuidePdf({...optionsRef.current,onProgress:next=>{if(!mountedRef.current)return;setStatus(next.status);setProgress(next.progress);}});
       if(mountedRef.current){setStatus("success");setProgress(100);}

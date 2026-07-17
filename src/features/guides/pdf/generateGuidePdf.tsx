@@ -19,10 +19,10 @@ export async function generateGuidePdf(
   let prepared;
   try{prepared=await prepareGuideImagesForPdf(guide);}catch(error){throw new PdfExportError("PREPARATION_FAILED",error);}
   if (prepared.hasFailures) onImageWarning?.();
-  onProgress?.({status:"rendering",progress:55});
+  onProgress?.({status:"rendering",progress:65});
   let renderer;
   try{renderer=pdf(<ModelGuideDocument viewModel={{...viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts}}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
-  onProgress?.({status:"generating",progress:80});
+  onProgress?.({status:"generating",progress:85});
   let blob:Blob;try{blob=await renderer.toBlob();}catch(error){throw new PdfExportError("PDF_GENERATION_FAILED",error);}
 
   if (!blob || blob.size === 0 || blob.type !== "application/pdf") {

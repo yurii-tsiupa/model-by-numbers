@@ -37,6 +37,30 @@ a {
   position: relative;
 }
 
+.guide-pdf-export-root {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 794px;
+  min-height: 1123px;
+  overflow: visible;
+  pointer-events: none;
+  z-index: -1;
+}
+
+[data-guide-render-mode="pdf"],
+[data-guide-render-mode="pdf"] * {
+  scroll-behavior: auto !important;
+  animation: none !important;
+  transition: none !important;
+  caret-color: transparent !important;
+}
+
+[data-guide-render-mode="pdf"] button,
+[data-guide-render-mode="pdf"] [data-guide-navigation] {
+  display: none !important;
+}
+
 @page {
   size: A4;
   margin: 14mm;
