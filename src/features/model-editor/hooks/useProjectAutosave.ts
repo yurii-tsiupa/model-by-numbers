@@ -80,6 +80,7 @@ export function useProjectAutosave({
       }));
     const serializedAssemblySteps = editorState.assemblySteps.map((step) => ({ ...step, partIds: [...step.partIds] }));
     const serializedPaintingOrder=[...editorState.paintingOrder];
+    const serializedMarkers = editorState.markers.map((marker) => ({ ...marker, position: { ...marker.position }, normal: marker.normal ? { ...marker.normal } : null, camera: { ...marker.camera, position: { ...marker.camera.position }, target: { ...marker.camera.target } } }));
 
     isSavingRef.current = true;
     editorState.markSaving();
@@ -92,6 +93,7 @@ export function useProjectAutosave({
         palette: serializedPalette,
         assemblySteps: serializedAssemblySteps,
         paintingOrder:serializedPaintingOrder,
+        markers: serializedMarkers,
       });
 
       useModelEditorStore
@@ -111,6 +113,7 @@ export function useProjectAutosave({
             palette: serializedPalette,
             assemblySteps: serializedAssemblySteps,
             paintingOrder:serializedPaintingOrder,
+            markers: serializedMarkers,
             updatedAt: new Date(),
           };
         },

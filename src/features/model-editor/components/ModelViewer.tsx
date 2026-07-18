@@ -79,6 +79,7 @@ type SceneProps = {
   showAllPartsForCapture: boolean;
   forceAssembled:boolean;
   forceFullyExploded:boolean;
+  defaultMarkerName: string;
 };
 
 function Scene({
@@ -95,6 +96,7 @@ function Scene({
   showAllPartsForCapture,
   forceAssembled,
   forceFullyExploded,
+  defaultMarkerName,
 }: SceneProps) {
   return (
     <>
@@ -137,6 +139,7 @@ function Scene({
           showAllPartsForCapture={showAllPartsForCapture}
           forceAssembled={forceAssembled}
           forceFullyExploded={forceFullyExploded}
+          defaultMarkerName={defaultMarkerName}
           controlsRef={controlsRef}
         />
 
@@ -192,6 +195,9 @@ export const ModelViewer = forwardRef<
   ref,
 ) {
   const {t}=useTranslation();
+  const markerPlacementActive = useModelEditorStore((state) => state.markerPlacementActive);
+  const cancelMarkerPlacement = useModelEditorStore((state) => state.cancelMarkerPlacement);
+  const selectedMarker = useModelEditorStore((state) => state.markers.find((marker) => marker.id === state.selectedMarkerId));
   const isExplodedLayoutEditing = useModelEditorStore((state) => state.isExplodedLayoutEditing);
   const focusedAssemblyStepId = useModelEditorStore((state) => state.focusedAssemblyStepId);
   const focusedAssemblyStep = useModelEditorStore((state) => state.assemblySteps.find((step) => step.id === state.focusedAssemblyStepId));
@@ -202,6 +208,15 @@ export const ModelViewer = forwardRef<
   const modelRef = useRef<Object3D | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isCaptureInProgressRef = useRef(false);
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!selectedMarker || !controls) return;
+    controls.object.position.set(selectedMarker.camera.position.x, selectedMarker.camera.position.y, selectedMarker.camera.position.z);
+    controls.target.set(selectedMarker.camera.target.x, selectedMarker.camera.target.y, selectedMarker.camera.target.z);
+    if (controls.object instanceof PerspectiveCamera && selectedMarker.camera.zoom) { controls.object.zoom = selectedMarker.camera.zoom; controls.object.updateProjectionMatrix(); }
+    controls.update();
+  }, [selectedMarker]);
 
   useEffect(() => () => {
     isCaptureInProgressRef.current = false;
@@ -587,7 +602,7 @@ export const ModelViewer = forwardRef<
   }
 
   return (
-    <section className="relative min-h-[34rem] min-w-0 flex-1 overflow-hidden bg-neutral-900">
+    <section className={`relative min-h-[34rem] min-w-0 flex-1 overflow-hidden bg-neutral-900 ${markerPlacementActive ? "cursor-crosshair" : ""}`}>
       {isLoading ? (
         <div className="absolute inset-0 z-20 bg-neutral-900">
           <ViewerLoading />
@@ -644,14 +659,16 @@ export const ModelViewer = forwardRef<
               showAllPartsForCapture={showAllPartsForCapture}
               forceAssembled={forceAssembled}
               forceFullyExploded={forceFullyExploded}
+              defaultMarkerName={t("editor.markers.defaultName")}
             />
           </Canvas>
         </ViewerErrorBoundary>
       ) : null}
 
       <div className="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center px-4">
-        {!simplified ? <ViewerModeSwitcher /> : null}
+      {!simplified ? <ViewerModeSwitcher /> : null}
       </div>
+      {markerPlacementActive ? <div role="status" className="absolute left-1/2 top-4 z-30 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 rounded-xl border border-[var(--accent)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--text)]"><span>{t("editor.markers.placementHelp")}</span><button type="button" onClick={cancelMarkerPlacement} className="shrink-0 rounded-lg border border-[var(--border)] px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">{t("editor.markers.cancelPlacement")}</button></div> : null}
       {focusedAssemblyStep ? <div role="status" className="absolute left-1/2 top-20 z-20 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-orange-400/30 bg-black/80 px-4 py-2 shadow-xl backdrop-blur"><div><p className="text-xs font-semibold text-orange-200">{t("assembly.focus.bannerTitle",{number:String(focusedAssemblyStep.order).padStart(2,"0")})}</p><p className="text-[10px] text-neutral-400">{t("assembly.focus.bannerDescription")}</p></div><button type="button" onClick={exitAssemblyStepFocus} className="rounded-lg bg-orange-400 px-3 py-1.5 text-xs font-semibold text-black">{t("assembly.focus.exit")}</button></div>:null}
 
       {shouldShowNumbersHint ? (

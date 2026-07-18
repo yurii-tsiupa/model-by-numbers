@@ -10,6 +10,8 @@ import {
 } from "react";
 import {
   Mesh,
+  Matrix3,
+  PerspectiveCamera,
   MathUtils,
   Vector3,
   type Object3D,
@@ -51,6 +53,7 @@ type LoadedModelProps = {
   onModelReady?: (
     model: Object3D,
   ) => void;
+  defaultMarkerName: string;
 };
 
 export function LoadedModel(props: LoadedModelProps) {
@@ -70,6 +73,7 @@ function LoadedModelContent({
   forceFullyExploded,
   controlsRef,
   onModelReady,
+  defaultMarkerName,
 }: LoadedModelProps & { sourceScene: Object3D }) {
   const {t}=useTranslation();
   const hasInitializedPartsRef = useRef(false);
@@ -121,6 +125,11 @@ function LoadedModelContent({
   const isExplodedLayoutEditing=useModelEditorStore(state=>state.isExplodedLayoutEditing);
   const setPartExplodedOffset=useModelEditorStore(state=>state.setPartExplodedOffset);
   const stopExplodedLayoutEditing=useModelEditorStore(state=>state.stopExplodedLayoutEditing);
+  const markers=useModelEditorStore(state=>state.markers);
+  const selectedMarkerId=useModelEditorStore(state=>state.selectedMarkerId);
+  const markerPlacementActive=useModelEditorStore(state=>state.markerPlacementActive);
+  const addMarker=useModelEditorStore(state=>state.addMarker);
+  const selectMarker=useModelEditorStore(state=>state.selectMarker);
 
   const model = useMemo(() => {
     const normalizedModel = normalizeModel(sourceScene);
@@ -274,6 +283,8 @@ function LoadedModelContent({
   ) {
     event.stopPropagation();
 
+    if (markerPlacementActive) return;
+
     const clickedMesh = event.object;
 
     if (!(clickedMesh instanceof Mesh)) {
@@ -296,12 +307,25 @@ function LoadedModelContent({
     }
   }
 
+  function handleMarkerPlacement(event: ThreeEvent<MouseEvent>) {
+    if (!markerPlacementActive || event.delta > 3) return;
+    event.stopPropagation();
+    const controls = controlsRef.current;
+    const camera = controls?.object;
+    if (!controls || !camera) return;
+    const surfaceNormal = event.face?.normal.clone().applyMatrix3(new Matrix3().getNormalMatrix(event.object.matrixWorld)).normalize();
+    addMarker({ name: defaultMarkerName, position: { x: event.point.x, y: event.point.y, z: event.point.z }, normal: surfaceNormal ? { x: surfaceNormal.x, y: surfaceNormal.y, z: surfaceNormal.z } : null, camera: { position: { x: camera.position.x, y: camera.position.y, z: camera.position.z }, target: { x: controls.target.x, y: controls.target.y, z: controls.target.z }, ...(camera instanceof PerspectiveCamera ? { zoom: camera.zoom } : {}) } });
+  }
+
   return (
     <>
       <primitive
         object={model}
         onPointerDown={handlePointerDown}
+        onClick={handleMarkerPlacement}
       />
+
+      {!showAllPartsForCapture ? markers.map((marker) => <Html key={marker.id} position={[marker.position.x, marker.position.y, marker.position.z]} center sprite><button type="button" aria-label={t("editor.markers.select", { number: marker.number, name: marker.name })} aria-pressed={selectedMarkerId === marker.id} onClick={(event) => { event.stopPropagation(); selectMarker(marker.id); }} className={`grid size-7 place-items-center rounded-full border-2 text-xs font-bold shadow-lg ${selectedMarkerId === marker.id ? "border-[var(--accent-foreground)] bg-[var(--accent)] text-[var(--accent-foreground)]" : "border-[var(--border)] bg-[var(--card)] text-[var(--text)]"}`}>{marker.number}</button></Html>) : null}
 
     {viewerMode === "numbers" ? (
       <ModelNumberLabels

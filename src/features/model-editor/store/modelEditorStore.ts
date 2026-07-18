@@ -14,6 +14,7 @@ import { MAX_EXPLODED_OFFSET } from "../lib/exploded/exploded.constants";
 import type { AssemblyStep, CreateAssemblyStepInput, UpdateAssemblyStepInput } from "@/features/models/types/AssemblyStep";
 import type { CreatePaintingStageInput, PaintingDifficulty, PartPaintingWorkflow, UpdatePaintingStageInput } from "../types/PaintingWorkflow";
 import { normalizePaintingOrder } from "../lib/paintingOrder";
+import type { CreatePaintMarkerInput, PaintMarker } from "@/features/models/types/PaintMarker";
 
 export type EditorSaveStatus =
   | "saved"
@@ -36,6 +37,16 @@ type ModelEditorState = {
     selectedPartId: string | null;
   } | null;
   selectedPartId: string | null;
+  markers: PaintMarker[];
+  selectedMarkerId: string | null;
+  markerPlacementActive: boolean;
+  setMarkers: (markers: PaintMarker[]) => void;
+  startMarkerPlacement: () => void;
+  cancelMarkerPlacement: () => void;
+  addMarker: (input: CreatePaintMarkerInput) => void;
+  selectMarker: (markerId: string | null) => void;
+  updateMarker: (markerId: string, changes: { name?: string; colorId?: string | null }) => void;
+  deleteMarker: (markerId: string) => void;
 
   isDirty: boolean;
   saveStatus: EditorSaveStatus;
@@ -246,6 +257,9 @@ function createPaletteColorName(
 export const useModelEditorStore =
   create<ModelEditorState>()((set) => ({
     parts: [],
+    markers: [],
+    selectedMarkerId: null,
+    markerPlacementActive: false,
     paintingOrder:[],
     assemblySteps: [],
     focusedAssemblyStepId: null,
@@ -366,6 +380,26 @@ export const useModelEditorStore =
       });
     },
 
+    setMarkers: (markers) => set({ markers, selectedMarkerId: null, markerPlacementActive: false }),
+    startMarkerPlacement: () => set({ markerPlacementActive: true, selectedMarkerId: null, selectedPartId: null }),
+    cancelMarkerPlacement: () => set({ markerPlacementActive: false }),
+    addMarker: (input) => set((state) => {
+      if (!state.markerPlacementActive) return state;
+      const now = Date.now();
+      const marker: PaintMarker = { ...input, id: `marker_${crypto.randomUUID()}`, number: Math.max(0, ...state.markers.map((item) => item.number)) + 1, colorId: null, createdAt: now, updatedAt: now };
+      return { markers: [...state.markers, marker], selectedMarkerId: marker.id, markerPlacementActive: false, ...markStateDirty(state) };
+    }),
+    selectMarker: (selectedMarkerId) => set({ selectedMarkerId, selectedPartId: null, highlightedPaletteColorId: null }),
+    updateMarker: (markerId, changes) => set((state) => {
+      const marker = state.markers.find((item) => item.id === markerId);
+      if (!marker) return state;
+      const name = changes.name === undefined ? marker.name : changes.name.trim();
+      const colorId = changes.colorId === undefined ? marker.colorId : changes.colorId;
+      if (!name || (colorId && !state.palette.some((color) => color.id === colorId)) || (name === marker.name && colorId === marker.colorId)) return state;
+      return { markers: state.markers.map((item) => item.id === markerId ? { ...item, name, colorId, updatedAt: Date.now() } : item), ...markStateDirty(state) };
+    }),
+    deleteMarker: (markerId) => set((state) => state.markers.some((item) => item.id === markerId) ? { markers: state.markers.filter((item) => item.id !== markerId), selectedMarkerId: state.selectedMarkerId === markerId ? null : state.selectedMarkerId, ...markStateDirty(state) } : state),
+
     syncPaletteFromParts: () => {
       set((state) => {
         const result = syncPaletteFromParts(
@@ -397,6 +431,7 @@ export const useModelEditorStore =
     selectPart: (partId) => {
       set({
         selectedPartId: partId,
+        selectedMarkerId: null,
         highlightedPaletteColorId: null,
       });
     },
@@ -1005,6 +1040,9 @@ export const useModelEditorStore =
     resetEditor: () => {
       set({
         parts: [],
+        markers: [],
+        selectedMarkerId: null,
+        markerPlacementActive: false,
         paintingOrder:[],
         assemblySteps: [],
         focusedAssemblyStepId: null,

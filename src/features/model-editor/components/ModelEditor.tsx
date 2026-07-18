@@ -120,6 +120,7 @@ export function ModelEditor({
     (state) => state.setPalette,
   );
   const setAssemblySteps = useModelEditorStore((state) => state.setAssemblySteps);
+  const setMarkers = useModelEditorStore((state) => state.setMarkers);
 
   const parts = useModelEditorStore(
     (state) => state.parts,
@@ -259,6 +260,7 @@ export function ModelEditor({
     hydratePaintingOrder(project.paintingOrder);
     setPalette(project.palette);
     setAssemblySteps(project.assemblySteps);
+    setMarkers(project.markers);
 
     initializedProjectIdRef.current = project.id;
   }, [
@@ -267,9 +269,11 @@ export function ModelEditor({
     resetEditor,
     setPalette,
     setAssemblySteps,
+    setMarkers,
     hydratePaintingOrder,
     project.paintingOrder,
     project.assemblySteps,
+    project.markers,
   ]);
 
   useEffect(() => {

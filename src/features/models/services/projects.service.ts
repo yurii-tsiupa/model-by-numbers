@@ -27,6 +27,7 @@ import type { AssemblyStep } from "../types/AssemblyStep";
 import { MAX_EXPLODED_OFFSET } from "@/features/model-editor/lib/exploded/exploded.constants";
 import { getModelFileExtension } from "@/features/model-import/lib/getModelFileExtension";
 import { normalizePaintingWorkflow } from "@/features/model-editor/lib/paintingWorkflow";
+import type { PaintMarker, Vector3Like } from "../types/PaintMarker";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -36,6 +37,14 @@ type StoredProjectPart = Omit<ProjectPart, "meshUuid" | "sourcePartKey"> & {
   meshUuid?: string;
   sourcePartKey?: string;
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null; }
+function isVector3Like(value: unknown): value is Vector3Like { return isRecord(value) && [value.x, value.y, value.z].every((item) => typeof item === "number" && Number.isFinite(item)); }
+function parsePaintMarker(value: unknown, index: number): PaintMarker | null {
+  if (!isRecord(value) || typeof value.id !== "string" || !isVector3Like(value.position) || !isRecord(value.camera) || !isVector3Like(value.camera.position) || !isVector3Like(value.camera.target)) return null;
+  const createdAt = typeof value.createdAt === "number" && Number.isFinite(value.createdAt) ? value.createdAt : 0;
+  return { id: value.id, number: typeof value.number === "number" && Number.isInteger(value.number) && value.number > 0 ? value.number : index + 1, name: typeof value.name === "string" ? value.name : "", colorId: typeof value.colorId === "string" ? value.colorId : null, position: value.position, normal: isVector3Like(value.normal) ? value.normal : null, camera: { position: value.camera.position, target: value.camera.target, ...(typeof value.camera.zoom === "number" && Number.isFinite(value.camera.zoom) ? { zoom: value.camera.zoom } : {}) }, createdAt, updatedAt: typeof value.updatedAt === "number" && Number.isFinite(value.updatedAt) ? value.updatedAt : createdAt };
+}
 
 function serializeProjectPart(part: ProjectPart): StoredProjectPart {
   return {
@@ -151,6 +160,7 @@ function mapProjectDocument(
               secondColor.number,
           )
       : [],
+    markers: Array.isArray(data.markers) ? data.markers.map(parsePaintMarker).filter((marker): marker is PaintMarker => marker !== null) : [],
 
     assemblySteps: Array.isArray(data.assemblySteps)
       ? data.assemblySteps.map((step: Partial<AssemblyStep>, index: number): AssemblyStep => ({
@@ -292,6 +302,7 @@ export async function createProject({
     baseColor,
 
     parts: (parts ?? []).map(serializeProjectPart),
+    markers: [],
     importSchemaVersion: importSchemaVersion ?? null,
     palette: [],
     assemblySteps: [],
@@ -320,6 +331,7 @@ export async function saveProjectEditorState({
   palette,
   assemblySteps,
   paintingOrder,
+  markers,
 }: {
   projectId: string;
   userId: string;
@@ -327,6 +339,7 @@ export async function saveProjectEditorState({
   palette: PaletteColor[];
   assemblySteps: AssemblyStep[];
   paintingOrder:string[];
+  markers:PaintMarker[];
 }): Promise<void> {
   if (!projectId || !userId) {
     throw new Error(
@@ -361,6 +374,7 @@ export async function saveProjectEditorState({
     palette,
     assemblySteps,
     paintingOrder,
+    markers,
     updatedAt: serverTimestamp(),
   });
 }
