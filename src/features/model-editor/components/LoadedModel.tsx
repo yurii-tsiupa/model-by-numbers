@@ -127,6 +127,7 @@ function LoadedModelContent({
   const stopExplodedLayoutEditing=useModelEditorStore(state=>state.stopExplodedLayoutEditing);
   const markers=useModelEditorStore(state=>state.markers);
   const selectedMarkerId=useModelEditorStore(state=>state.selectedMarkerId);
+  const activePaintingStageId=useModelEditorStore(state=>state.activePaintingStageId);
   const markerPlacementActive=useModelEditorStore(state=>state.markerPlacementActive);
   const addMarker=useModelEditorStore(state=>state.addMarker);
   const selectMarker=useModelEditorStore(state=>state.selectMarker);
@@ -138,6 +139,9 @@ function LoadedModelContent({
 
     return normalizedModel;
   }, [sourceScene]);
+  const activePaintingStage = useMemo(() => parts.flatMap((part) => part.paintingWorkflow.stages).find((stage) => stage.id === activePaintingStageId), [activePaintingStageId, parts]);
+  const highlightedPaintingPartIds = useMemo(() => activePaintingStage?.targetReferences?.filter((reference) => reference.type === "part").map((reference) => reference.id) ?? [], [activePaintingStage]);
+  const highlightedPaintingMarkerIds = useMemo(() => new Set(activePaintingStage?.targetReferences?.filter((reference) => reference.type === "marker").map((reference) => reference.id) ?? []), [activePaintingStage]);
 
   const presentationParts = useMemo(
     () =>
@@ -258,6 +262,7 @@ function LoadedModelContent({
       selectedPartId,
       selectedPartIds,
       highlightedPaletteColorId,
+      highlightedPaintingPartIds,
       hideUnmappedMeshes: importSchemaVersion === 1,
     });
   }, [
@@ -269,6 +274,7 @@ function LoadedModelContent({
     selectedPartId,
     selectedPartIds,
     highlightedPaletteColorId,
+    highlightedPaintingPartIds,
     importSchemaVersion,
   ]);
 
@@ -325,7 +331,7 @@ function LoadedModelContent({
         onClick={handleMarkerPlacement}
       />
 
-      {!showAllPartsForCapture ? markers.map((marker) => <Html key={marker.id} position={[marker.position.x, marker.position.y, marker.position.z]} center sprite><button type="button" aria-label={t("editor.markers.select", { number: marker.number, name: marker.name })} aria-pressed={selectedMarkerId === marker.id} onClick={(event) => { event.stopPropagation(); selectMarker(marker.id); }} className={`grid size-7 place-items-center rounded-full border-2 text-xs font-bold shadow-lg ${selectedMarkerId === marker.id ? "border-[var(--accent-foreground)] bg-[var(--accent)] text-[var(--accent-foreground)]" : "border-[var(--border)] bg-[var(--card)] text-[var(--text)]"}`}>{marker.number}</button></Html>) : null}
+      {!showAllPartsForCapture ? markers.map((marker) => { const targetHighlighted=highlightedPaintingMarkerIds.has(marker.id);const hasActiveTargets=Boolean(activePaintingStage?.targetReferences?.length);return <Html key={marker.id} position={[marker.position.x, marker.position.y, marker.position.z]} center sprite><button type="button" aria-label={t("editor.markers.select", { number: marker.number, name: marker.name })} aria-pressed={selectedMarkerId === marker.id || targetHighlighted} onClick={(event) => { event.stopPropagation(); selectMarker(marker.id); }} className={`grid place-items-center rounded-full border-2 text-xs font-bold shadow-lg ${targetHighlighted?"size-9 border-[var(--accent-foreground)] bg-[var(--accent)] text-[var(--accent-foreground)]":selectedMarkerId===marker.id?"size-7 border-[var(--accent-foreground)] bg-[var(--accent)] text-[var(--accent-foreground)]":`size-7 border-[var(--border)] bg-[var(--card)] text-[var(--text)] ${hasActiveTargets?"opacity-50":""}`}`}>{marker.number}</button></Html>}) : null}
 
     {viewerMode === "numbers" ? (
       <ModelNumberLabels

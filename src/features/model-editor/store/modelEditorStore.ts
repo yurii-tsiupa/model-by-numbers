@@ -40,6 +40,8 @@ type ModelEditorState = {
   markers: PaintMarker[];
   selectedMarkerId: string | null;
   markerPlacementActive: boolean;
+  activePaintingStageId: string | null;
+  paintingTargetFocusRevision: number;
   setMarkers: (markers: PaintMarker[]) => void;
   startMarkerPlacement: () => void;
   cancelMarkerPlacement: () => void;
@@ -47,6 +49,8 @@ type ModelEditorState = {
   selectMarker: (markerId: string | null) => void;
   updateMarker: (markerId: string, changes: { name?: string; colorId?: string | null }) => void;
   deleteMarker: (markerId: string) => void;
+  setActivePaintingStage: (stageId: string | null) => void;
+  focusActivePaintingTargets: () => void;
 
   isDirty: boolean;
   saveStatus: EditorSaveStatus;
@@ -260,6 +264,8 @@ export const useModelEditorStore =
     markers: [],
     selectedMarkerId: null,
     markerPlacementActive: false,
+    activePaintingStageId: null,
+    paintingTargetFocusRevision: 0,
     paintingOrder:[],
     assemblySteps: [],
     focusedAssemblyStepId: null,
@@ -398,7 +404,9 @@ export const useModelEditorStore =
       if (!name || (colorId && !state.palette.some((color) => color.id === colorId)) || (name === marker.name && colorId === marker.colorId)) return state;
       return { markers: state.markers.map((item) => item.id === markerId ? { ...item, name, colorId, updatedAt: Date.now() } : item), ...markStateDirty(state) };
     }),
-    deleteMarker: (markerId) => set((state) => state.markers.some((item) => item.id === markerId) ? { markers: state.markers.filter((item) => item.id !== markerId), selectedMarkerId: state.selectedMarkerId === markerId ? null : state.selectedMarkerId, ...markStateDirty(state) } : state),
+    deleteMarker: (markerId) => set((state) => state.markers.some((item) => item.id === markerId) ? { markers: state.markers.filter((item) => item.id !== markerId), parts: state.parts.map((part) => ({ ...part, paintingWorkflow: { ...part.paintingWorkflow, stages: part.paintingWorkflow.stages.map((stage) => ({ ...stage, targetReferences: stage.targetReferences?.filter((reference) => !(reference.type === "marker" && reference.id === markerId)) ?? [] })) } })), selectedMarkerId: state.selectedMarkerId === markerId ? null : state.selectedMarkerId, ...markStateDirty(state) } : state),
+    setActivePaintingStage: (activePaintingStageId) => set({ activePaintingStageId }),
+    focusActivePaintingTargets: () => set((state) => ({ paintingTargetFocusRevision: state.paintingTargetFocusRevision + 1 })),
 
     syncPaletteFromParts: () => {
       set((state) => {
@@ -1043,6 +1051,8 @@ export const useModelEditorStore =
         markers: [],
         selectedMarkerId: null,
         markerPlacementActive: false,
+        activePaintingStageId: null,
+        paintingTargetFocusRevision: 0,
         paintingOrder:[],
         assemblySteps: [],
         focusedAssemblyStepId: null,

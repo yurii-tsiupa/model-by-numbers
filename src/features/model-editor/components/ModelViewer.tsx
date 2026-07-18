@@ -20,6 +20,8 @@ import {
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import {
   PerspectiveCamera,
+  Box3,
+  Sphere,
   Vector3,
   type Object3D,
 } from "three";
@@ -198,6 +200,7 @@ export const ModelViewer = forwardRef<
   const markerPlacementActive = useModelEditorStore((state) => state.markerPlacementActive);
   const cancelMarkerPlacement = useModelEditorStore((state) => state.cancelMarkerPlacement);
   const selectedMarker = useModelEditorStore((state) => state.markers.find((marker) => marker.id === state.selectedMarkerId));
+  const paintingTargetFocusRevision = useModelEditorStore((state) => state.paintingTargetFocusRevision);
   const isExplodedLayoutEditing = useModelEditorStore((state) => state.isExplodedLayoutEditing);
   const focusedAssemblyStepId = useModelEditorStore((state) => state.focusedAssemblyStepId);
   const focusedAssemblyStep = useModelEditorStore((state) => state.assemblySteps.find((step) => step.id === state.focusedAssemblyStepId));
@@ -208,6 +211,18 @@ export const ModelViewer = forwardRef<
   const modelRef = useRef<Object3D | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isCaptureInProgressRef = useRef(false);
+
+  useEffect(() => {
+    if (paintingTargetFocusRevision === 0) return;
+    const controls=controlsRef.current,model=modelRef.current,state=useModelEditorStore.getState();
+    if(!controls||!model)return;
+    const stage=state.parts.flatMap(part=>part.paintingWorkflow.stages).find(item=>item.id===state.activePaintingStageId);
+    const references=stage?.targetReferences??[],bounds=new Box3(),partIds=new Set(references.filter(reference=>reference.type==="part").map(reference=>reference.id)),meshIds=new Set(state.parts.filter(part=>partIds.has(part.id)).map(part=>part.meshUuid));
+    model.traverse(object=>{if(meshIds.has(object.uuid))bounds.expandByObject(object)});
+    for(const reference of references){if(reference.type!=="marker")continue;const marker=state.markers.find(item=>item.id===reference.id);if(marker)bounds.expandByPoint(new Vector3(marker.position.x,marker.position.y,marker.position.z));}
+    const targetBounds = bounds.isEmpty() ? getModelBounds(model) : { box: bounds, center: bounds.getCenter(new Vector3()), size: bounds.getSize(new Vector3()), sphere: bounds.getBoundingSphere(new Sphere()), radius: bounds.getBoundingSphere(new Sphere()).radius };
+    fitCameraToBounds({camera:controls.object as PerspectiveCamera,controls,bounds:targetBounds});
+  },[paintingTargetFocusRevision]);
 
   useEffect(() => {
     const controls = controlsRef.current;

@@ -2,9 +2,13 @@
 
 import { MapPin, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import { ConfirmationModal as BaseConfirmationModal } from "@/components/ui/ConfirmationModal";
+import type { ComponentProps } from "react";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { useModelEditorStore } from "../store/modelEditorStore";
+import { getStepsReferencingMarker } from "../lib/paintingTargets";
+
+function ConfirmationModal(props: ComponentProps<typeof BaseConfirmationModal>) { const { t } = useTranslation(); const parts = useModelEditorStore((state) => state.parts); const selectedMarkerId = useModelEditorStore((state) => state.selectedMarkerId); const count = selectedMarkerId ? getStepsReferencingMarker(parts, selectedMarkerId).length : 0; return <BaseConfirmationModal {...props} description={count ? t("editor.markers.deleteReferenced.description", { count }) : props.description} />; }
 
 export function MarkerDetailsSection() {
   const { t } = useTranslation();

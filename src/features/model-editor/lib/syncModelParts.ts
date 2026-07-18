@@ -173,6 +173,7 @@ export function syncModelParts({
   selectedPartId,
   selectedPartIds,
   highlightedPaletteColorId,
+  highlightedPaintingPartIds = [],
   hideUnmappedMeshes = false,
 }: {
   model: Object3D;
@@ -183,6 +184,7 @@ export function syncModelParts({
   selectedPartId: string | null;
   selectedPartIds: string[];
   highlightedPaletteColorId: string | null;
+  highlightedPaintingPartIds?: string[];
   hideUnmappedMeshes?: boolean;
 }): void {
   const paletteById = new Map(
@@ -239,6 +241,7 @@ export function syncModelParts({
       ) &&
       part.paletteColorId ===
         highlightedPaletteColorId;
+    const isPaintingTargetHighlighted = highlightedPaintingPartIds.includes(part.id);
 
     syncMeshMaterials({
       mesh: object,
@@ -248,7 +251,8 @@ export function syncModelParts({
       isSelected:
         isSingleSelected ||
         isBatchSelected ||
-        isPaletteHighlighted,
+        isPaletteHighlighted ||
+        isPaintingTargetHighlighted,
     });
   });
 }
