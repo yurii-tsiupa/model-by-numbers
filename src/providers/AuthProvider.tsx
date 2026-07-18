@@ -14,6 +14,9 @@ import {
 
 import { auth } from "@/lib/firebase/client";
 import {
+  loginWithEmail,
+  registerWithEmail,
+  sendPasswordReset,
   signInWithGoogle,
   signOutUser,
 } from "@/lib/firebase/auth";
@@ -22,6 +25,9 @@ export type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
   signIn: () => Promise<void>;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  registerWithEmail: (email: string, password: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -58,6 +64,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isLoading,
       signIn: async () => {
         await signInWithGoogle();
+      },
+      loginWithEmail: async (email, password) => {
+        await loginWithEmail(email, password);
+      },
+      registerWithEmail: async (email, password) => {
+        await registerWithEmail(email, password);
+      },
+      sendPasswordReset: async (email) => {
+        await sendPasswordReset(email);
       },
       signOut: async () => {
         await signOutUser();

@@ -53,8 +53,8 @@ export function FinalCtaSection() {
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
-                href="/login"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-[10px] bg-[var(--accent)] px-6 text-[15px] font-medium text-white transition-opacity hover:opacity-90"
+                href="/register"
+                className="inline-flex min-h-[52px] items-center justify-center rounded-[10px] bg-[var(--accent)] px-6 text-[15px] font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
               >
                 {t('landing.cta.primary')}
               </Link>

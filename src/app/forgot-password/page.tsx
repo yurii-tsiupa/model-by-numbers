@@ -1,0 +1,12 @@
+"use client";
+
+import Link from "next/link";
+import { useState, type FormEvent } from "react";
+import { AuthField } from "@/components/auth/AuthField";
+import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { normalizeAuthError } from "@/features/auth/services/auth-errors";
+import { hasAuthFieldErrors, validatePasswordReset, type AuthFieldErrors } from "@/features/auth/services/auth-validation";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
+
+export default function ForgotPasswordPage(){const{t}=useTranslation();const{sendPasswordReset}=useAuth();const[email,setEmail]=useState("");const[errors,setErrors]=useState<AuthFieldErrors>({});const[formError,setFormError]=useState<string>();const[submitting,setSubmitting]=useState(false);const[sent,setSent]=useState(false);async function submit(event:FormEvent){event.preventDefault();const next=validatePasswordReset(email);setErrors(next);if(hasAuthFieldErrors(next)||submitting)return;setSubmitting(true);setFormError(undefined);try{await sendPasswordReset(email.trim());setSent(true);}catch(error){setFormError(t(`auth.errors.${normalizeAuthError(error)}`));}finally{setSubmitting(false);}}const validation=errors.email?t(`auth.validation.${errors.email}`):undefined;return <AuthPageShell title={t("auth.resetPassword.title")} description={t("auth.resetPassword.description")}>{sent?<div role="status" className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4 text-sm leading-6 text-[var(--text)]">{t("auth.resetPassword.success")}</div>:<form onSubmit={submit} noValidate className="mt-6 space-y-4"><AuthField id="reset-email" label={t("auth.email")} type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} error={validation}/>{formError?<p role="alert" className="text-sm text-[var(--accent)]">{formError}</p>:null}<button disabled={submitting} className="h-11 w-full rounded-[10px] bg-[var(--accent)] px-4 text-sm font-medium text-[var(--accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">{submitting?t("auth.resetPassword.submitting"):t("auth.resetPassword.submit")}</button></form>}<p className="mt-6 text-center text-sm"><Link href="/login" className="font-medium text-[var(--accent)]">{t("auth.resetPassword.backToLogin")}</Link></p></AuthPageShell>}

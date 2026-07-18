@@ -1,5 +1,8 @@
 import {
+  createUserWithEmailAndPassword,
   GoogleAuthProvider,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
   type UserCredential,
@@ -24,4 +27,18 @@ export async function signInWithGoogle(): Promise<UserCredential> {
 
 export async function signOutUser(): Promise<void> {
   await signOut(auth);
+}
+
+export async function registerWithEmail(email: string, password: string): Promise<UserCredential> {
+  const credential = await createUserWithEmailAndPassword(auth, email, password);
+  await syncUserProfile(credential.user);
+  return credential;
+}
+
+export function loginWithEmail(email: string, password: string): Promise<UserCredential> {
+  return signInWithEmailAndPassword(auth, email, password);
+}
+
+export function sendPasswordReset(email: string): Promise<void> {
+  return sendPasswordResetEmail(auth, email);
 }

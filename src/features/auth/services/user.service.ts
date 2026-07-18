@@ -3,7 +3,6 @@ import {
   getDoc,
   serverTimestamp,
   setDoc,
-  updateDoc,
 } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
@@ -27,10 +26,6 @@ export async function syncUserProfile(user: User): Promise<void> {
     return;
   }
 
-  await updateDoc(userDocumentReference, {
-    email: user.email ?? "",
-    displayName: user.displayName ?? "",
-    photoUrl: user.photoURL,
-    updatedAt: serverTimestamp(),
-  });
+  // Existing profiles may contain user-managed values. Authentication must not
+  // overwrite them on every sign-in.
 }

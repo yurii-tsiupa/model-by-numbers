@@ -1,39 +1,12 @@
 "use client";
 
-import { FirebaseError } from "firebase/app";
 import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
-
-function getAuthenticationError(error: unknown): "auth.genericError"|"auth.popupClosed"|"auth.popupBlocked"|"auth.popupOpen"|"auth.network"|"auth.unauthorized"|"auth.signInFailed" {
-  if (!(error instanceof FirebaseError)) {
-    return "auth.genericError";
-  }
-
-  switch (error.code) {
-    case "auth/popup-closed-by-user":
-      return "auth.popupClosed";
-
-    case "auth/popup-blocked":
-      return "auth.popupBlocked";
-
-    case "auth/cancelled-popup-request":
-      return "auth.popupOpen";
-
-    case "auth/network-request-failed":
-      return "auth.network";
-
-    case "auth/unauthorized-domain":
-      return "auth.unauthorized";
-
-    default:
-      console.error("Google sign-in failed:", error);
-      return "auth.signInFailed";
-  }
-}
+import { normalizeAuthError } from "@/features/auth/services/auth-errors";
 
 export function GoogleSignInButton() {
   const router = useRouter();
@@ -54,7 +27,7 @@ export function GoogleSignInButton() {
 
       router.replace("/models");
     } catch (error) {
-      setErrorMessage(t(getAuthenticationError(error)));
+      setErrorMessage(t(`auth.errors.${normalizeAuthError(error)}`));
     } finally {
       setIsSubmitting(false);
     }
@@ -66,7 +39,7 @@ export function GoogleSignInButton() {
         type="button"
         disabled={isSubmitting}
         onClick={handleSignIn}
-        className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-full bg-white px-5 py-3 font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-[10px] border border-[var(--border)] bg-[var(--card)] px-5 py-3 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSubmitting ? (
           <>
