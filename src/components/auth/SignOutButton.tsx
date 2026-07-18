@@ -32,7 +32,7 @@ export function SignOutButton() {
       type="button"
       disabled={isSubmitting}
       onClick={handleSignOut}
-      className="flex cursor-pointer items-center gap-2 text-sm text-neutral-400 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm text-[var(--text-secondary)] transition hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {isSubmitting ? (
         <LoaderCircle className="h-4 w-4 animate-spin" />

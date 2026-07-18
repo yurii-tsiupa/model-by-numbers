@@ -89,6 +89,22 @@ export const en={
   "theme.enableLight":"Enable light theme",
   "theme.enableDark":"Enable dark theme",
   "pdf.metadata.subject":"Painting guide for {project}",
+  "header.homeLabel":"Model by Numbers home",
+  "header.primaryNavigation":"Primary navigation",
+  "header.nav.models":"Models",
+  "header.nav.howItWorks":"How it works",
+  "header.nav.guidePreview":"Guide example",
+  "header.login":"Log in",
+  "header.registration":"Create account",
+  "header.mobileMenu":"Mobile navigation",
+  "header.openMenu":"Open menu",
+  "header.closeMenu":"Close menu",
+  "auth.eyebrow":"Layer by layer",
+  "notFound.eyebrow":"Page not found",
+  "notFound.title":"This page does not exist",
+  "notFound.description":"The link may be outdated, or the address may contain a mistake.",
+  "notFound.back":"Go back",
+  "notFound.home":"Home",
 } as const;
 export type TranslationKey=keyof typeof en;
 export type TranslationDictionary={readonly [K in TranslationKey]:string};

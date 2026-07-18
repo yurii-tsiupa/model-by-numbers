@@ -16,6 +16,7 @@ import { useDeleteProject } from "@/features/models/hooks/useDeleteProject";
 import { useProjects } from "@/features/models/hooks/useProjects";
 import type { Project } from "@/features/models/types/Project";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 export default function ModelsPage() {
   const router = useRouter();
@@ -95,8 +96,8 @@ export default function ModelsPage() {
   return (
     <>
       <main className="relative min-h-screen overflow-hidden bg-[var(--bg)] text-[var(--text)]">
+        <AppHeader variant="application" />
         <ModelsHeader
-          user={user}
           onNewProject={() =>
             setIsNewProjectModalOpen(true)
           }

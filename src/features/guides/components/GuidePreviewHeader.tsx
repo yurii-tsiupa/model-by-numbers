@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  Box,
   CircleAlert,
   Download,
   Layers3,
@@ -8,8 +7,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { LanguageSwitcher } from "@/features/i18n/components/LanguageSwitcher";
+import { AppHeader } from "@/components/layout/AppHeader";
 import { translate } from "@/features/i18n/lib/i18n";
 import type { Locale } from "@/features/i18n/types/Locale";
 
@@ -74,44 +72,7 @@ export function GuidePreviewHeader({
 
   return (
     <>
-      <header
-        data-guide-controls
-        className="border-b border-[var(--border)] print:hidden"
-      >
-        <div className="flex min-h-16 items-center justify-between px-6 lg:px-8">
-          <Link
-            href="/models"
-            className="flex min-w-0 items-center gap-3"
-          >
-            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--card)]">
-              <Box
-                className="h-[18px] w-[18px] text-[var(--accent)]"
-                strokeWidth={1.8}
-              />
-
-              <span
-                aria-hidden="true"
-                className="absolute -bottom-1 left-2 right-2 h-1 rounded-full bg-[var(--accent)] opacity-30"
-              />
-            </div>
-
-            <div className="hidden min-w-0 sm:block">
-              <p className="font-[family-name:var(--font-space-grotesk)] text-sm font-semibold tracking-[-0.01em] text-[var(--text)]">
-                Model by Numbers
-              </p>
-
-              <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase tracking-[0.14em] text-[var(--text-secondary)]">
-                Layer workspace
-              </p>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <LanguageSwitcher />
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <div data-guide-controls className="print:hidden"><AppHeader variant="guide" showNavigation={false}/></div>
 
       <section
         data-guide-controls

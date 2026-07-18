@@ -4,13 +4,11 @@ import { GuidePreviewSection } from '@/features/landing/components/GuidePreviewS
 import { HeroSection } from '@/features/landing/components/HeroSection';
 import { HowItWorksSection } from '@/features/landing/components/HowItWorksSection';
 import { LandingFooter } from '@/features/landing/components/LandingFooter';
-import { LandingHeader } from '@/features/landing/components/LandingHeader';
+import { AppShell } from '@/components/layout/AppShell';
 
 export default function HomePage() {
   return (
-    <>
-      <LandingHeader />
-
+    <AppShell variant="public">
       <main>
         <HeroSection />
         <GuidePreviewSection />
@@ -20,6 +18,6 @@ export default function HomePage() {
       </main>
 
       <LandingFooter />
-    </>
+    </AppShell>
   );
 }

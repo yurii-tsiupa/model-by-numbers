@@ -8,9 +8,8 @@ import { useEffect } from "react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { Container } from "@/components/ui/Container";
 import { Loader } from "@/components/ui/Loader";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { LanguageSwitcher } from "@/features/i18n/components/LanguageSwitcher";
+import { AppHeader } from "@/components/layout/AppHeader";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 function LayerBackground() {
@@ -88,29 +87,7 @@ export default function LoginPage() {
 
   return (
     <main className="relative flex min-h-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--text)]">
-      <header className="relative z-50 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--bg)_92%,transparent)] backdrop-blur-xl">
-        <Container className="flex min-h-16 items-center justify-between gap-6 sm:min-h-[72px]">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2.5 font-[var(--font-heading)] text-xl font-semibold"
-            aria-label="Шар — головна"
-          >
-            <span
-              className="grid size-9 place-items-center rounded-[10px] bg-[var(--accent)] text-sm font-semibold text-white"
-              aria-hidden="true"
-            >
-              Ш
-            </span>
-
-            <span className="hidden min-[380px]:inline">Шар</span>
-          </Link>
-
-          <div className="flex items-center gap-2.5">
-            <LanguageSwitcher />
-            <ThemeToggle />
-          </div>
-        </Container>
-      </header>
+      <AppHeader variant="public" showNavigation={false}/>
 
       <section className="relative flex flex-1 items-center justify-center">
         <LayerBackground />
@@ -128,7 +105,7 @@ export default function LoginPage() {
             <div className="rounded-[24px] border border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_94%,transparent)] p-6 backdrop-blur-xl sm:p-8">
               <div className="mb-8">
                 <p className="mb-3 font-[var(--font-mono)] text-xs font-medium uppercase tracking-[0.16em] text-[var(--accent)]">
-                  Шар за шаром
+                  {t("auth.eyebrow")}
                 </p>
 
                 <h1 className="font-[var(--font-heading)] text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
