@@ -35,6 +35,7 @@ import { GuideSettingsModal } from "@/features/guides/components/GuideSettingsMo
 import {getAssemblyGuideReadiness} from "@/features/guides/lib/getAssemblyGuideReadiness";
 import { imageSourceToBlob, saveGuideAsset } from "@/features/guides/services/assets/saveGuideAsset";
 import type { GuideAssetReference } from "@/features/guides/services/assets/types";
+import { registerStepPreviewGenerator } from "../step-previews/stepPreviewService";
 
 type ModelEditorProps = {
   project: Project;
@@ -64,6 +65,8 @@ export function ModelEditor({
   const references=referencesQuery.data??[];
   const selectedReference=references.find(reference=>reference.id===selectedReferenceId)??null;
   const effectiveReferenceViewMode=selectedReference?referenceViewMode:"viewer";
+
+  useEffect(() => registerStepPreviewGenerator(project.id, async (stepId) => { const viewer=viewerRef.current;if(!viewer)throw new Error("modelUnavailable");return viewer.generateStepPreview(stepId); }), [project.id]);
 
   function focusAssemblyStep(stepId: string) {
     useModelEditorStore.getState().focusAssemblyStep(stepId);
@@ -310,7 +313,7 @@ export function ModelEditor({
           <div className={`${mode === "advanced" && effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-[18rem] min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} simplified={mode === "simple"} /></div>
           {mode === "advanced"&&selectedReference&&effectiveReferenceViewMode!=="viewer"?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={setSelectedReferenceId} onClose={()=>setReferenceViewMode("viewer")}/>:null}
           {mode === "advanced" ? <div className="absolute right-3 top-3 z-20 flex rounded-full border border-white/10 bg-black/70 p-1 text-xs">{(["viewer","split","reference"] as const).map(viewMode=><button key={viewMode} type="button" disabled={viewMode!=="viewer"&&references.length===0} onClick={()=>{if(viewMode==="viewer")setReferenceViewMode("viewer");else openReferenceMode(viewMode);}} className={`rounded-full px-3 py-1.5 disabled:opacity-40 ${effectiveReferenceViewMode===viewMode?"bg-orange-400 text-black":"text-neutral-300"}`}>{viewMode==="viewer"?t("viewer.model"):viewMode==="split"?t("viewer.split"):t("viewer.reference")}</button>)}</div> : null}
-          {mode === "simple" ? <GuideBuilderPanel canOpenGuide={isGuideReady} onOpenGuide={() => setShowGuideSettings(true)} /> : null}
+          {mode === "simple" ? <GuideBuilderPanel projectId={project.id} canOpenGuide={isGuideReady} onOpenGuide={() => setShowGuideSettings(true)} /> : null}
         </div>
 
         {mode === "advanced" ? <PropertiesPanel key="advanced-properties" /> : null}

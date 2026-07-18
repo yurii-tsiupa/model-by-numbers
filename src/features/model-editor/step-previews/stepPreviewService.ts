@@ -1,0 +1,7 @@
+import type { StepPreviewResult } from "./types";
+import { STEP_PREVIEW_HEIGHT,STEP_PREVIEW_WIDTH } from "./constants";
+import { clearStepPreviewCache,getCachedStepPreview,invalidateStepPreview,setCachedStepPreview } from "./cache";
+type Generator=(stepId:string,cacheKey:string)=>Promise<{blob:Blob;framing:StepPreviewResult["framing"]}>;
+const generators=new Map<string,Generator>();let queue=Promise.resolve();
+export function registerStepPreviewGenerator(projectId:string,generator:Generator){generators.set(projectId,generator);return()=>{if(generators.get(projectId)===generator){generators.delete(projectId);clearStepPreviewCache()}}}
+export function getOrGenerateStepPreview(projectId:string,stepId:string,cacheKey:string,force=false):Promise<StepPreviewResult>{if(force)invalidateStepPreview(cacheKey);const cached=getCachedStepPreview(cacheKey);if(cached)return Promise.resolve(cached);const task=async()=>{const generator=generators.get(projectId);if(!generator)throw new Error("modelUnavailable");const{blob,framing}=await generator(stepId,cacheKey);const existing=getCachedStepPreview(cacheKey);if(existing)return existing;const result={stepId,imageUrl:URL.createObjectURL(blob),width:STEP_PREVIEW_WIDTH,height:STEP_PREVIEW_HEIGHT,generatedAt:Date.now(),framing,cacheKey};setCachedStepPreview(cacheKey,result);return result};const result=queue.then(task,task);queue=result.then(()=>undefined,()=>undefined);return result}

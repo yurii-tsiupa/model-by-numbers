@@ -46,6 +46,8 @@ import {ExplodedViewToolbar} from "./ExplodedViewToolbar";
 import type { ExplodedLabelsMode } from "../types/ExplodedLabelsMode";
 import { captureAssemblyCanvas } from "../lib/captureAssemblyCanvas";
 import { isEditableKeyboardTarget } from "../lib/isEditableKeyboardTarget";
+import { createStepPreviewBlob } from "../step-previews/createStepPreviewBlob";
+import type { StepPreviewFraming } from "../step-previews/types";
 
 type ModelViewerProps = {
   project: Project;
@@ -57,6 +59,7 @@ export type ModelViewerHandle = {
   captureView: (mode: ViewerMode) => Promise<string>;
   fitView: () => void;
   captureAssemblyStep: (options: {partIds:string[];labelsMode:ExplodedLabelsMode}) => Promise<Blob>;
+  generateStepPreview: (stepId:string) => Promise<{blob:Blob;framing:StepPreviewFraming}>;
 };
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
@@ -441,6 +444,7 @@ export const ModelViewer = forwardRef<
     ref,
     () => ({
       fitView: handleFitModel,
+      generateStepPreview: async (stepId) => { const model=modelRef.current;if(!model)throw new Error("modelUnavailable");const state=useModelEditorStore.getState(),step=state.parts.flatMap(part=>part.paintingWorkflow.stages).find(item=>item.id===stepId);if(!step)throw new Error("targetsUnavailable");model.updateWorldMatrix(true,true);return createStepPreviewBlob({model,step,parts:state.parts,markers:state.markers,palette:state.palette}); },
       captureAssemblyStep: async ({partIds,labelsMode}) => {
         if(isCaptureInProgressRef.current)throw new Error("Capture busy.");
         const model=modelRef.current,canvas=canvasRef.current,controls=controlsRef.current;
