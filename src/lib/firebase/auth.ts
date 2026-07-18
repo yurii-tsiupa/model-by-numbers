@@ -6,6 +6,7 @@ import {
   signInWithPopup,
   signOut,
   type UserCredential,
+  updateProfile,
 } from "firebase/auth";
 
 import { syncUserProfile } from "@/features/auth/services/user.service";
@@ -29,8 +30,10 @@ export async function signOutUser(): Promise<void> {
   await signOut(auth);
 }
 
-export async function registerWithEmail(email: string, password: string): Promise<UserCredential> {
+export type RegisterWithEmailInput={displayName:string;email:string;password:string};
+export async function registerWithEmail({displayName,email,password}: RegisterWithEmailInput): Promise<UserCredential> {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
+  await updateProfile(credential.user,{displayName});
   await syncUserProfile(credential.user);
   return credential;
 }
