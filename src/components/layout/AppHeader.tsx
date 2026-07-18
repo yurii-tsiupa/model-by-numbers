@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { SignOutButton } from "@/components/auth/SignOutButton";
+import { UserMenu } from "@/components/auth/UserMenu";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { LanguageSwitcher } from "@/features/i18n/components/LanguageSwitcher";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
@@ -40,7 +40,7 @@ export function AppHeader({ variant, contextualStart, contextualActions, showNav
         {showNavigation ? <nav aria-label={t("header.primaryNavigation")} className="ml-4 hidden items-center gap-1 md:flex">{navigation.map(item => { const active = item.id === "models" && pathname.startsWith("/models"); return <Link key={item.id} href={item.href} aria-current={active ? "page" : undefined} className={`rounded-lg px-3 py-2 font-[family-name:var(--font-inter)] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${active ? "text-[var(--accent)]" : "text-[var(--text-secondary)] hover:text-[var(--text)]"}`}>{t(item.labelKey)}</Link>; })}</nav> : null}
 
         <div className="ml-auto flex min-w-0 items-center gap-2">
-          <div className="hidden items-center gap-2 md:flex"><LanguageSwitcher/><ThemeToggle/>{user ? <SignOutButton/> : <><Link href="/login" className="inline-flex min-h-10 items-center rounded-[10px] px-3 font-[family-name:var(--font-inter)] text-sm font-medium text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">{t("header.login")}</Link>{variant === "public" ? <Link href="/register" className="inline-flex min-h-10 items-center rounded-[10px] bg-[var(--accent)] px-4 font-[family-name:var(--font-inter)] text-sm font-medium text-[var(--accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">{t("header.registration")}</Link> : null}</>}</div>
+          <div className="hidden items-center gap-2 md:flex"><LanguageSwitcher/><ThemeToggle/>{user ? <UserMenu/> : <><Link href="/login" className="inline-flex min-h-10 items-center rounded-[10px] px-3 font-[family-name:var(--font-inter)] text-sm font-medium text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">{t("header.login")}</Link>{variant === "public" ? <Link href="/register" className="inline-flex min-h-10 items-center rounded-[10px] bg-[var(--accent)] px-4 font-[family-name:var(--font-inter)] text-sm font-medium text-[var(--accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">{t("header.registration")}</Link> : null}</>}</div>
           {contextualActions}
           <button type="button" className="inline-flex size-10 items-center justify-center rounded-[10px] border border-[var(--border)] bg-[var(--card)] text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] md:hidden" aria-label={t("header.openMenu")} aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><Menu className="size-5" aria-hidden="true"/></button>
         </div>
