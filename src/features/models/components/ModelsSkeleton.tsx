@@ -1,28 +1,34 @@
 export function ModelsSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid justify-center grid-cols-[repeat(auto-fit,340px)] gap-5">
       {Array.from({ length: 6 }).map((_, index) => (
         <div
           key={index}
-          className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.025]"
+          className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]"
         >
-          <div className="aspect-[16/10] animate-pulse bg-white/[0.04]" />
+          <div className="aspect-[16/10] animate-pulse bg-[var(--bg)]" />
 
-          <div className="space-y-4 p-5">
-            <div className="h-5 w-2/3 animate-pulse rounded-full bg-white/[0.06]" />
-
+          <div className="space-y-5 p-5">
             <div className="space-y-2">
-              <div className="h-3 w-full animate-pulse rounded-full bg-white/[0.04]" />
-              <div className="h-3 w-4/5 animate-pulse rounded-full bg-white/[0.04]" />
+              <div className="h-6 w-2/3 animate-pulse rounded bg-[var(--border)]" />
+              <div className="h-4 w-full animate-pulse rounded bg-[var(--border)] opacity-70" />
+              <div className="h-4 w-4/5 animate-pulse rounded bg-[var(--border)] opacity-50" />
             </div>
 
-            <div className="border-t border-white/10 pt-4">
-              <div className="h-3 w-full animate-pulse rounded-full bg-white/[0.04]" />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="h-16 animate-pulse rounded-xl bg-[var(--bg)]" />
+              <div className="h-16 animate-pulse rounded-xl bg-[var(--bg)]" />
             </div>
 
-            <div className="flex gap-2">
-              <div className="h-10 flex-1 animate-pulse rounded-full bg-white/[0.05]" />
-              <div className="h-10 w-10 animate-pulse rounded-full bg-white/[0.05]" />
+            <div className="space-y-3 border-t border-[var(--border)] pt-4">
+              <div className="h-4 w-full animate-pulse rounded bg-[var(--border)] opacity-70" />
+              <div className="h-4 w-5/6 animate-pulse rounded bg-[var(--border)] opacity-60" />
+              <div className="h-4 w-2/3 animate-pulse rounded bg-[var(--border)] opacity-50" />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <div className="h-11 flex-1 animate-pulse rounded-xl bg-[var(--border)]" />
+              <div className="h-11 w-11 animate-pulse rounded-xl bg-[var(--border)]" />
             </div>
           </div>
         </div>

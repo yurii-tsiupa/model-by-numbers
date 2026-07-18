@@ -12,31 +12,49 @@ export function ModelsEmptyState({
 }: ModelsEmptyStateProps) {
   const {t}=useTranslation();
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.025] px-6 py-16 text-center sm:px-10 sm:py-20">
-      <div className="pointer-events-none absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-500/10 blur-3xl" />
+    <div className="flex min-h-[520px] items-center justify-center rounded-3xl border border-[var(--border)] bg-[var(--card)] px-6 py-12">
+      <div className="max-w-xl text-center">
+        <div className="mx-auto flex flex-col items-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--bg)]">
+            <Box
+              className="h-9 w-9 text-[var(--accent)]"
+              strokeWidth={1.6}
+            />
+          </div>
 
-      <div className="relative mx-auto max-w-lg">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05] shadow-2xl shadow-black/30">
-          <Box className="h-7 w-7 text-orange-400" />
+          <div
+            aria-hidden="true"
+            className="mt-5 flex flex-col items-center gap-1"
+          >
+            <span className="h-1 w-16 rounded-full bg-[var(--accent)] opacity-30" />
+            <span className="h-1 w-12 rounded-full bg-[var(--accent)] opacity-20" />
+            <span className="h-1 w-8 rounded-full bg-[var(--accent)] opacity-10" />
+          </div>
         </div>
 
-        <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-neutral-400">
-          <Sparkles className="h-3.5 w-3.5 text-orange-400" />
-          {t("models.ready")}
+        <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5">
+          <Sparkles
+            className="h-3.5 w-3.5 text-[var(--accent)]"
+            strokeWidth={2}
+          />
+
+          <span className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+            {t("models.ready")}
+          </span>
         </div>
 
-        <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+        <h2 className="mt-6 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-[-0.03em] text-[var(--text)]">
           {t("models.emptyTitle")}
         </h2>
 
-        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-neutral-400 sm:text-base">
+        <p className="mx-auto mt-4 max-w-md font-[family-name:var(--font-inter)] text-base leading-7 text-[var(--text-secondary)]">
           {t("models.emptyDescription")}
         </p>
 
         <button
           type="button"
           onClick={onNewProject}
-          className="mt-8 inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
+          className="mt-10 inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 font-[family-name:var(--font-inter)] text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
           <Plus className="h-4 w-4" />
           {t("models.createFirst")}
