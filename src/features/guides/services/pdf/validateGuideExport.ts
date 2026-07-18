@@ -1,5 +1,6 @@
 import type { TranslationKey } from "@/features/i18n/locales/en";
 import type { GuideViewModel } from "../../lib/getGuideViewModel";
+import { PDF_IMAGE } from "./pdfImage.constants";
 
 export type GuideExportWarningCode =
   | "MISSING_THUMBNAIL"
@@ -27,8 +28,6 @@ export type GuideExportValidation = {
   warnings: ExportValidationWarning[];
 };
 
-const LOW_RESOLUTION_EDGE_PX = 800;
-
 export function validateGuideExport(viewModel: GuideViewModel): GuideExportValidation {
   const {guide,settings,modelViews,workflowGuide}=viewModel;
   const errors:ExportValidationError[]=[];
@@ -48,7 +47,7 @@ export function validateGuideExport(viewModel: GuideViewModel): GuideExportValid
   const missingPainting=workflowGuide.parts.filter(part=>!part.paintingWorkflow?.stages.length).length;
   if (viewModel.hasPaintingWorkflow&&missingPainting) warnings.push({code:"MISSING_PAINTING",count:missingPainting});
 
-  const lowResolutionImages=settings.includeReferenceImages?(guide.references??[]).filter(reference=>reference.width<LOW_RESOLUTION_EDGE_PX||reference.height<LOW_RESOLUTION_EDGE_PX).length:0;
+  const lowResolutionImages=settings.includeReferenceImages?(guide.references??[]).filter(reference=>reference.width<PDF_IMAGE.minWidth).length:0;
   if (lowResolutionImages) warnings.push({code:"LOW_RESOLUTION_IMAGE",count:lowResolutionImages});
 
   if (settings.includeReferenceImages&&!(guide.references?.length)) warnings.push({code:"EMPTY_OPTIONAL_SECTION"});

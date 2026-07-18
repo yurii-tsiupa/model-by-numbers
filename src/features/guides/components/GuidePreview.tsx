@@ -60,8 +60,8 @@ export function GuidePreview({
     viewModel,
     existingBlob: savedPdfBlob,
     fileName: savedFileName,
-    onImageWarning: () => {
-      setSaveWarning(text("guide.pdfExport.imageWarning"));
+    onImageWarning: (warning) => {
+      setSaveWarning(warning.code === "LOW_RESOLUTION_IMAGE" ? text("guide.pdfExport.warnings.lowResolutionImage", { count: warning.count }) : text("guide.pdfExport.imageWarning"));
     },
     beforeDownload: async ({ blob, fileName }) => {
       if (skipSave || savedGuideIdRef.current) {

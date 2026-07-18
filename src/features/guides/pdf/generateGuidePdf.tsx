@@ -8,7 +8,7 @@ import type { PdfExportProgress } from "../services/pdf/types";
 
 export async function generateGuidePdf(
   viewModel: GuideViewModel,
-  onImageWarning?: () => void,
+  onImageWarning?: (warning: { code: "IMAGE_LOAD_FAILED" | "LOW_RESOLUTION_IMAGE"; count: number }) => void,
   onProgress?: (progress:PdfExportProgress)=>void,
 ): Promise<Blob> {
   const {guide}=viewModel;
@@ -18,7 +18,8 @@ export async function generateGuidePdf(
 
   let prepared;
   try{prepared=await prepareGuideImagesForPdf(guide);}catch(error){throw new PdfExportError("PREPARATION_FAILED",error);}
-  if (prepared.hasFailures) onImageWarning?.();
+  if (prepared.hasFailures) onImageWarning?.({ code: "IMAGE_LOAD_FAILED", count: 1 });
+  if (prepared.lowResolutionCount > 0) onImageWarning?.({ code: "LOW_RESOLUTION_IMAGE", count: prepared.lowResolutionCount });
   onProgress?.({status:"rendering",progress:65});
   let renderer;
   try{renderer=pdf(<ModelGuideDocument viewModel={{...viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts}}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
