@@ -1,6 +1,10 @@
-import type { ModelGuide } from "../types/ModelGuide";
+import {
+  formatLocalizedDate,
+  translate,
+} from "@/features/i18n/lib/i18n";
 import type { Locale } from "@/features/i18n/types/Locale";
-import { formatLocalizedDate,translate } from "@/features/i18n/lib/i18n";
+
+import type { ModelGuide } from "../types/ModelGuide";
 
 type GuideProjectOverviewProps = {
   guide: ModelGuide;
@@ -15,9 +19,15 @@ export function GuideProjectOverview({
   guide,
   locale,
 }: GuideProjectOverviewProps) {
-  const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
+  const t = (
+    key: Parameters<typeof translate>[1],
+  ) => translate(locale, key);
+
   const details = [
-    { label: t("guide.author"), value: guide.author },
+    {
+      label: t("guide.author"),
+      value: guide.author,
+    },
     {
       label: t("guide.printer"),
       value: formatLabel(guide.printerType),
@@ -36,47 +46,65 @@ export function GuideProjectOverview({
     },
     {
       label: t("guide.generated"),
-      value: formatLocalizedDate(guide.generatedAt,locale),
+      value: formatLocalizedDate(
+        guide.generatedAt,
+        locale,
+      ),
     },
   ];
 
   return (
-    <section className="relative overflow-hidden border-t border-white/10 pt-8">
-      <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-orange-400/10 blur-3xl"/>
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-400">{t("guide.classic")}</p>
-      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{t("guide.overview")}</h2>
+    <section className="relative overflow-hidden">
+      <div className="flex items-center gap-3">
+        <span className="h-px w-10 bg-[#76558F]" />
+
+        <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
+          {t("guide.classic")}
+        </p>
+      </div>
+
+      <h2 className="mt-5 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-[-0.04em] text-[#181221] sm:text-4xl">
+        {t("guide.overview")}
+      </h2>
 
       {guide.description ? (
-        <p className="mt-4 max-w-3xl text-base leading-7 text-neutral-400">
+        <p className="mt-5 max-w-3xl whitespace-pre-wrap font-[family-name:var(--font-inter)] text-base leading-7 text-[#5F5866]">
           {guide.description}
         </p>
       ) : null}
 
-      <dl className="relative mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {details.map((detail) => (
           <div
             key={detail.label}
-            className="rounded-2xl border border-white/[0.08] bg-neutral-950/60 p-4 shadow-lg shadow-black/10"
+            className="rounded-2xl border border-[#E3DEEC] bg-white p-4"
           >
-            <dt className="text-xs uppercase tracking-wider text-neutral-600">
+            <dt className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium uppercase tracking-[0.12em] text-[#8A8291]">
               {detail.label}
             </dt>
-            <dd className="mt-2 text-sm font-medium text-neutral-200">
+
+            <dd className="mt-2 break-words font-[family-name:var(--font-inter)] text-sm font-semibold leading-6 text-[#312A37]">
               {detail.value}
             </dd>
           </div>
         ))}
 
-        <div className="rounded-2xl border border-white/[0.07] bg-neutral-950/50 p-4">
-          <dt className="text-xs uppercase tracking-wider text-neutral-600">
+        <div className="rounded-2xl border border-[#E3DEEC] bg-white p-4">
+          <dt className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium uppercase tracking-[0.12em] text-[#8A8291]">
             {t("guide.baseColor")}
           </dt>
-          <dd className="mt-2 flex items-center gap-2 text-sm font-medium text-neutral-200">
+
+          <dd className="mt-2 flex items-center gap-3">
             <span
-              className="h-5 w-5 rounded-md border border-white/20"
-              style={{ backgroundColor: guide.baseColor }}
+              className="h-6 w-6 rounded-lg border border-[#D5CFDD]"
+              style={{
+                backgroundColor: guide.baseColor,
+              }}
             />
-            {guide.baseColor.toUpperCase()}
+
+            <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs font-semibold tracking-[0.08em] text-[#312A37]">
+              {guide.baseColor.toUpperCase()}
+            </span>
           </dd>
         </div>
       </dl>

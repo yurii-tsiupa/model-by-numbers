@@ -1,15 +1,26 @@
-@import '../styles/tokens.css';
+@import "../styles/tokens.css";
 @import "tailwindcss";
 
 :root {
   color-scheme: dark;
 }
 
-* {
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 html {
+  min-height: 100%;
   scroll-behavior: smooth;
   background: var(--bg);
 }
@@ -20,6 +31,9 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body), sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button,
@@ -30,22 +44,68 @@ select {
   font: inherit;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-::selection {
-  color: var(--card);
-  background: var(--accent);
-}
-
 button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
 
+button {
+  border: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+picture,
+svg,
+canvas {
+  display: block;
+}
+
+input,
+textarea,
+select {
+  color: var(--text);
+}
+
+::selection {
+  color: white;
+  background: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid var(--bg);
+  border-radius: 999px;
+  background: var(--border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Guide document                                                             */
+/* -------------------------------------------------------------------------- */
+
 .guide-document {
+  color-scheme: light;
   line-height: 1.6;
 }
 
@@ -58,15 +118,34 @@ a {
   position: relative;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Hidden PDF export render                                                   */
+/* -------------------------------------------------------------------------- */
+
 .guide-pdf-export-root {
   position: fixed;
   top: 0;
   left: -10000px;
+  z-index: -1;
   width: 794px;
   min-height: 1123px;
   overflow: visible;
   pointer-events: none;
-  z-index: -1;
+  color-scheme: light;
+}
+
+.guide-pdf-export-root,
+[data-guide-render-mode="pdf"] {
+  --bg: #ffffff;
+  --card: #ffffff;
+  --border: #e3deec;
+  --text: #181221;
+  --text-secondary: #716a79;
+  --accent: #76558f;
+  --accent-2: #a58ab8;
+
+  background: #ffffff;
+  color: #181221;
 }
 
 [data-guide-render-mode="pdf"],
@@ -78,9 +157,14 @@ a {
 }
 
 [data-guide-render-mode="pdf"] button,
+[data-guide-render-mode="pdf"] [data-guide-controls],
 [data-guide-render-mode="pdf"] [data-guide-navigation] {
   display: none !important;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Print                                                                      */
+/* -------------------------------------------------------------------------- */
 
 @page {
   size: A4;
@@ -90,11 +174,25 @@ a {
 @media print {
   :root {
     color-scheme: light;
+
+    --bg: #ffffff;
+    --card: #ffffff;
+    --border: #e3deec;
+    --text: #181221;
+    --text-secondary: #716a79;
+    --accent: #76558f;
+    --accent-2: #a58ab8;
   }
 
   html,
   body {
-    background: white !important;
+    min-height: auto !important;
+    background: #ffffff !important;
+    color: #181221 !important;
+  }
+
+  body {
+    margin: 0 !important;
   }
 
   [data-guide-controls],
@@ -106,6 +204,7 @@ a {
     display: block !important;
     width: 100% !important;
     max-width: none !important;
+    margin: 0 !important;
     padding: 0 !important;
   }
 
@@ -116,35 +215,29 @@ a {
     overflow: visible !important;
     border: 0 !important;
     border-radius: 0 !important;
-    background: white !important;
-    color: #171717 !important;
+    background: #ffffff !important;
+    color: #181221 !important;
     box-shadow: none !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
   .guide-document * {
-    color: #171717 !important;
     text-shadow: none !important;
-  }
-
-  .guide-document section,
-  .guide-document article,
-  .guide-document header,
-  .guide-document div {
-    background-color: transparent !important;
-    background-image: none !important;
-    box-shadow: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   .guide-cover {
     min-height: calc(297mm - 28mm);
     break-after: page;
+    page-break-after: always;
   }
 
   .guide-chapter {
-    break-before: page;
     scroll-margin-top: 0;
+    break-before: page;
+    page-break-before: always;
   }
 
   .guide-document article,
@@ -162,6 +255,11 @@ a {
     overflow: hidden;
     break-after: page;
     page-break-after: always;
+  }
+
+  .print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
   }
 
   .print-keep-together {
@@ -182,5 +280,20 @@ a {
 
   .guide-document button {
     display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
