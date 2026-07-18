@@ -1,15 +1,14 @@
+'use client';
+
 import Link from 'next/link';
 
 import { Container } from '@/components/ui/Container';
 
-const benefits = [
-  'Покрокові ракурси моделі',
-  'Позначення важливих областей',
-  'Кольори та пояснення для кожного етапу',
-  'Експорт у зрозумілий PDF-гайд',
-];
+import { useTranslation } from '@/features/i18n/hooks/useTranslation';
 
 export function FinalCtaSection() {
+  const { t } = useTranslation();
+  const benefits=([1,2,3,4] as const).map(number=>t(`landing.cta.benefits.${number}`));
   return (
     <section className="border-t border-[var(--border)] py-20 sm:py-24 lg:py-28 xl:py-32">
       <Container>
@@ -23,16 +22,15 @@ export function FinalCtaSection() {
 
           <div className="relative z-10 max-w-[900px]">
             <span className="font-[var(--font-mono)] text-xs font-semibold tracking-[0.1em] text-[var(--accent)]">
-              ГОТОВІ ПОЧАТИ?
+              {t('landing.cta.eyebrow')}
             </span>
 
             <h2 className="mt-4 max-w-[900px] text-[clamp(38px,5.2vw,72px)] font-semibold leading-[0.98] tracking-[-0.05em]">
-              Перетвори складну модель на зрозумілу інструкцію
+              {t('landing.cta.title')}
             </h2>
 
             <p className="mt-6 max-w-[700px] text-base leading-[1.7] text-[var(--text-secondary)] sm:text-[18px]">
-              Створи професійний гайд для клієнта без ручної верстки,
-              нескінченних скріншотів і заплутаних пояснень.
+              {t('landing.cta.description')}
             </p>
 
             <div className="mt-8 grid max-w-[760px] gap-3 sm:grid-cols-2">
@@ -58,14 +56,14 @@ export function FinalCtaSection() {
                 href="/login"
                 className="inline-flex min-h-[52px] items-center justify-center rounded-[10px] bg-[var(--accent)] px-6 text-[15px] font-medium text-white transition-opacity hover:opacity-90"
               >
-                Створити перший гайд
+                {t('landing.cta.primary')}
               </Link>
 
               <a
                 href="#guide-preview"
                 className="inline-flex min-h-[52px] items-center justify-center rounded-[10px] border border-[var(--border)] bg-[var(--bg)] px-6 text-[15px] font-medium transition-colors hover:border-[var(--accent)]"
               >
-                Переглянути приклад
+                {t('landing.cta.secondary')}
               </a>
             </div>
           </div>
@@ -80,6 +78,7 @@ export function FinalCtaSection() {
 }
 
 function GuideStackIllustration() {
+  const { t } = useTranslation();
   return (
     <div className="relative h-full w-full">
       <div className="absolute left-[5%] top-[15%] h-[72%] w-[72%] rotate-[-7deg] rounded-[20px] border border-[var(--border)] bg-[var(--bg)]" />
@@ -90,7 +89,7 @@ function GuideStackIllustration() {
         <div className="flex items-center justify-between">
           <div>
             <div className="font-[var(--font-mono)] text-[8px] font-semibold tracking-[0.12em] text-[#6D28D9]">
-              PAINTING GUIDE
+              {t('landing.guidePreview.documentType')}
             </div>
 
             <div className="mt-2 h-2.5 w-28 rounded-full bg-[#181221]" />

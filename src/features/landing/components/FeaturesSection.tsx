@@ -1,41 +1,12 @@
-import { Container } from '@/components/ui/Container';
+'use client';
 
-const features = [
-  {
-    number: '01',
-    meta: 'VIEWPOINTS',
-    title: 'Окремий ракурс для кожного кроку',
-    description:
-      'Обертай модель, наближай потрібну область і зберігай точний вигляд для інструкції.',
-    illustration: 'viewpoint',
-  },
-  {
-    number: '02',
-    meta: 'ANNOTATIONS',
-    title: 'Позначення важливих областей',
-    description:
-      'Вказуй клієнту, яку саме дрібну частину потрібно фарбувати на цьому етапі.',
-    illustration: 'annotation',
-  },
-  {
-    number: '03',
-    meta: 'PAINTS',
-    title: 'Кольори для кожного етапу',
-    description:
-      'Додавай лише ті фарби, які потрібні в конкретному кроці, разом із назвою та HEX-кодом.',
-    illustration: 'palette',
-  },
-  {
-    number: '04',
-    meta: 'GUIDE',
-    title: 'Опис і послідовність дій',
-    description:
-      'Пояснюй техніку фарбування, порядок шарів, змішування кольорів і фінальну обробку.',
-    illustration: 'steps',
-  },
-];
+import { Container } from '@/components/ui/Container';
+import { useTranslation } from '@/features/i18n/hooks/useTranslation';
 
 export function FeaturesSection() {
+  const { t } = useTranslation();
+  const illustrations=['viewpoint','annotation','palette','steps'] as const;
+  const features=([1,2,3,4] as const).map((number,index)=>({number:String(number).padStart(2,'0'),meta:t(`landing.features.items.${number}.meta`),title:t(`landing.features.items.${number}.title`),description:t(`landing.features.items.${number}.description`),illustration:illustrations[index]}));
   return (
     <section
       id="features"
@@ -45,17 +16,16 @@ export function FeaturesSection() {
         <div className="grid gap-8 lg:grid-cols-2 lg:items-end lg:gap-16 xl:gap-24">
           <div>
             <span className="font-[var(--font-mono)] text-xs font-semibold tracking-[0.1em] text-[var(--accent)]">
-              МОЖЛИВОСТІ
+              {t('landing.features.eyebrow')}
             </span>
 
             <h2 className="mt-4 max-w-[850px] text-[clamp(38px,5vw,64px)] font-semibold leading-[1.02] tracking-[-0.045em]">
-              Поясни не лише що фарбувати, а й як
+              {t('landing.features.title')}
             </h2>
           </div>
 
           <p className="max-w-[760px] text-base leading-[1.7] text-[var(--text-secondary)] sm:text-[18px]">
-            Складні моделі потребують контексту: правильного ракурсу, вказаної
-            області, списку фарб і зрозумілого опису кожного етапу.
+            {t('landing.features.description')}
           </p>
         </div>
 
@@ -104,6 +74,7 @@ export function FeaturesSection() {
 }
 
 function ViewpointIllustration() {
+  const { t } = useTranslation();
   return (
     <div className="grid h-full grid-cols-2 gap-3 sm:gap-4">
       {[0, 1].map((item) => (
@@ -123,7 +94,7 @@ function ViewpointIllustration() {
           </div>
 
           <span className="absolute bottom-3 left-3 font-[var(--font-mono)] text-[9px] text-[var(--text-secondary)]">
-            VIEW {item + 1}
+            {t('landing.features.view',{number:item+1})}
           </span>
         </div>
       ))}
@@ -132,6 +103,7 @@ function ViewpointIllustration() {
 }
 
 function AnnotationIllustration() {
+  const { t } = useTranslation();
   return (
     <div className="relative h-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg)]">
       <div className="absolute left-1/2 top-1/2 h-36 w-36 -translate-x-1/2 -translate-y-1/2">
@@ -143,17 +115,18 @@ function AnnotationIllustration() {
       <span className="absolute right-[13%] top-[32%] h-px w-[18%] bg-[#E8A35B]" />
 
       <div className="absolute right-4 top-[22%] rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs font-medium">
-        Очі
+        {t('landing.features.annotation')}
       </div>
     </div>
   );
 }
 
 function PaletteIllustration() {
+  const { t } = useTranslation();
   const colors = [
-    ['Основний', 'var(--accent)'],
-    ['Деталі', 'var(--accent-2)'],
-    ['Акцент', '#E8A35B'],
+    [t('landing.features.colors.primary'), 'var(--accent)'],
+    [t('landing.features.colors.details'), 'var(--accent-2)'],
+    [t('landing.features.colors.accent'), '#E8A35B'],
   ];
 
   return (
@@ -171,7 +144,7 @@ function PaletteIllustration() {
           <div className="min-w-0 flex-1">
             <strong className="block text-sm font-semibold">{name}</strong>
             <span className="mt-1 block font-[var(--font-mono)] text-[10px] text-[var(--text-secondary)]">
-              Колір цього етапу
+              {t('landing.features.stageColor')}
             </span>
           </div>
         </div>

@@ -1,23 +1,14 @@
+'use client';
+
 import Link from 'next/link';
 
 import { Container } from '@/components/ui/Container';
 
-const navigation = [
-  {
-    label: 'Приклад гайду',
-    href: '#guide-preview',
-  },
-  {
-    label: 'Як це працює',
-    href: '#how-it-works',
-  },
-  {
-    label: 'Можливості',
-    href: '#features',
-  },
-];
+import { useTranslation } from '@/features/i18n/hooks/useTranslation';
 
 export function LandingFooter() {
+  const { t } = useTranslation();
+  const navigation=[{label:t('landing.footer.guidePreview'),href:'#guide-preview'},{label:t('landing.footer.howItWorks'),href:'#how-it-works'},{label:t('landing.footer.features'),href:'#features'}];
   return (
     <footer className="border-t border-[var(--border)] py-8 sm:py-10">
       <Container>
@@ -26,21 +17,20 @@ export function LandingFooter() {
             <Link
               href="/"
               className="inline-flex items-center gap-3 text-lg font-semibold tracking-[-0.02em]"
-              aria-label="Шар — головна сторінка"
+              aria-label={t('landing.accessibility.home')}
             >
               <LogoMark />
-              <span>Шар</span>
+              <span>Model by Numbers</span>
             </Link>
 
             <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">
-              Платформа для створення покрокових гайдів із фарбування та
-              складання 3D-друкованих моделей.
+              {t('landing.footer.description')}
             </p>
           </div>
 
           <nav
             className="flex flex-col gap-3 text-sm sm:flex-row sm:flex-wrap sm:gap-x-7"
-            aria-label="Навігація у футері"
+            aria-label={t('landing.accessibility.footerNavigation')}
           >
             {navigation.map((item) => (
               <a
@@ -56,16 +46,16 @@ export function LandingFooter() {
               href="/login"
               className="font-medium text-[var(--text)] transition-colors hover:text-[var(--accent)]"
             >
-              Увійти
+              {t('header.login')}
             </Link>
           </nav>
         </div>
 
         <div className="mt-8 flex flex-col gap-3 border-t border-[var(--border)] pt-6 text-xs text-[var(--text-secondary)] sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} Шар. Усі права захищені.</p>
+          <p>{t('landing.footer.copyright',{year:new Date().getFullYear()})}</p>
 
           <p className="font-[var(--font-mono)] tracking-[0.06em]">
-            MADE FOR 3D CREATORS
+            {t('landing.footer.tagline')}
           </p>
         </div>
       </Container>

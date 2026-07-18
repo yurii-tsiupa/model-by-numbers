@@ -1,30 +1,11 @@
-import { Container } from '@/components/ui/Container';
+'use client';
 
-const steps = [
-  {
-    number: '01',
-    label: 'МОДЕЛЬ',
-    title: 'Завантаж 3D-модель',
-    description:
-      'Додай GLB або GLTF-файл і підготуй потрібні ракурси у візуальному редакторі.',
-  },
-  {
-    number: '02',
-    label: 'КРОКИ',
-    title: 'Створи етапи фарбування',
-    description:
-      'Обери потрібний ракурс, наблизь важливу область, додай назву, опис і кольори цього кроку.',
-  },
-  {
-    number: '03',
-    label: 'ГАЙД',
-    title: 'Експортуй інструкцію',
-    description:
-      'Збери всі етапи у структурований PDF або веб-гайд для свого клієнта.',
-  },
-];
+import { Container } from '@/components/ui/Container';
+import { useTranslation } from '@/features/i18n/hooks/useTranslation';
 
 export function HowItWorksSection() {
+  const { t } = useTranslation();
+  const steps=([1,2,3] as const).map(number=>({number:String(number).padStart(2,'0'),label:t(`landing.workflow.steps.${number}.label`),title:t(`landing.workflow.steps.${number}.title`),description:t(`landing.workflow.steps.${number}.description`)}));
   return (
     <section
       id="how-it-works"
@@ -34,18 +15,16 @@ export function HowItWorksSection() {
         <div className="grid gap-8 lg:grid-cols-2 lg:items-end lg:gap-16 xl:gap-24">
           <div>
             <span className="font-[var(--font-mono)] text-xs font-semibold tracking-[0.1em] text-[var(--accent)]">
-              ЯК ЦЕ ПРАЦЮЄ
+              {t('landing.workflow.eyebrow')}
             </span>
 
             <h2 className="mt-4 max-w-[820px] text-[clamp(38px,5vw,64px)] font-semibold leading-[1.02] tracking-[-0.045em]">
-              Побудуй гайд навколо реального процесу фарбування
+              {t('landing.workflow.title')}
             </h2>
           </div>
 
           <p className="max-w-[760px] text-base leading-[1.7] text-[var(--text-secondary)] sm:text-[18px]">
-            Одна частина моделі може мати десятки дрібних кольорових областей.
-            Тому гайд створюється через окремі ракурси, пояснення та етапи, а не
-            лише через mesh-елементи.
+            {t('landing.workflow.description')}
           </p>
         </div>
 
@@ -57,7 +36,7 @@ export function HowItWorksSection() {
             >
               <div className="flex items-center justify-between gap-4">
                 <span className="font-[var(--font-mono)] text-[11px] font-semibold tracking-[0.08em] text-[var(--text-secondary)]">
-                  КРОК {step.number}
+                  {t('landing.common.step',{number:step.number})}
                 </span>
 
                 <span className="font-[var(--font-mono)] text-[10px] font-semibold tracking-[0.08em] text-[var(--accent)]">

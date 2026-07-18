@@ -1,65 +1,17 @@
+'use client';
+
 import type { CSSProperties } from 'react';
 
 import { Container } from '@/components/ui/Container';
 
-const guideSteps = [
-  {
-    number: '01',
-    title: 'Підготуй модель',
-    description: 'Очисть поверхню та рівномірно нанеси ґрунт.',
-    color: '#D7D3DD',
-  },
-  {
-    number: '02',
-    title: 'Нанеси базовий колір',
-    description: 'Пофарбуй корпус фіолетовим у два тонкі шари.',
-    color: '#6D28D9',
-  },
-  {
-    number: '03',
-    title: 'Додай деталі',
-    description: 'Виділи дрібні елементи бірюзовим кольором.',
-    color: '#0E7C86',
-  },
-];
-
-const palette = [
-  {
-    name: 'Фіолетовий',
-    code: '#6D28D9',
-  },
-  {
-    name: 'Бірюзовий',
-    code: '#0E7C86',
-  },
-  {
-    name: 'Світло-сірий',
-    code: '#D7D3DD',
-  },
-];
-
-const benefits = [
-  {
-    number: '01',
-    title: 'Чітка послідовність',
-    description:
-      'Кожен крок показаний окремо, без перевантаження зайвою інформацією.',
-  },
-  {
-    number: '02',
-    title: 'Зрозумілі кольори',
-    description:
-      'Назви, HEX-коди та за потреби бренд або артикул фарби.',
-  },
-  {
-    number: '03',
-    title: 'Готово до друку',
-    description:
-      'Документ завжди створюється у світлому форматі, зручному для домашнього принтера.',
-  },
-];
+import { useTranslation } from '@/features/i18n/hooks/useTranslation';
 
 export function GuidePreviewSection() {
+  const { t } = useTranslation();
+  const colors = ['#D7D3DD','#6D28D9','#0E7C86'] as const;
+  const guideSteps = ([1,2,3] as const).map((number,index)=>({number:String(number).padStart(2,'0'),title:t(`landing.guidePreview.steps.${number}.title`),description:t(`landing.guidePreview.steps.${number}.description`),color:colors[index]}));
+  const palette = ([['purple','#6D28D9'],['turquoise','#0E7C86'],['lightGray','#D7D3DD']] as const).map(([name,code])=>({name:t(`landing.guidePreview.palette.${name}`),code}));
+  const benefits = ([1,2,3] as const).map(number=>({number:String(number).padStart(2,'0'),title:t(`landing.guidePreview.benefits.${number}.title`),description:t(`landing.guidePreview.benefits.${number}.description`)}));
   return (
     <section
       id="guide-preview"
@@ -69,17 +21,16 @@ export function GuidePreviewSection() {
         <div className="mb-14 grid items-end gap-6 lg:grid-cols-2 lg:gap-16 xl:gap-24">
           <div>
             <span className="block font-[var(--font-mono)] text-xs font-semibold tracking-[0.1em] text-[var(--accent)]">
-              ГОТОВИЙ РЕЗУЛЬТАТ
+              {t('landing.guidePreview.eyebrow')}
             </span>
 
             <h2 className="mt-3.5 max-w-[700px] text-[clamp(38px,5vw,58px)] font-semibold leading-[1.05] tracking-[-0.04em]">
-              Інструкція, яку зрозуміє кожен клієнт
+              {t('landing.guidePreview.title')}
             </h2>
           </div>
 
           <p className="m-0 max-w-[650px] text-[17px] leading-[1.65] text-[var(--text-secondary)]">
-            Платформа перетворює розмічену модель на простий документ із
-            палітрою, частинами та послідовними кроками фарбування.
+            {t('landing.guidePreview.description')}
           </p>
         </div>
 
@@ -88,21 +39,21 @@ export function GuidePreviewSection() {
             <header className="flex flex-col items-start justify-between gap-6 border-b border-[#E3DEEC] pb-7 sm:flex-row">
               <div>
                 <span className="font-[var(--font-mono)] text-[10px] font-semibold tracking-[0.1em] text-[#6B637A]">
-                  ГАЙД З ФАРБУВАННЯ
+                  {t('landing.guidePreview.documentType')}
                 </span>
 
                 <h3 className="mt-2.5 text-2xl font-semibold leading-[1.1] sm:text-3xl">
-                  Космічний дослідник
+                  {t('landing.guidePreview.modelName')}
                 </h3>
 
                 <p className="mt-2.5 max-w-[440px] text-sm leading-6 text-[#6B637A]">
-                  Покрокова інструкція для підготовки та фарбування моделі.
+                  {t('landing.guidePreview.documentDescription')}
                 </p>
               </div>
 
               <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[rgb(14_124_134_/_0.08)] px-2.5 py-2 font-[var(--font-mono)] text-[10px] font-semibold text-[#0E7C86]">
                 <span className="size-[7px] rounded-full bg-[#0E7C86]" />
-                Гайд готовий
+                {t('landing.guidePreview.ready')}
               </div>
             </header>
 
@@ -119,7 +70,7 @@ export function GuidePreviewSection() {
 
               <div className="rounded-2xl border border-[#E3DEEC] bg-[#FAF9FC] p-[22px]">
                 <span className="font-[var(--font-mono)] text-[10px] font-semibold tracking-[0.1em] text-[#6B637A]">
-                  ПАЛІТРА
+                  {t('landing.guidePreview.paletteLabel')}
                 </span>
 
                 <div className="mt-[18px] grid gap-2.5">
@@ -151,10 +102,10 @@ export function GuidePreviewSection() {
             <div className="border-t border-[#E3DEEC] pt-6">
               <div className="mb-3.5 flex items-center justify-between">
                 <span className="font-[var(--font-mono)] text-[10px] font-semibold tracking-[0.1em] text-[#6B637A]">
-                  КРОКИ
+                  {t('landing.guidePreview.stepsLabel')}
                 </span>
 
-                <span className="text-[11px] text-[#6B637A]">3 етапи</span>
+                <span className="text-[11px] text-[#6B637A]">{t('landing.guidePreview.stageCount',{count:3})}</span>
               </div>
 
               <div className="grid gap-2.5">
@@ -197,11 +148,11 @@ export function GuidePreviewSection() {
 
           <aside className="pt-5 lg:sticky lg:top-[110px]">
             <span className="block font-[var(--font-mono)] text-xs font-semibold tracking-[0.1em] text-[var(--accent)]">
-              ЩО ОТРИМУЄ КЛІЄНТ
+              {t('landing.guidePreview.benefitsEyebrow')}
             </span>
 
             <h3 className="mt-4 max-w-[420px] text-[32px] font-semibold leading-[1.1] tracking-[-0.03em]">
-              Не просто PDF, а зрозумілий процес
+              {t('landing.guidePreview.benefitsTitle')}
             </h3>
 
             <div className="mt-8">
