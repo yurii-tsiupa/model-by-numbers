@@ -54,7 +54,7 @@ export function ModelsEmptyState({
         <button
           type="button"
           onClick={onNewProject}
-          className="mt-10 inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 font-[family-name:var(--font-inter)] text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          className="mt-10 inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 font-[family-name:var(--font-inter)] text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
         >
           <Plus className="h-4 w-4" />
           {t("models.createFirst")}
