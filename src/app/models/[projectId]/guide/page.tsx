@@ -25,6 +25,8 @@ import { getGuideReadiness } from "@/features/model-editor/lib/getGuideReadiness
 import { useProject } from "@/features/models/hooks/useProject";
 import { useReferenceImages } from "@/features/references/hooks/useReferenceImages";
 import { referencesToGuideImages } from "@/features/references/lib/referenceToDataUrl";
+import { loadGuideAssetReferences } from "@/features/guides/services/assets/loadGuideAsset";
+import type { GuideAssetReference } from "@/features/guides/services/assets/types";
 
 const EMPTY_GUIDE_IMAGES: GuideImages = {
   original: null,
@@ -177,6 +179,7 @@ export default function GuidePage() {
   const [guideReferences, setGuideReferences] = useState<
     GuideReferenceImage[] | null
   >(null);
+  const [storedAssetReferences, setStoredAssetReferences] = useState<GuideAssetReference[] | null>(null);
 
   const capturedProjectId = useGuideGenerationStore(
     (state) => state.projectId,
@@ -197,6 +200,7 @@ export default function GuidePage() {
   const assemblySteps = useGuideGenerationStore(
     (state) => state.assemblySteps,
   );
+  const assetReferences = useGuideGenerationStore((state) => state.assetReferences);
 
   useEffect(() => {
     if (!isAuthLoading && !user) {
@@ -228,6 +232,12 @@ export default function GuidePage() {
     };
   }, [referencesQuery.data]);
 
+  useEffect(() => {
+    let active = true;
+    void loadGuideAssetReferences(projectId).then(references => { if (active) setStoredAssetReferences(references); }).catch(() => { if (active) setStoredAssetReferences([]); });
+    return () => { active = false; };
+  }, [projectId]);
+
   if (isAuthLoading || !user) {
     return <GuideLoadingState label={t("guide.checking")} />;
   }
@@ -235,7 +245,7 @@ export default function GuidePage() {
   if (
     projectQuery.isLoading ||
     referencesQuery.isLoading ||
-    guideReferences === null
+    guideReferences === null || storedAssetReferences === null
   ) {
     return <GuideLoadingState label={t("guide.loading")} />;
   }
@@ -305,6 +315,7 @@ export default function GuidePage() {
     explodedView,
     assemblySteps,
   });
+  guide.assetReferences = capturedProjectId === projectId && assetReferences.length > 0 ? assetReferences : storedAssetReferences;
 
   return <GuidePreview guide={guide} />;
 }

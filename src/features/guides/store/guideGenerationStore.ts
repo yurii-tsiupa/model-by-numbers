@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import type { GuideAssemblyStep, GuideExplodedView, GuideImages, GuideSettings } from "../types/ModelGuide";
+import type { GuideAssetReference } from "../services/assets/types";
 
 export type GuideGenerationStatus =
   | "idle"
@@ -27,9 +28,10 @@ type GuideGenerationState = {
   settings: GuideSettings | null;
   explodedView: GuideExplodedView | null;
   assemblySteps: GuideAssemblyStep[];
+  assetReferences: GuideAssetReference[];
 
   startCapture: (projectId: string,totalSteps?:number) => void;
-  setGuideExtras:(settings:GuideSettings,explodedView:GuideExplodedView|null,assemblySteps:GuideAssemblyStep[])=>void;
+  setGuideExtras:(settings:GuideSettings,explodedView:GuideExplodedView|null,assemblySteps:GuideAssemblyStep[],assetReferences:GuideAssetReference[])=>void;
   setCaptureStep: (
     step: GuideCaptureStep,
     completedSteps: number,
@@ -52,7 +54,7 @@ const initialState = {
   projectId: null,
   images: null,
   error: null,
-  settings:null,explodedView:null,assemblySteps:[],
+  settings:null,explodedView:null,assemblySteps:[],assetReferences:[],
 };
 
 export const useGuideGenerationStore =
@@ -70,7 +72,7 @@ export const useGuideGenerationStore =
         error: null,
       });
     },
-    setGuideExtras:(settings,explodedView,assemblySteps)=>set({settings,explodedView,assemblySteps:assemblySteps.map(step=>({...step,parts:step.parts.map(part=>({...part}))}))}),
+    setGuideExtras:(settings,explodedView,assemblySteps,assetReferences)=>set({settings,explodedView,assemblySteps:assemblySteps.map(step=>({...step,parts:step.parts.map(part=>({...part}))})),assetReferences:[...assetReferences]}),
 
     setCaptureStep: (currentStep, completedSteps) => {
       set((state) =>

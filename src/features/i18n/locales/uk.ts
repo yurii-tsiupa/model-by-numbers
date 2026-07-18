@@ -84,4 +84,9 @@ export const uk:TranslationDictionary={
  "guide.pdfExport.errors.generation":"Не вдалося створити PDF-файл.",
  "guide.pdfExport.errors.download":"Не вдалося завантажити PDF.",
  "guide.pdfExport.errors.unknown":"Сталася невідома помилка експорту.",
+ "modelImport.status.processing":"Обробка моделі...",
+ "common.copied":"Скопійовано",
+ "guide.colors":"Кольори",
+ "theme.enableLight":"Увімкнути світлу тему",
+ "theme.enableDark":"Увімкнути темну тему",
 };

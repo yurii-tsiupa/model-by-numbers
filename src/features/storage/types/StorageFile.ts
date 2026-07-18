@@ -1,4 +1,4 @@
-export type StorageEntity = "guide" | "reference" | "thumbnail" | "assembly-step-image";
+export type StorageEntity = "guide" | "reference" | "thumbnail" | "assembly-step-image" | "guide-asset";
 
 export type StorageFile = {
   id: string;

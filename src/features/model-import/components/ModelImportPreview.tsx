@@ -44,19 +44,11 @@ function PreviewScene({
   transform,
   groupRef,
 }: PreviewSceneProps) {
-  const [accentColor, setAccentColor] = useState("#ffffff");
-
-  useEffect(() => {
+  const [accentColor] = useState(() => {
+    if (typeof document === "undefined") return "#ffffff";
     const rootStyles = getComputedStyle(document.documentElement);
-
-    const accent =
-      rootStyles.getPropertyValue("--accent").trim() ||
-      rootStyles.getPropertyValue("--text").trim();
-
-    if (accent) {
-      setAccentColor(accent);
-    }
-  }, []);
+    return rootStyles.getPropertyValue("--accent").trim() || rootStyles.getPropertyValue("--text").trim() || "#ffffff";
+  });
 
   useEffect(() => {
     const visibility = new Map<string, boolean>();

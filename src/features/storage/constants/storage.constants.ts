@@ -4,4 +4,5 @@ export const STORAGE_STORES = {
   reference: LOCAL_DATABASE_STORES.references,
   thumbnail: LOCAL_DATABASE_STORES.thumbnails,
   "assembly-step-image": LOCAL_DATABASE_STORES.assemblyStepImages,
+  "guide-asset": LOCAL_DATABASE_STORES.guideAssets,
 } as const;

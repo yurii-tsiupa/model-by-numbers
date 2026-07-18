@@ -2,7 +2,8 @@
 
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+import { useTranslation } from '@/features/i18n/hooks/useTranslation';
 
 type ThemeToggleProps = {
   className?: string;
@@ -12,11 +13,8 @@ export function ThemeToggle({
   className = '',
 }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const { t } = useTranslation();
+  const mounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
 
   const isDark = mounted && resolvedTheme === 'dark';
 
@@ -41,13 +39,13 @@ export function ThemeToggle({
       ].join(' ')}
       aria-label={
         isDark
-          ? 'Увімкнути світлу тему'
-          : 'Увімкнути темну тему'
+          ? t('theme.enableLight')
+          : t('theme.enableDark')
       }
       title={
         isDark
-          ? 'Увімкнути світлу тему'
-          : 'Увімкнути темну тему'
+          ? t('theme.enableLight')
+          : t('theme.enableDark')
       }
     >
       {mounted ? (

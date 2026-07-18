@@ -19,3 +19,8 @@ export const saveAssemblyImageFile = (file: StorageFile) => provider.save(file);
 export const loadAssemblyImageFile = (id: string) => provider.get(id);
 export const deleteAssemblyImageFile = (id: string) => provider.delete(id);
 export const deleteAssemblyImageFiles = (projectId: string) => provider.deleteByEntity("assembly-step-image", projectId);
+export const saveGuideAssetFile = (file: StorageFile) => provider.save(file);
+export const loadGuideAssetFile = (id: string) => provider.get(id);
+export const loadGuideAssetFiles = (projectId: string) => provider.getManyByEntity("guide-asset", projectId);
+export const deleteGuideAssetFile = (id: string) => provider.delete(id);
+export const deleteGuideAssetFiles = (projectId: string) => provider.deleteByEntity("guide-asset", projectId);

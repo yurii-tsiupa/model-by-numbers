@@ -30,6 +30,8 @@ import type { GuideAssemblyStep, GuideSettings } from "@/features/guides/types/M
 import { PAINTING_GUIDE_SETTINGS } from "@/features/guides/lib/guideSettings";
 import { GuideSettingsModal } from "@/features/guides/components/GuideSettingsModal";
 import {getAssemblyGuideReadiness} from "@/features/guides/lib/getAssemblyGuideReadiness";
+import { imageSourceToBlob, saveGuideAsset } from "@/features/guides/services/assets/saveGuideAsset";
+import type { GuideAssetReference } from "@/features/guides/services/assets/types";
 
 type ModelEditorProps = {
   project: Project;
@@ -210,19 +212,23 @@ export function ModelEditor({
       painted: null,
       numbers: null,
     };
+    const assetReferences: GuideAssetReference[] = [];
 
     try {
       let progress=0;
       for (const step of paintingSteps) {
         setCaptureStep(step, ++progress);
         images[step] = await viewer.captureView(step);
+        const source = images[step];
+        if (source) assetReferences.push(await saveGuideAsset({ projectId: project.id, kind: `model-${step}`, assetId: "current", blob: await imageSourceToBlob(source) }));
       }
       let explodedView=null;
       const includedParts=editorState.parts.filter(part=>part.includeInGuide);
-      if(settings.includeExplodedView){setCaptureStep("exploded",++progress);const blob=await viewer.captureAssemblyStep({partIds:includedParts.map(part=>part.id),labelsMode:"numbers-and-names"});explodedView={image:await blobToDataUrl(blob),labelsMode:"numbers-and-names" as const,partsCount:includedParts.length};}
+      if(settings.includeExplodedView){setCaptureStep("exploded",++progress);const blob=await viewer.captureAssemblyStep({partIds:includedParts.map(part=>part.id),labelsMode:"numbers-and-names"});explodedView={image:await blobToDataUrl(blob),labelsMode:"numbers-and-names" as const,partsCount:includedParts.length};assetReferences.push(await saveGuideAsset({projectId:project.id,kind:"exploded",assetId:"current",blob}));}
       const assemblyGuideSteps:GuideAssemblyStep[]=[];
       if(settings.includeAssemblyInstructions){if(settings.includeAssemblyStepImages)setCaptureStep("assembly-assets",++progress);const partById=new Map(editorState.parts.map(part=>[part.id,part]));for(const step of editorState.assemblySteps.slice().sort((a,b)=>a.order-b.order)){const resolved=step.partIds.map(id=>partById.get(id)).filter((part):part is NonNullable<typeof part>=>Boolean(part));if(!step.title.trim()||resolved.length===0)continue;let image:string|null=null;if(settings.includeAssemblyStepImages&&step.imageKey){try{const blob=await getAssemblyStepImage(project.id,step.id);if(blob)image=await blobToDataUrl(blob);}catch{image=null;}}assemblyGuideSteps.push({id:step.id,order:step.order,title:step.title.trim(),description:step.description.trim(),parts:resolved.map(part=>({id:part.id,number:part.index+1,name:part.name})),image});}}
-      setGuideExtras(settings,explodedView,assemblyGuideSteps);
+      for(const step of assemblyGuideSteps){if(step.image)assetReferences.push(await saveGuideAsset({projectId:project.id,kind:"assembly",assetId:step.id,blob:await imageSourceToBlob(step.image)}));}
+      setGuideExtras(settings,explodedView,assemblyGuideSteps,assetReferences);
       setImages(project.id, images);
       router.push(`/models/${project.id}/guide`);
     } catch (error) {

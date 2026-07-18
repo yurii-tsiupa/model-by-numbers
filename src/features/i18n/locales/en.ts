@@ -83,6 +83,11 @@ export const en={
   "guide.pdfExport.errors.generation":"The PDF file could not be generated.",
   "guide.pdfExport.errors.download":"The PDF could not be downloaded.",
   "guide.pdfExport.errors.unknown":"An unknown export error occurred.",
+  "modelImport.status.processing":"Processing model...",
+  "common.copied":"Copied",
+  "guide.colors":"Colors",
+  "theme.enableLight":"Enable light theme",
+  "theme.enableDark":"Enable dark theme",
 } as const;
 export type TranslationKey=keyof typeof en;
 export type TranslationDictionary={readonly [K in TranslationKey]:string};

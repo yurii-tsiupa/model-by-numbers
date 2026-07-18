@@ -12,6 +12,7 @@ import { projectThumbnailService } from "../services/projectThumbnail.service";
 import { generatedGuidesService } from "@/features/guides/services/generatedGuides.service";
 import { referenceImagesService } from "@/features/references/services/referenceImages.service";
 import { deleteAssemblyStepImagesByProjectId } from "@/features/model-editor/services/assemblyStepImage.service";
+import { deleteGuideAssetFiles } from "@/features/storage/services/storage.service";
 
 export function useDeleteProject(userId: string | undefined) {
   const queryClient = useQueryClient();
@@ -24,6 +25,7 @@ export function useDeleteProject(userId: string | undefined) {
         generatedGuidesService.deleteByProjectId(project.id),
         referenceImagesService.deleteByProjectId(project.id),
         deleteAssemblyStepImagesByProjectId(project.id),
+        deleteGuideAssetFiles(project.id),
       ]);
     },
 

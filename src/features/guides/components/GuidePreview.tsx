@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { translate } from "@/features/i18n/lib/i18n";
 
 import { useGuidePdfExport } from "../hooks/useGuidePdfExport";
+import { useResolvedGuideAssets } from "../hooks/useResolvedGuideAssets";
 import { useGuideViewModel } from "../hooks/useGuideViewModel";
 import { useSaveGeneratedGuide } from "../hooks/useSaveGeneratedGuide";
 import { defaultGuideTemplate } from "../templates/registry/guideTemplates";
@@ -32,7 +33,8 @@ export function GuidePreview({
   skipSave = false,
   onDelete,
 }: GuidePreviewProps) {
-  const viewModel = useGuideViewModel(guide);
+  const resolvedGuide = useResolvedGuideAssets(guide);
+  const viewModel = useGuideViewModel(resolvedGuide);
 
   const {
     locale,
@@ -109,8 +111,8 @@ export function GuidePreview({
   return (
     <main className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       <GuidePreviewHeader
-        projectId={guide.projectId}
-        title={guide.title}
+        projectId={resolvedGuide.projectId}
+        title={resolvedGuide.title}
         exportStatus={pdfExport.status}
         exportProgress={pdfExport.progress}
         exportError={pdfExport.error}
@@ -176,7 +178,7 @@ export function GuidePreview({
             lg:m-0
           "
         >
-          <TemplatePreview guide={guide} />
+          <TemplatePreview guide={resolvedGuide} />
 
           {hasPaintingWorkflow ? (
             <GuideSectionAnchor id="painting-workflow">

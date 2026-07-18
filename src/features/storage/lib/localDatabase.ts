@@ -1,5 +1,5 @@
 export const LOCAL_DATABASE_NAME = "model-by-numbers";
-export const LOCAL_DATABASE_VERSION = 6;
+export const LOCAL_DATABASE_VERSION = 7;
 
 export const LOCAL_DATABASE_STORES = {
   modelFiles: "model-files",
@@ -7,6 +7,7 @@ export const LOCAL_DATABASE_STORES = {
   thumbnails: "project-thumbnails",
   references: "reference-images",
   assemblyStepImages: "assembly-step-images",
+  guideAssets: "guide-assets",
 } as const;
 
 let databasePromise: Promise<IDBDatabase> | null = null;
@@ -28,6 +29,8 @@ function upgradeDatabase(database: IDBDatabase, transaction: IDBTransaction) {
   ensureIndex(references, "projectId", "projectId", { unique: false });
   const assemblyImages = database.objectStoreNames.contains(stores.assemblyStepImages) ? transaction.objectStore(stores.assemblyStepImages) : database.createObjectStore(stores.assemblyStepImages, { keyPath: "id" });
   ensureIndex(assemblyImages, "projectId", "projectId", { unique: false });
+  const guideAssets = database.objectStoreNames.contains(stores.guideAssets) ? transaction.objectStore(stores.guideAssets) : database.createObjectStore(stores.guideAssets, { keyPath: "id" });
+  ensureIndex(guideAssets, "projectId", "projectId", { unique: false });
 }
 
 export function openLocalDatabase(): Promise<IDBDatabase> {
