@@ -4,7 +4,7 @@ import { PaletteColor } from "./PaletteColor";
 import type { AssemblyStep } from "./AssemblyStep";
 import type { ModelFormat } from "@/features/model-import/types/ModelFormat";
 import type { ModelDimensions, ModelUnits } from "@/features/model-import/types/ModelUnits";
-import type { PaintMarker } from "./PaintMarker";
+import type { ManualDetail } from "./ManualDetail";
 
 export type PrinterType = "fdm" | "resin" | "other";
 
@@ -42,7 +42,8 @@ export type Project = {
   baseColor: string;
 
   parts: ProjectPart[];
-  markers: PaintMarker[];
+  manualDetails: ManualDetail[];
+  nextManualDetailNumber: number;
   palette: PaletteColor[];
   assemblySteps: AssemblyStep[];
   paintingOrder: string[];

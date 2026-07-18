@@ -14,7 +14,7 @@ import { MAX_EXPLODED_OFFSET } from "../lib/exploded/exploded.constants";
 import type { AssemblyStep, CreateAssemblyStepInput, UpdateAssemblyStepInput } from "@/features/models/types/AssemblyStep";
 import type { CreatePaintingStageInput, PaintingDifficulty, PartPaintingWorkflow, UpdatePaintingStageInput } from "../types/PaintingWorkflow";
 import { normalizePaintingOrder } from "../lib/paintingOrder";
-import type { CreatePaintMarkerInput, PaintMarker } from "@/features/models/types/PaintMarker";
+import type { CreateManualDetailPinInput,ManualDetail,ManualDetailPin } from "@/features/models/types/ManualDetail";
 
 export type EditorSaveStatus =
   | "saved"
@@ -37,18 +37,26 @@ type ModelEditorState = {
     selectedPartId: string | null;
   } | null;
   selectedPartId: string | null;
-  markers: PaintMarker[];
-  selectedMarkerId: string | null;
-  markerPlacementActive: boolean;
+  manualDetails: ManualDetail[];
+  nextManualDetailNumber:number;
+  selectedManualDetailId:string|null;
+  selectedManualDetailPinId:string|null;
+  manualDetailPlacement:{detailId:string|null;name:string;pins:ManualDetailPin[]}|null;
+  manualDetailFocusRequest:{detailId:string;pinId:string|null;revision:number}|null;
   activePaintingStageId: string | null;
   paintingTargetFocusRevision: number;
-  setMarkers: (markers: PaintMarker[]) => void;
-  startMarkerPlacement: () => void;
-  cancelMarkerPlacement: () => void;
-  addMarker: (input: CreatePaintMarkerInput) => void;
-  selectMarker: (markerId: string | null) => void;
-  updateMarker: (markerId: string, changes: { name?: string; colorId?: string | null }) => void;
-  deleteMarker: (markerId: string) => void;
+  setManualDetails:(details:ManualDetail[],nextDetailNumber:number)=>void;
+  startManualDetailPlacement:(name:string,detailId?:string)=>void;
+  cancelManualDetailPlacement:()=>void;
+  addDraftManualDetailPin:(input:CreateManualDetailPinInput)=>void;
+  undoDraftManualDetailPin:()=>void;
+  finishManualDetailPlacement:()=>void;
+  selectManualDetail:(detailId:string|null,pinId?:string|null)=>void;
+  updateManualDetail:(detailId:string,changes:{name?:string;colorId?:string|null})=>void;
+  deleteManualDetail:(detailId:string)=>void;
+  deleteManualDetailPin:(detailId:string,pinId:string)=>void;
+  focusManualDetail:(detailId:string)=>void;
+  focusManualDetailPin:(detailId:string,pinId:string)=>void;
   setActivePaintingStage: (stageId: string | null) => void;
   focusActivePaintingTargets: () => void;
 
@@ -261,9 +269,12 @@ function createPaletteColorName(
 export const useModelEditorStore =
   create<ModelEditorState>()((set) => ({
     parts: [],
-    markers: [],
-    selectedMarkerId: null,
-    markerPlacementActive: false,
+    manualDetails: [],
+    nextManualDetailNumber:1,
+    selectedManualDetailId:null,
+    selectedManualDetailPinId:null,
+    manualDetailPlacement:null,
+    manualDetailFocusRequest:null,
     activePaintingStageId: null,
     paintingTargetFocusRevision: 0,
     paintingOrder:[],
@@ -386,25 +397,18 @@ export const useModelEditorStore =
       });
     },
 
-    setMarkers: (markers) => set({ markers, selectedMarkerId: null, markerPlacementActive: false }),
-    startMarkerPlacement: () => set({ markerPlacementActive: true, selectedMarkerId: null, selectedPartId: null }),
-    cancelMarkerPlacement: () => set({ markerPlacementActive: false }),
-    addMarker: (input) => set((state) => {
-      if (!state.markerPlacementActive) return state;
-      const now = Date.now();
-      const marker: PaintMarker = { ...input, id: `marker_${crypto.randomUUID()}`, number: Math.max(0, ...state.markers.map((item) => item.number)) + 1, colorId: null, createdAt: now, updatedAt: now };
-      return { markers: [...state.markers, marker], selectedMarkerId: marker.id, markerPlacementActive: false, ...markStateDirty(state) };
-    }),
-    selectMarker: (selectedMarkerId) => set({ selectedMarkerId, selectedPartId: null, highlightedPaletteColorId: null }),
-    updateMarker: (markerId, changes) => set((state) => {
-      const marker = state.markers.find((item) => item.id === markerId);
-      if (!marker) return state;
-      const name = changes.name === undefined ? marker.name : changes.name.trim();
-      const colorId = changes.colorId === undefined ? marker.colorId : changes.colorId;
-      if (!name || (colorId && !state.palette.some((color) => color.id === colorId)) || (name === marker.name && colorId === marker.colorId)) return state;
-      return { markers: state.markers.map((item) => item.id === markerId ? { ...item, name, colorId, updatedAt: Date.now() } : item), ...markStateDirty(state) };
-    }),
-    deleteMarker: (markerId) => set((state) => state.markers.some((item) => item.id === markerId) ? { markers: state.markers.filter((item) => item.id !== markerId), parts: state.parts.map((part) => ({ ...part, paintingWorkflow: { ...part.paintingWorkflow, stages: part.paintingWorkflow.stages.map((stage) => ({ ...stage, targetReferences: stage.targetReferences?.filter((reference) => !(reference.type === "marker" && reference.id === markerId)) ?? [] })) } })), selectedMarkerId: state.selectedMarkerId === markerId ? null : state.selectedMarkerId, ...markStateDirty(state) } : state),
+    setManualDetails:(manualDetails,nextManualDetailNumber)=>set({manualDetails,nextManualDetailNumber,selectedManualDetailId:null,selectedManualDetailPinId:null,manualDetailPlacement:null,manualDetailFocusRequest:null}),
+    startManualDetailPlacement:(name,detailId)=>set({manualDetailPlacement:{detailId:detailId??null,name:name.trim(),pins:[]},selectedManualDetailId:detailId??null,selectedManualDetailPinId:null,selectedPartId:null}),
+    cancelManualDetailPlacement:()=>set({manualDetailPlacement:null}),
+    addDraftManualDetailPin:(input)=>set(state=>{const draft=state.manualDetailPlacement;if(!draft)return state;const now=Date.now(),pin:ManualDetailPin={...input,id:`pin_${crypto.randomUUID()}`,createdAt:now,updatedAt:now};return{manualDetailPlacement:{...draft,pins:[...draft.pins,pin]},selectedManualDetailPinId:pin.id}}),
+    undoDraftManualDetailPin:()=>set(state=>state.manualDetailPlacement?.pins.length?{manualDetailPlacement:{...state.manualDetailPlacement,pins:state.manualDetailPlacement.pins.slice(0,-1)},selectedManualDetailPinId:state.manualDetailPlacement.pins.at(-2)?.id??null}:state),
+    finishManualDetailPlacement:()=>set(state=>{const draft=state.manualDetailPlacement;if(!draft?.pins.length||!draft.name.trim())return state;const now=Date.now();if(draft.detailId){const existing=state.manualDetails.find(detail=>detail.id===draft.detailId);if(!existing)return{manualDetailPlacement:null};return{manualDetails:state.manualDetails.map(detail=>detail.id===draft.detailId?{...detail,pins:[...detail.pins,...draft.pins],updatedAt:now}:detail),manualDetailPlacement:null,selectedManualDetailId:draft.detailId,selectedManualDetailPinId:draft.pins.at(-1)?.id??null,...markStateDirty(state)}}const detail:ManualDetail={id:`detail_${crypto.randomUUID()}`,number:state.nextManualDetailNumber,name:draft.name.trim(),colorId:null,pins:draft.pins,createdAt:now,updatedAt:now};return{manualDetails:[...state.manualDetails,detail],nextManualDetailNumber:state.nextManualDetailNumber+1,manualDetailPlacement:null,selectedManualDetailId:detail.id,selectedManualDetailPinId:draft.pins.at(-1)?.id??null,...markStateDirty(state)}}),
+    selectManualDetail:(selectedManualDetailId,selectedManualDetailPinId=null)=>set({selectedManualDetailId,selectedManualDetailPinId,selectedPartId:null,highlightedPaletteColorId:null}),
+    updateManualDetail:(detailId,changes)=>set(state=>{const detail=state.manualDetails.find(item=>item.id===detailId);if(!detail)return state;const name=changes.name===undefined?detail.name:changes.name.trim(),colorId=changes.colorId===undefined?detail.colorId:changes.colorId;if(!name||(colorId&&!state.palette.some(color=>color.id===colorId))||(name===detail.name&&colorId===detail.colorId))return state;return{manualDetails:state.manualDetails.map(item=>item.id===detailId?{...item,name,colorId,updatedAt:Date.now()}:item),...markStateDirty(state)}}),
+    deleteManualDetail:(detailId)=>set(state=>state.manualDetails.some(detail=>detail.id===detailId)?{manualDetails:state.manualDetails.filter(detail=>detail.id!==detailId),parts:state.parts.map(part=>({...part,paintingWorkflow:{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>({...stage,targetReferences:stage.targetReferences?.filter(reference=>!(reference.type==="manualDetail"&&reference.id===detailId))??[]}))}})),selectedManualDetailId:state.selectedManualDetailId===detailId?null:state.selectedManualDetailId,selectedManualDetailPinId:state.selectedManualDetailId===detailId?null:state.selectedManualDetailPinId,...markStateDirty(state)}:state),
+    deleteManualDetailPin:(detailId,pinId)=>set(state=>{const detail=state.manualDetails.find(item=>item.id===detailId);if(!detail||!detail.pins.some(pin=>pin.id===pinId))return state;if(detail.pins.length===1)return{manualDetails:state.manualDetails.filter(item=>item.id!==detailId),parts:state.parts.map(part=>({...part,paintingWorkflow:{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>({...stage,targetReferences:stage.targetReferences?.filter(reference=>!(reference.type==="manualDetail"&&reference.id===detailId))??[]}))}})),selectedManualDetailId:state.selectedManualDetailId===detailId?null:state.selectedManualDetailId,selectedManualDetailPinId:null,...markStateDirty(state)};return{manualDetails:state.manualDetails.map(item=>item.id===detailId?{...item,pins:item.pins.filter(pin=>pin.id!==pinId),updatedAt:Date.now()}:item),selectedManualDetailPinId:state.selectedManualDetailPinId===pinId?null:state.selectedManualDetailPinId,...markStateDirty(state)}}),
+    focusManualDetail:(detailId)=>set(state=>({manualDetailFocusRequest:{detailId,pinId:null,revision:(state.manualDetailFocusRequest?.revision??0)+1}})),
+    focusManualDetailPin:(detailId,pinId)=>set(state=>({manualDetailFocusRequest:{detailId,pinId,revision:(state.manualDetailFocusRequest?.revision??0)+1}})),
     setActivePaintingStage: (activePaintingStageId) => set({ activePaintingStageId }),
     focusActivePaintingTargets: () => set((state) => ({ paintingTargetFocusRevision: state.paintingTargetFocusRevision + 1 })),
 
@@ -439,7 +443,8 @@ export const useModelEditorStore =
     selectPart: (partId) => {
       set({
         selectedPartId: partId,
-        selectedMarkerId: null,
+        selectedManualDetailId: null,
+        selectedManualDetailPinId:null,
         highlightedPaletteColorId: null,
       });
     },
@@ -1048,9 +1053,12 @@ export const useModelEditorStore =
     resetEditor: () => {
       set({
         parts: [],
-        markers: [],
-        selectedMarkerId: null,
-        markerPlacementActive: false,
+        manualDetails:[],
+        nextManualDetailNumber:1,
+        selectedManualDetailId:null,
+        selectedManualDetailPinId:null,
+        manualDetailPlacement:null,
+        manualDetailFocusRequest:null,
         activePaintingStageId: null,
         paintingTargetFocusRevision: 0,
         paintingOrder:[],

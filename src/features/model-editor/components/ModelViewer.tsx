@@ -20,6 +20,7 @@ import {
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import {
   PerspectiveCamera,
+  MathUtils,
   Box3,
   Sphere,
   Vector3,
@@ -39,6 +40,7 @@ import { useModelEditorStore } from "../store/modelEditorStore";
 import { fitCameraToBounds } from "../lib/fitCameraToBounds";
 import { getModelBounds } from "../lib/getModelBounds";
 import {getVisibleModelBounds} from "../lib/getVisibleModelBounds";
+import {getManualDetailFocusBounds} from "../lib/manualDetails/manualDetailFocus";
 import { ViewerModeSwitcher } from "./ViewerModeSwitcher";
 import type { ViewerMode } from "../types/ViewerMode";
 import { waitForAnimationFrames } from "../lib/waitForAnimationFrames";
@@ -84,7 +86,7 @@ type SceneProps = {
   showAllPartsForCapture: boolean;
   forceAssembled:boolean;
   forceFullyExploded:boolean;
-  defaultMarkerName: string;
+  onControlsStart:()=>void;
 };
 
 function Scene({
@@ -101,7 +103,7 @@ function Scene({
   showAllPartsForCapture,
   forceAssembled,
   forceFullyExploded,
-  defaultMarkerName,
+  onControlsStart,
 }: SceneProps) {
   return (
     <>
@@ -144,7 +146,6 @@ function Scene({
           showAllPartsForCapture={showAllPartsForCapture}
           forceAssembled={forceAssembled}
           forceFullyExploded={forceFullyExploded}
-          defaultMarkerName={defaultMarkerName}
           controlsRef={controlsRef}
         />
 
@@ -187,6 +188,7 @@ function Scene({
         minDistance={1.5}
         maxDistance={25}
         maxPolarAngle={Math.PI / 2.01}
+        onStart={onControlsStart}
       />
     </>
   );
@@ -200,9 +202,11 @@ export const ModelViewer = forwardRef<
   ref,
 ) {
   const {t}=useTranslation();
-  const markerPlacementActive = useModelEditorStore((state) => state.markerPlacementActive);
-  const cancelMarkerPlacement = useModelEditorStore((state) => state.cancelMarkerPlacement);
-  const selectedMarker = useModelEditorStore((state) => state.markers.find((marker) => marker.id === state.selectedMarkerId));
+  const manualDetailPlacement=useModelEditorStore(state=>state.manualDetailPlacement);
+  const cancelManualDetailPlacement=useModelEditorStore(state=>state.cancelManualDetailPlacement);
+  const undoDraftManualDetailPin=useModelEditorStore(state=>state.undoDraftManualDetailPin);
+  const finishManualDetailPlacement=useModelEditorStore(state=>state.finishManualDetailPlacement);
+  const manualDetailFocusRequest=useModelEditorStore(state=>state.manualDetailFocusRequest);
   const paintingTargetFocusRevision = useModelEditorStore((state) => state.paintingTargetFocusRevision);
   const isExplodedLayoutEditing = useModelEditorStore((state) => state.isExplodedLayoutEditing);
   const focusedAssemblyStepId = useModelEditorStore((state) => state.focusedAssemblyStepId);
@@ -214,29 +218,47 @@ export const ModelViewer = forwardRef<
   const modelRef = useRef<Object3D | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isCaptureInProgressRef = useRef(false);
+  const focusAnimationFrameRef=useRef<number|null>(null);
+  const focusAnimationGenerationRef=useRef(0);
+
+  const cancelFocusAnimation=useCallback(()=>{focusAnimationGenerationRef.current+=1;if(focusAnimationFrameRef.current!==null){cancelAnimationFrame(focusAnimationFrameRef.current);focusAnimationFrameRef.current=null}},[]);
+
+  const focusManualDetail=useCallback((manualDetailId:string,pinId:string|null)=>{
+    cancelFocusAnimation();
+    const controls=controlsRef.current,model=modelRef.current;
+    if(!controls||!model||!(controls.object instanceof PerspectiveCamera))return;
+    const detail=useModelEditorStore.getState().manualDetails.find(item=>item.id===manualDetailId),modelBounds=getModelBounds(model);
+    if(!detail)return;
+    const frame=getManualDetailFocusBounds(detail,modelBounds,pinId);
+    if(!frame){fitCameraToBounds({camera:controls.object,controls,bounds:modelBounds});return}
+    const camera=controls.object,verticalHalfFov=Math.max(MathUtils.degToRad(camera.fov)/2,.01),aspect=Number.isFinite(camera.aspect)&&camera.aspect>0?camera.aspect:1,horizontalHalfFov=Math.atan(Math.tan(verticalHalfFov)*aspect),limitingHalfFov=Math.max(Math.min(verticalHalfFov,horizontalHalfFov),.01);
+    let distance=frame.bounds.radius/Math.sin(limitingHalfFov);
+    distance=MathUtils.clamp(distance,frame.bounds.radius*1.1,modelBounds.radius*4);
+    const offset=frame.bounds.center.clone().sub(modelBounds.center),safeModelRadius=modelBounds.radius*1.08,b=offset.dot(frame.direction),c=offset.lengthSq()-safeModelRadius*safeModelRadius,discriminant=b*b-c;
+    if(discriminant>=0)distance=Math.max(distance,-b+Math.sqrt(discriminant)+modelBounds.radius*.04);
+    const destination=frame.bounds.center.clone().add(frame.direction.clone().multiplyScalar(distance)),startPosition=camera.position.clone(),startTarget=controls.target.clone(),generation=focusAnimationGenerationRef.current,startTime=performance.now(),duration=320;
+    camera.near=Math.max(Math.min(distance-frame.bounds.radius,modelBounds.radius)/100,.01);camera.far=Math.max(distance+modelBounds.radius*4,modelBounds.radius*20,100);camera.updateProjectionMatrix();controls.enabled=true;
+    const animate=(time:number)=>{if(generation!==focusAnimationGenerationRef.current)return;const progress=MathUtils.clamp((time-startTime)/duration,0,1),eased=1-Math.pow(1-progress,3);camera.position.lerpVectors(startPosition,destination,eased);const modelOffset=camera.position.clone().sub(modelBounds.center);if(modelOffset.length()<safeModelRadius)camera.position.copy(modelBounds.center).add((modelOffset.lengthSq()>1e-8?modelOffset.normalize():frame.direction).multiplyScalar(safeModelRadius));controls.target.lerpVectors(startTarget,frame.bounds.center,eased);controls.update();if(progress<1)focusAnimationFrameRef.current=requestAnimationFrame(animate);else focusAnimationFrameRef.current=null};
+    focusAnimationFrameRef.current=requestAnimationFrame(animate);
+  },[cancelFocusAnimation]);
 
   useEffect(() => {
     if (paintingTargetFocusRevision === 0) return;
+    cancelFocusAnimation();
     const controls=controlsRef.current,model=modelRef.current,state=useModelEditorStore.getState();
     if(!controls||!model)return;
     const stage=state.parts.flatMap(part=>part.paintingWorkflow.stages).find(item=>item.id===state.activePaintingStageId);
     const references=stage?.targetReferences??[],bounds=new Box3(),partIds=new Set(references.filter(reference=>reference.type==="part").map(reference=>reference.id)),meshIds=new Set(state.parts.filter(part=>partIds.has(part.id)).map(part=>part.meshUuid));
     model.traverse(object=>{if(meshIds.has(object.uuid))bounds.expandByObject(object)});
-    for(const reference of references){if(reference.type!=="marker")continue;const marker=state.markers.find(item=>item.id===reference.id);if(marker)bounds.expandByPoint(new Vector3(marker.position.x,marker.position.y,marker.position.z));}
+    for(const reference of references){if(reference.type==="part")continue;const detail=state.manualDetails.find(item=>item.id===reference.id);for(const pin of detail?.pins??[])bounds.expandByPoint(new Vector3(pin.position.x,pin.position.y,pin.position.z));}
     const targetBounds = bounds.isEmpty() ? getModelBounds(model) : { box: bounds, center: bounds.getCenter(new Vector3()), size: bounds.getSize(new Vector3()), sphere: bounds.getBoundingSphere(new Sphere()), radius: bounds.getBoundingSphere(new Sphere()).radius };
     fitCameraToBounds({camera:controls.object as PerspectiveCamera,controls,bounds:targetBounds});
-  },[paintingTargetFocusRevision]);
+  },[cancelFocusAnimation,paintingTargetFocusRevision]);
 
-  useEffect(() => {
-    const controls = controlsRef.current;
-    if (!selectedMarker || !controls) return;
-    controls.object.position.set(selectedMarker.camera.position.x, selectedMarker.camera.position.y, selectedMarker.camera.position.z);
-    controls.target.set(selectedMarker.camera.target.x, selectedMarker.camera.target.y, selectedMarker.camera.target.z);
-    if (controls.object instanceof PerspectiveCamera && selectedMarker.camera.zoom) { controls.object.zoom = selectedMarker.camera.zoom; controls.object.updateProjectionMatrix(); }
-    controls.update();
-  }, [selectedMarker]);
+  useEffect(()=>{if(manualDetailFocusRequest)focusManualDetail(manualDetailFocusRequest.detailId,manualDetailFocusRequest.pinId)},[focusManualDetail,manualDetailFocusRequest]);
 
   useEffect(() => () => {
+    cancelFocusAnimation();
     isCaptureInProgressRef.current = false;
     if (controlsRef.current) controlsRef.current.enabled = true;
     controlsRef.current = null;
@@ -246,7 +268,7 @@ export const ModelViewer = forwardRef<
     if (state.focusedAssemblyStepId) state.exitAssemblyStepFocus();
     state.stopExplodedLayoutEditing();
     state.resetExplodedViewerState();
-  }, []);
+  }, [cancelFocusAnimation]);
 
   const [isGridVisible, setIsGridVisible] =
     useState(true);
@@ -330,6 +352,7 @@ export const ModelViewer = forwardRef<
   } = useProgress();
 
   const fitFullModel = useCallback(() => {
+    cancelFocusAnimation();
     const model = modelRef.current;
     const controls = controlsRef.current;
 
@@ -359,7 +382,7 @@ export const ModelViewer = forwardRef<
       controls,
       bounds,
     });
-  }, []);
+  }, [cancelFocusAnimation]);
 
   const handleModelReady = useCallback(
     (model: Object3D) => {
@@ -410,6 +433,7 @@ export const ModelViewer = forwardRef<
   }, [handleFitModel, setExplodedLabelsMode, setViewerMode]);
 
   function handleResetCamera() {
+    cancelFocusAnimation();
     const model = modelRef.current;
     const controls = controlsRef.current;
 
@@ -444,8 +468,9 @@ export const ModelViewer = forwardRef<
     ref,
     () => ({
       fitView: handleFitModel,
-      generateStepPreview: async (stepId) => { const model=modelRef.current;if(!model)throw new Error("modelUnavailable");const state=useModelEditorStore.getState(),step=state.parts.flatMap(part=>part.paintingWorkflow.stages).find(item=>item.id===stepId);if(!step)throw new Error("targetsUnavailable");model.updateWorldMatrix(true,true);return createStepPreviewBlob({model,step,parts:state.parts,markers:state.markers,palette:state.palette}); },
+      generateStepPreview:async(stepId)=>{const model=modelRef.current;if(!model)throw new Error("modelUnavailable");const state=useModelEditorStore.getState(),step=state.parts.flatMap(part=>part.paintingWorkflow.stages).find(item=>item.id===stepId);if(!step)throw new Error("targetsUnavailable");model.updateWorldMatrix(true,true);return createStepPreviewBlob({model,step,parts:state.parts,manualDetails:state.manualDetails,palette:state.palette})},
       captureAssemblyStep: async ({partIds,labelsMode}) => {
+        cancelFocusAnimation();
         if(isCaptureInProgressRef.current)throw new Error("Capture busy.");
         const model=modelRef.current,canvas=canvasRef.current,controls=controlsRef.current;
         if(!model||!canvas||!controls||localModel.isLoading||isAssetLoading)throw new Error("Viewer unavailable.");
@@ -466,6 +491,7 @@ export const ModelViewer = forwardRef<
         }
       },
       captureView: async (mode) => {
+        cancelFocusAnimation();
         if (isCaptureInProgressRef.current) {
           throw new Error(
             "A model capture is already in progress.",
@@ -586,6 +612,7 @@ export const ModelViewer = forwardRef<
     }),
     [
       handleFitModel,
+      cancelFocusAnimation,
       isAssetLoading,
       isGridVisible,
       localModel.isLoading,
@@ -621,7 +648,7 @@ export const ModelViewer = forwardRef<
   }
 
   return (
-    <section className={`relative min-h-[34rem] min-w-0 flex-1 overflow-hidden bg-neutral-900 ${markerPlacementActive ? "cursor-crosshair" : ""}`}>
+    <section className={`relative min-h-[34rem] min-w-0 flex-1 overflow-hidden bg-neutral-900 ${manualDetailPlacement?"cursor-crosshair":""}`}>
       {isLoading ? (
         <div className="absolute inset-0 z-20 bg-neutral-900">
           <ViewerLoading />
@@ -662,7 +689,7 @@ export const ModelViewer = forwardRef<
               selectPart(null);
             }}
           >
-            <Scene
+          <Scene
               modelUrl={localModel.modelUrl}
               modelFormat={project.modelFormat}
               savedParts={project.parts}
@@ -677,8 +704,8 @@ export const ModelViewer = forwardRef<
               }
               showAllPartsForCapture={showAllPartsForCapture}
               forceAssembled={forceAssembled}
-              forceFullyExploded={forceFullyExploded}
-              defaultMarkerName={t("editor.markers.defaultName")}
+            forceFullyExploded={forceFullyExploded}
+            onControlsStart={cancelFocusAnimation}
             />
           </Canvas>
         </ViewerErrorBoundary>
@@ -687,7 +714,7 @@ export const ModelViewer = forwardRef<
       <div className="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center px-4">
       {!simplified ? <ViewerModeSwitcher /> : null}
       </div>
-      {markerPlacementActive ? <div role="status" className="absolute left-1/2 top-4 z-30 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 rounded-xl border border-[var(--accent)] bg-[var(--card)] px-3 py-2 text-sm text-[var(--text)]"><span>{t("editor.markers.placementHelp")}</span><button type="button" onClick={cancelMarkerPlacement} className="shrink-0 rounded-lg border border-[var(--border)] px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">{t("editor.markers.cancelPlacement")}</button></div> : null}
+      {manualDetailPlacement?<div role="status" className="absolute left-1/2 top-4 z-30 flex max-w-[calc(100%-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-xl border border-[var(--accent)] bg-[var(--card)] px-3 py-2 text-xs text-[var(--text)]"><span>{t("editor.manualDetails.placement.help")}</span><span>{t("editor.manualDetails.pinCount",{count:manualDetailPlacement.pins.length})}</span><button type="button" disabled={!manualDetailPlacement.pins.length} onClick={undoDraftManualDetailPin} className="rounded-lg border border-[var(--border)] px-2 py-1 disabled:opacity-40">{t("editor.manualDetails.undo")}</button><button type="button" disabled={!manualDetailPlacement.pins.length} onClick={finishManualDetailPlacement} className="rounded-lg bg-[var(--accent)] px-2 py-1 text-[var(--accent-foreground)] disabled:opacity-40">{t("editor.manualDetails.finish")}</button><button type="button" onClick={cancelManualDetailPlacement} className="rounded-lg border border-[var(--border)] px-2 py-1">{t("common.cancel")}</button></div>:null}
       {focusedAssemblyStep ? <div role="status" className="absolute left-1/2 top-20 z-20 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-orange-400/30 bg-black/80 px-4 py-2 shadow-xl backdrop-blur"><div><p className="text-xs font-semibold text-orange-200">{t("assembly.focus.bannerTitle",{number:String(focusedAssemblyStep.order).padStart(2,"0")})}</p><p className="text-[10px] text-neutral-400">{t("assembly.focus.bannerDescription")}</p></div><button type="button" onClick={exitAssemblyStepFocus} className="rounded-lg bg-orange-400 px-3 py-1.5 text-xs font-semibold text-black">{t("assembly.focus.exit")}</button></div>:null}
 
       {shouldShowNumbersHint ? (

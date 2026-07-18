@@ -26,7 +26,7 @@ function serializeParts(): ProjectPart[] {
       color: part.color,
       paletteColorId: part.paletteColorId,
       explodedOffset: part.explodedOffset,
-      paintingWorkflow: { ...part.paintingWorkflow, stages: part.paintingWorkflow.stages.map((stage) => ({ ...stage })) },
+      paintingWorkflow:{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>({...stage,targetReferences:stage.targetReferences??[]}))},
     }));
 }
 
@@ -80,7 +80,7 @@ export function useProjectAutosave({
       }));
     const serializedAssemblySteps = editorState.assemblySteps.map((step) => ({ ...step, partIds: [...step.partIds] }));
     const serializedPaintingOrder=[...editorState.paintingOrder];
-    const serializedMarkers = editorState.markers.map((marker) => ({ ...marker, position: { ...marker.position }, normal: marker.normal ? { ...marker.normal } : null, camera: { ...marker.camera, position: { ...marker.camera.position }, target: { ...marker.camera.target } } }));
+    const serializedManualDetails=editorState.manualDetails.map(detail=>({...detail,pins:detail.pins.map(pin=>({...pin,position:{...pin.position},normal:pin.normal?{...pin.normal}:null,camera:{...pin.camera,position:{...pin.camera.position},target:{...pin.camera.target}}}))}));
 
     isSavingRef.current = true;
     editorState.markSaving();
@@ -93,7 +93,8 @@ export function useProjectAutosave({
         palette: serializedPalette,
         assemblySteps: serializedAssemblySteps,
         paintingOrder:serializedPaintingOrder,
-        markers: serializedMarkers,
+        manualDetails:serializedManualDetails,
+        nextManualDetailNumber:editorState.nextManualDetailNumber,
       });
 
       useModelEditorStore
@@ -113,7 +114,8 @@ export function useProjectAutosave({
             palette: serializedPalette,
             assemblySteps: serializedAssemblySteps,
             paintingOrder:serializedPaintingOrder,
-            markers: serializedMarkers,
+            manualDetails:serializedManualDetails,
+            nextManualDetailNumber:editorState.nextManualDetailNumber,
             updatedAt: new Date(),
           };
         },

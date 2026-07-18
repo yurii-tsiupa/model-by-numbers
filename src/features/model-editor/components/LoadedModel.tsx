@@ -53,7 +53,6 @@ type LoadedModelProps = {
   onModelReady?: (
     model: Object3D,
   ) => void;
-  defaultMarkerName: string;
 };
 
 export function LoadedModel(props: LoadedModelProps) {
@@ -73,7 +72,6 @@ function LoadedModelContent({
   forceFullyExploded,
   controlsRef,
   onModelReady,
-  defaultMarkerName,
 }: LoadedModelProps & { sourceScene: Object3D }) {
   const {t}=useTranslation();
   const hasInitializedPartsRef = useRef(false);
@@ -125,12 +123,14 @@ function LoadedModelContent({
   const isExplodedLayoutEditing=useModelEditorStore(state=>state.isExplodedLayoutEditing);
   const setPartExplodedOffset=useModelEditorStore(state=>state.setPartExplodedOffset);
   const stopExplodedLayoutEditing=useModelEditorStore(state=>state.stopExplodedLayoutEditing);
-  const markers=useModelEditorStore(state=>state.markers);
-  const selectedMarkerId=useModelEditorStore(state=>state.selectedMarkerId);
+  const manualDetails=useModelEditorStore(state=>state.manualDetails);
+  const nextManualDetailNumber=useModelEditorStore(state=>state.nextManualDetailNumber);
+  const selectedManualDetailId=useModelEditorStore(state=>state.selectedManualDetailId);
+  const selectedManualDetailPinId=useModelEditorStore(state=>state.selectedManualDetailPinId);
   const activePaintingStageId=useModelEditorStore(state=>state.activePaintingStageId);
-  const markerPlacementActive=useModelEditorStore(state=>state.markerPlacementActive);
-  const addMarker=useModelEditorStore(state=>state.addMarker);
-  const selectMarker=useModelEditorStore(state=>state.selectMarker);
+  const manualDetailPlacement=useModelEditorStore(state=>state.manualDetailPlacement);
+  const addDraftManualDetailPin=useModelEditorStore(state=>state.addDraftManualDetailPin);
+  const selectManualDetail=useModelEditorStore(state=>state.selectManualDetail);
 
   const model = useMemo(() => {
     const normalizedModel = normalizeModel(sourceScene);
@@ -141,7 +141,7 @@ function LoadedModelContent({
   }, [sourceScene]);
   const activePaintingStage = useMemo(() => parts.flatMap((part) => part.paintingWorkflow.stages).find((stage) => stage.id === activePaintingStageId), [activePaintingStageId, parts]);
   const highlightedPaintingPartIds = useMemo(() => activePaintingStage?.targetReferences?.filter((reference) => reference.type === "part").map((reference) => reference.id) ?? [], [activePaintingStage]);
-  const highlightedPaintingMarkerIds = useMemo(() => new Set(activePaintingStage?.targetReferences?.filter((reference) => reference.type === "marker").map((reference) => reference.id) ?? []), [activePaintingStage]);
+  const highlightedPaintingManualDetailIds=useMemo(()=>new Set(activePaintingStage?.targetReferences?.filter(reference=>reference.type!=="part").map(reference=>reference.id)??[]),[activePaintingStage]);
 
   const presentationParts = useMemo(
     () =>
@@ -289,7 +289,7 @@ function LoadedModelContent({
   ) {
     event.stopPropagation();
 
-    if (markerPlacementActive) return;
+    if (manualDetailPlacement) return;
 
     const clickedMesh = event.object;
 
@@ -314,14 +314,16 @@ function LoadedModelContent({
   }
 
   function handleMarkerPlacement(event: ThreeEvent<MouseEvent>) {
-    if (!markerPlacementActive || event.delta > 3) return;
+    if (!manualDetailPlacement || event.delta > 3) return;
     event.stopPropagation();
     const controls = controlsRef.current;
     const camera = controls?.object;
     if (!controls || !camera) return;
     const surfaceNormal = event.face?.normal.clone().applyMatrix3(new Matrix3().getNormalMatrix(event.object.matrixWorld)).normalize();
-    addMarker({ name: defaultMarkerName, position: { x: event.point.x, y: event.point.y, z: event.point.z }, normal: surfaceNormal ? { x: surfaceNormal.x, y: surfaceNormal.y, z: surfaceNormal.z } : null, camera: { position: { x: camera.position.x, y: camera.position.y, z: camera.position.z }, target: { x: controls.target.x, y: controls.target.y, z: controls.target.z }, ...(camera instanceof PerspectiveCamera ? { zoom: camera.zoom } : {}) } });
+    addDraftManualDetailPin({position:{x:event.point.x,y:event.point.y,z:event.point.z},normal:surfaceNormal?{x:surfaceNormal.x,y:surfaceNormal.y,z:surfaceNormal.z}:null,camera:{position:{x:camera.position.x,y:camera.position.y,z:camera.position.z},target:{x:controls.target.x,y:controls.target.y,z:controls.target.z},...(camera instanceof PerspectiveCamera?{zoom:camera.zoom}:{})}});
   }
+  const draftDetailNumber=manualDetailPlacement?.detailId?manualDetails.find(detail=>detail.id===manualDetailPlacement.detailId)?.number??nextManualDetailNumber:nextManualDetailNumber;
+  const renderedPins=[...manualDetails.flatMap(detail=>detail.pins.map((pin,index)=>({pin,detailId:detail.id,detailName:detail.name,detailNumber:detail.number,locationIndex:index+1,colorId:detail.colorId,isDraft:false}))),...(manualDetailPlacement?.pins.map((pin,index)=>({pin,detailId:manualDetailPlacement.detailId??"draft",detailName:manualDetailPlacement.name,detailNumber:draftDetailNumber,locationIndex:index+1,colorId:null,isDraft:true}))??[])];
 
   return (
     <>
@@ -331,7 +333,7 @@ function LoadedModelContent({
         onClick={handleMarkerPlacement}
       />
 
-      {!showAllPartsForCapture ? markers.map((marker) => { const targetHighlighted=highlightedPaintingMarkerIds.has(marker.id);const hasActiveTargets=Boolean(activePaintingStage?.targetReferences?.length);return <Html key={marker.id} position={[marker.position.x, marker.position.y, marker.position.z]} center sprite><button type="button" aria-label={t("editor.markers.select", { number: marker.number, name: marker.name })} aria-pressed={selectedMarkerId === marker.id || targetHighlighted} onClick={(event) => { event.stopPropagation(); selectMarker(marker.id); }} className={`grid place-items-center rounded-full border-2 text-xs font-bold shadow-lg ${targetHighlighted?"size-9 border-[var(--accent-foreground)] bg-[var(--accent)] text-[var(--accent-foreground)]":selectedMarkerId===marker.id?"size-7 border-[var(--accent-foreground)] bg-[var(--accent)] text-[var(--accent-foreground)]":`size-7 border-[var(--border)] bg-[var(--card)] text-[var(--text)] ${hasActiveTargets?"opacity-50":""}`}`}>{marker.number}</button></Html>}) : null}
+      {!showAllPartsForCapture?renderedPins.map(({pin,detailId,detailName,detailNumber,locationIndex,colorId,isDraft})=>{const targetHighlighted=highlightedPaintingManualDetailIds.has(detailId),detailSelected=selectedManualDetailId===detailId,pinSelected=selectedManualDetailPinId===pin.id,hasActiveTargets=Boolean(activePaintingStage?.targetReferences?.length),assignedColor=colorId?palette.find(color=>color.id===colorId)?.hex:undefined;return <Html key={pin.id} position={[pin.position.x,pin.position.y,pin.position.z]} center sprite><button type="button" aria-label={t("editor.manualDetails.accessibility.selectLocation",{number:detailNumber,name:detailName,location:locationIndex})} aria-pressed={pinSelected||detailSelected||targetHighlighted} onClick={event=>{event.stopPropagation();if(!isDraft)selectManualDetail(detailId,pin.id)}} style={!pinSelected&&!detailSelected&&!targetHighlighted&&assignedColor?{borderColor:assignedColor}:undefined} className={`grid min-w-7 place-items-center rounded-full border-2 px-1 text-xs font-bold shadow-lg ${targetHighlighted||pinSelected?"h-9 border-[var(--accent-foreground)] bg-[var(--accent)] text-[var(--accent-foreground)]":detailSelected||isDraft?"h-7 border-[var(--accent)] bg-[var(--card)] text-[var(--text)]":`h-7 border-[var(--border)] bg-[var(--card)] text-[var(--text)] ${hasActiveTargets?"opacity-50":""}`}`}>{detailNumber}</button></Html>}) : null}
 
     {viewerMode === "numbers" ? (
       <ModelNumberLabels
