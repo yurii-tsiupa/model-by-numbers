@@ -1,0 +1,7 @@
+"use client";
+import { X } from "lucide-react";
+import { useEffect } from "react";
+import { useTranslation } from "@/features/i18n/hooks/useTranslation";
+import type { GuideLibraryTemplate } from "../types/GuideLibraryTemplate";
+import { TemplatePreview } from "./TemplatePreview";
+export function TemplatePreviewModal({template,name,onClose}:{template:GuideLibraryTemplate;name:string;onClose:()=>void}){const{t}=useTranslation();useEffect(()=>{const key=(event:KeyboardEvent)=>{if(event.key==="Escape")onClose()};window.addEventListener("keydown",key);return()=>window.removeEventListener("keydown",key)},[onClose]);return <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg)]/90 p-4" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}><section role="dialog" aria-modal="true" aria-labelledby="template-preview-title" className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5"><div className="flex items-center justify-between gap-3"><h2 id="template-preview-title" className="text-lg font-semibold">{name}</h2><button onClick={onClose} aria-label={t("common.close")} className="grid size-9 place-items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"><X className="size-4"/></button></div><div className="mt-5"><TemplatePreview settings={template.settings} large/></div></section></div>}

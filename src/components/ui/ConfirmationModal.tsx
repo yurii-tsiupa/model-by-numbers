@@ -115,7 +115,7 @@ export function ConfirmationModal({
 
             <div className="min-w-0 pt-0.5">
               <p className="font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
-                {isDanger ? "Danger" : "Confirmation"}
+                {isDanger ? t("common.danger") : t("common.confirmation")}
               </p>
 
               <h2
@@ -159,7 +159,7 @@ export function ConfirmationModal({
               className={`
                 flex w-full min-w-28 cursor-pointer items-center
                 justify-center gap-2 rounded-xl px-4 py-2.5
-                text-sm font-semibold text-white transition
+                text-sm font-semibold text-[var(--accent-foreground)] transition
                 focus-visible:outline-none focus-visible:ring-2
                 disabled:cursor-not-allowed disabled:opacity-50
                 sm:w-auto
