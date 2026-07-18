@@ -93,7 +93,7 @@ export const en={
   "pdf.metadata.subject":"Painting guide for {project}",
   "header.homeLabel":"Model by Numbers home",
   "header.primaryNavigation":"Primary navigation",
-  "header.nav.models":"Models",
+ "header.nav.models":"Models","header.nav.guides":"Guides","header.nav.templates":"Templates","workspace.guides.title":"Guides","workspace.guides.description":"Saved guide management will be available here in a future update.","workspace.templates.title":"Templates","workspace.templates.description":"Reusable guide templates will be available here in a future update.",
   "header.nav.howItWorks":"How it works",
   "header.nav.guidePreview":"Guide example",
   "header.login":"Log in",

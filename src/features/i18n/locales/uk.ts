@@ -94,7 +94,7 @@ export const uk:TranslationDictionary={
  "pdf.metadata.subject":"Гайд із фарбування для {project}",
  "header.homeLabel":"Model by Numbers — головна",
  "header.primaryNavigation":"Основна навігація",
- "header.nav.models":"Моделі",
+ "header.nav.models":"Моделі","header.nav.guides":"Гайди","header.nav.templates":"Шаблони","workspace.guides.title":"Гайди","workspace.guides.description":"Керування збереженими гайдами з’явиться тут у наступному оновленні.","workspace.templates.title":"Шаблони","workspace.templates.description":"Багаторазові шаблони гайдів з’являться тут у наступному оновленні.",
  "header.nav.howItWorks":"Як це працює",
  "header.nav.guidePreview":"Приклад гайду",
  "header.login":"Увійти",
