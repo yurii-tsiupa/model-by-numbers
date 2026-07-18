@@ -22,6 +22,9 @@ import { downloadGuidePdf } from "../lib/downloadGuidePdf";
 import { getGuideViewModel } from "../lib/getGuideViewModel";
 import { generateGuidePdf } from "../pdf/generateGuidePdf";
 import type { GeneratedGuide } from "../types/GeneratedGuide";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useGuideTemplates } from "@/features/templates/hooks/useGuideTemplates";
+import { resolveGuideTemplate } from "@/features/templates/lib/resolveGuideTemplate";
 
 type GeneratedGuidesSectionProps = {
   projectId: string;
@@ -31,6 +34,8 @@ export function GeneratedGuidesSection({
   projectId,
 }: GeneratedGuidesSectionProps) {
   const { t, locale } = useTranslation();
+  const { user } = useAuth();
+  const templates = useGuideTemplates(user?.uid);
 
   const query = useGeneratedGuides(projectId);
   const deletion = useDeleteGeneratedGuide(projectId);
@@ -47,10 +52,12 @@ export function GeneratedGuidesSection({
     setActionError(null);
 
     try {
+      const template = resolveGuideTemplate(guide.snapshot.templateId, templates.data ?? []);
       const pdfBlob =
         guide.pdfBlob ??
         (await generateGuidePdf(
           getGuideViewModel(guide.snapshot),
+          template.settings,
         ));
 
       downloadGuidePdf(

@@ -6,6 +6,7 @@ import { GuidePageFooter } from "./GuidePageFooter";
 import { guidePdfStyles } from "./guidePdfStyles";
 import { PDF_PAGE_POINTS } from "./printPageConstants";
 import { GuidePageHeader } from "./GuidePageHeader";
+import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
 
 type GuidePageProps = Omit<ComponentProps<typeof Page>, "children" | "size"> & {
   children: ReactNode;
@@ -15,11 +16,12 @@ type GuidePageProps = Omit<ComponentProps<typeof Page>, "children" | "size"> & {
 };
 
 export function GuidePage({children, locale, projectName, showFooter = true, style, wrap = true, ...props}: GuidePageProps) {
+  const template=useGuidePdfTemplate();
   const pageStyle = Array.isArray(style)
-    ? [guidePdfStyles.page, ...style]
+    ? [guidePdfStyles.page, {backgroundColor:template.pageBackground,color:template.textColor}, ...style]
     : style
-      ? [guidePdfStyles.page, style]
-      : guidePdfStyles.page;
+      ? [guidePdfStyles.page, {backgroundColor:template.pageBackground,color:template.textColor}, style]
+      : [guidePdfStyles.page, {backgroundColor:template.pageBackground,color:template.textColor}];
   return (
     <Page
       {...props}

@@ -17,6 +17,8 @@ import { GuideNavigation } from "./GuideNavigation";
 import { GuidePaintingWorkflowSection } from "./GuidePreview/sections/GuidePaintingWorkflowSection";
 import { GuidePreviewHeader } from "./GuidePreviewHeader";
 import { GuideSectionAnchor } from "./GuideSectionAnchor";
+import { GuideTemplateSection } from "./GuideTemplateSection";
+import type { GuideLibraryTemplate, UserGuideTemplate } from "@/features/templates/types/GuideLibraryTemplate";
 
 type GuidePreviewProps = {
   guide: ModelGuide;
@@ -24,6 +26,10 @@ type GuidePreviewProps = {
   savedPdfBlob?: Blob | null;
   skipSave?: boolean;
   onDelete?: () => void;
+  template: GuideLibraryTemplate;
+  userTemplates?: readonly UserGuideTemplate[];
+  isSelectingTemplate?: boolean;
+  onSelectTemplate?: (id: string) => Promise<void>;
 };
 
 export function GuidePreview({
@@ -32,6 +38,10 @@ export function GuidePreview({
   savedPdfBlob,
   skipSave = false,
   onDelete,
+  template,
+  userTemplates = [],
+  isSelectingTemplate = false,
+  onSelectTemplate,
 }: GuidePreviewProps) {
   const resolvedGuide = useResolvedGuideAssets(guide);
   const viewModel = useGuideViewModel(resolvedGuide);
@@ -58,6 +68,7 @@ export function GuidePreview({
 
   const pdfExport = useGuidePdfExport({
     viewModel,
+    templateSettings: template.settings,
     existingBlob: savedPdfBlob,
     fileName: savedFileName,
     onImageWarning: (warning) => {
@@ -124,7 +135,7 @@ export function GuidePreview({
       />
 
       {pdfExport.isExporting ? (
-        <GuideExportDocument viewModel={viewModel} />
+        <GuideExportDocument viewModel={viewModel} templateSettings={template.settings} />
       ) : null}
 
       {pdfExport.status === "awaitingConfirmation" ? (
@@ -162,14 +173,14 @@ export function GuidePreview({
           locale={locale}
         />
 
+        <div className="min-w-0">
+        {onSelectTemplate ? <GuideTemplateSection current={template} userTemplates={userTemplates} isSelecting={isSelectingTemplate} onSelect={onSelectTemplate}/> : null}
         <article
           data-guide-render-mode="preview"
           className="
             guide-document
             min-w-0
             overflow-hidden
-            bg-white
-            text-[#181221]
             sm:mx-5
             sm:my-6
             sm:rounded-2xl
@@ -177,8 +188,9 @@ export function GuidePreview({
             sm:border-[#E3DEEC]
             lg:m-0
           "
+          style={{ backgroundColor: template.settings.pageBackground, color: template.settings.textColor }}
         >
-          <TemplatePreview guide={resolvedGuide} />
+          <TemplatePreview guide={resolvedGuide} templateSettings={template.settings} />
 
           {hasPaintingWorkflow ? (
             <GuideSectionAnchor id="painting-workflow">
@@ -189,6 +201,7 @@ export function GuidePreview({
             </GuideSectionAnchor>
           ) : null}
         </article>
+        </div>
       </div>
     </main>
   );

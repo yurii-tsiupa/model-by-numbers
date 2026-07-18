@@ -78,6 +78,7 @@ function mapProjectDocument(
     originalDimensions: data.originalDimensions && [data.originalDimensions.width, data.originalDimensions.height, data.originalDimensions.depth].every((value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= 0) ? { width: data.originalDimensions.width, height: data.originalDimensions.height, depth: data.originalDimensions.depth } : null,
 
     thumbnailUrl: data.thumbnailUrl ?? null,
+    selectedGuideTemplateId: typeof data.selectedGuideTemplateId === "string" ? data.selectedGuideTemplateId : undefined,
 
     status: data.status,
 
@@ -362,4 +363,11 @@ export async function saveProjectEditorState({
     paintingOrder,
     updatedAt: serverTimestamp(),
   });
+}
+
+export async function saveProjectGuideTemplate(projectId: string, userId: string, templateId: string): Promise<void> {
+  const reference = doc(db, "projects", projectId);
+  const snapshot = await getDoc(reference);
+  if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error("Unable to update this project.");
+  await updateDoc(reference, { selectedGuideTemplateId: templateId, updatedAt: serverTimestamp() });
 }

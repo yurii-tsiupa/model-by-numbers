@@ -22,6 +22,7 @@ import { useDeleteGeneratedGuide } from "@/features/guides/hooks/useDeleteGenera
 import { useGeneratedGuide } from "@/features/guides/hooks/useGeneratedGuides";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { useProject } from "@/features/models/hooks/useProject";
+import { useCurrentGuideTemplate } from "@/features/templates/hooks/useCurrentGuideTemplate";
 
 export default function SavedGuidePage() {
   const params = useParams<{
@@ -45,6 +46,7 @@ export default function SavedGuidePage() {
   const guideQuery = useGeneratedGuide(
     params.guideId,
   );
+  const guideTemplate = useCurrentGuideTemplate(projectQuery.data, user?.uid, guideQuery.data?.snapshot.templateId);
 
   const deletion = useDeleteGeneratedGuide(
     params.projectId,
@@ -71,7 +73,9 @@ export default function SavedGuidePage() {
     authLoading ||
     !user ||
     projectQuery.isLoading ||
-    guideQuery.isLoading;
+    guideQuery.isLoading ||
+    guideTemplate.isLoading;
+
 
   if (isLoading) {
     return (
@@ -144,6 +148,7 @@ export default function SavedGuidePage() {
   return (
     <>
       <GuidePreview
+        template={guideTemplate.current}
         guide={{
           ...guide.snapshot,
           locale:

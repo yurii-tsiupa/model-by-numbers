@@ -28,6 +28,7 @@ type BuildGuideDataParams = {
   settings?: GuideSettings;
   explodedView?: GuideExplodedView | null;
   assemblySteps?: readonly GuideAssemblyStep[];
+  templateId?: string;
 };
 
 export function buildGuideData({
@@ -41,6 +42,7 @@ export function buildGuideData({
   settings,
   explodedView = null,
   assemblySteps = [],
+  templateId,
 }: BuildGuideDataParams): ModelGuide {
   const paletteById = new Map(
     palette.map((color) => [color.id, color]),
@@ -76,6 +78,7 @@ export function buildGuideData({
   const previewSummary=getPaintingPreviewSummary(orderedParts);
 
   return {
+    templateId,
     locale,
     projectId: project.id,
     title: project.name,

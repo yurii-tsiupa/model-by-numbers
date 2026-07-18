@@ -37,15 +37,19 @@ import {
 } from "../../pdf/GuideTableOfContentsPage";
 import type { ModelGuide } from "../../types/ModelGuide";
 import { createPdfDocumentMetadata } from "../../pdf/pdfDocumentMetadata";
+import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
+import { GuidePdfTemplateProvider } from "../../pdf/GuidePdfTemplateContext";
 
 type ClassicGuideDocumentProps = {
   guide: ModelGuide;
   viewModel?: GuideViewModel;
+  templateSettings?: GuideTemplateSettings;
 };
 
 export function ClassicGuideDocument({
   guide,
   viewModel,
+  templateSettings,
 }: ClassicGuideDocumentProps) {
   const model =
     viewModel ?? getGuideViewModel(guide);
@@ -56,7 +60,8 @@ export function ClassicGuideDocument({
     <GuideDocument
       {...metadata}
     >
-      <GuideCoverPage guide={guide} exportDate={exportDate} />
+      <GuidePdfTemplateProvider settings={templateSettings}>
+      <GuideCoverPage guide={guide} exportDate={exportDate} templateSettings={templateSettings} />
 
       <GuideTableOfContentsPage
         viewModel={model}
@@ -136,6 +141,7 @@ export function ClassicGuideDocument({
             return null;
         }
       })}
+      </GuidePdfTemplateProvider>
     </GuideDocument>
   );
 }

@@ -5,9 +5,11 @@ import { ModelGuideDocument } from "./ModelGuideDocument";
 import { prepareGuideImagesForPdf } from "./prepareGuideImagesForPdf";
 import { PdfExportError } from "../services/pdf/pdfExportErrors";
 import type { PdfExportProgress } from "../services/pdf/types";
+import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
 export async function generateGuidePdf(
   viewModel: GuideViewModel,
+  templateSettings: GuideTemplateSettings,
   onImageWarning?: (warning: { code: "IMAGE_LOAD_FAILED" | "LOW_RESOLUTION_IMAGE"; count: number }) => void,
   onProgress?: (progress:PdfExportProgress)=>void,
 ): Promise<Blob> {
@@ -22,7 +24,7 @@ export async function generateGuidePdf(
   if (prepared.lowResolutionCount > 0) onImageWarning?.({ code: "LOW_RESOLUTION_IMAGE", count: prepared.lowResolutionCount });
   onProgress?.({status:"rendering",progress:65});
   let renderer;
-  try{renderer=pdf(<ModelGuideDocument viewModel={{...viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts}}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
+  try{renderer=pdf(<ModelGuideDocument templateSettings={templateSettings} viewModel={{...viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts}}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
   onProgress?.({status:"generating",progress:85});
   let blob:Blob;try{blob=await renderer.toBlob();}catch(error){throw new PdfExportError("PDF_GENERATION_FAILED",error);}
 

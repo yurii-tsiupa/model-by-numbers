@@ -12,10 +12,12 @@ import {
   pdfColors,
 } from "./guidePdfStyles";
 import { formatLocalizedDate,translate } from "@/features/i18n/lib/i18n";
+import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
 type GuideCoverPageProps = {
   guide: ModelGuide;
   exportDate: Date;
+  templateSettings?: GuideTemplateSettings;
 };
 
 const styles = StyleSheet.create({
@@ -69,7 +71,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export function GuideCoverPage({ guide, exportDate }: GuideCoverPageProps) {
+export function GuideCoverPage({ guide, exportDate, templateSettings }: GuideCoverPageProps) {
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
   const coverImage=guide.images.painted??guide.images.base??guide.images.original??guide.images.numbers;
   const metadata = [
@@ -83,9 +85,9 @@ export function GuideCoverPage({ guide, exportDate }: GuideCoverPageProps) {
   ].filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
 
   return (
-    <Page size="A4" orientation="portrait" style={styles.page}>
+    <Page size="A4" orientation="portrait" style={[styles.page,{backgroundColor:templateSettings?.pageBackground??pdfColors.background,color:templateSettings?.textColor??pdfColors.text}]}>
       <View>
-        <Text style={styles.brand}>{t("pdf.brand")}</Text><View style={styles.accentRule}/>
+        <Text style={[styles.brand,{color:templateSettings?.accentColor??pdfColors.accent}]}>{t("pdf.brand")}</Text><View style={[styles.accentRule,{backgroundColor:templateSettings?.accentColor??pdfColors.accent}]}/>
         <View style={styles.titleBlock}>
           <Text style={styles.title}>{guide.title}</Text>
           <Text style={styles.subtitle}>{t("guide.paintingGuide")}</Text>

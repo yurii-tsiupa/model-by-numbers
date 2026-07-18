@@ -27,6 +27,7 @@ import { useReferenceImages } from "@/features/references/hooks/useReferenceImag
 import { referencesToGuideImages } from "@/features/references/lib/referenceToDataUrl";
 import { loadGuideAssetReferences } from "@/features/guides/services/assets/loadGuideAsset";
 import type { GuideAssetReference } from "@/features/guides/services/assets/types";
+import { useCurrentGuideTemplate } from "@/features/templates/hooks/useCurrentGuideTemplate";
 
 const EMPTY_GUIDE_IMAGES: GuideImages = {
   original: null,
@@ -174,6 +175,7 @@ export default function GuidePage() {
   const projectId = params.projectId;
 
   const projectQuery = useProject(projectId, user?.uid);
+  const guideTemplate = useCurrentGuideTemplate(projectQuery.data, user?.uid);
   const referencesQuery = useReferenceImages(projectId);
 
   const [guideReferences, setGuideReferences] = useState<
@@ -245,7 +247,7 @@ export default function GuidePage() {
   if (
     projectQuery.isLoading ||
     referencesQuery.isLoading ||
-    guideReferences === null || storedAssetReferences === null
+    guideReferences === null || storedAssetReferences === null || guideTemplate.isLoading
   ) {
     return <GuideLoadingState label={t("guide.loading")} />;
   }
@@ -314,8 +316,9 @@ export default function GuidePage() {
     settings: guideSettings ?? undefined,
     explodedView,
     assemblySteps,
+    templateId: guideTemplate.current.id,
   });
   guide.assetReferences = capturedProjectId === projectId && assetReferences.length > 0 ? assetReferences : storedAssetReferences;
 
-  return <GuidePreview guide={guide} />;
+  return <GuidePreview guide={guide} template={guideTemplate.current} userTemplates={guideTemplate.templates} isSelectingTemplate={guideTemplate.isSelecting} onSelectTemplate={async id => { await guideTemplate.select(id); }} />;
 }

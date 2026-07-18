@@ -18,7 +18,7 @@ export async function exportGuidePdf(options:ExportGuidePdfOptions):Promise<PdfE
   try{
     if(!blob){
       const{generateGuidePdf}=await import("../../pdf/generateGuidePdf");
-      blob=await generateGuidePdf(viewModel,warning=>{warnings.push(warning);options.onImageWarning?.(warning);},progress=>options.onProgress?.(progress));
+      blob=await generateGuidePdf(viewModel,options.templateSettings,warning=>{warnings.push(warning);options.onImageWarning?.(warning);},progress=>options.onProgress?.(progress));
     }
   }catch(error){throw normalizePdfExportError(error,"PDF_GENERATION_FAILED");}
   if(!blob||blob.size===0)throw new PdfExportError("PDF_GENERATION_FAILED");

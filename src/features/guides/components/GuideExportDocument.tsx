@@ -3,13 +3,16 @@ import { defaultGuideTemplate } from "../templates/registry/guideTemplates";
 import { GuidePaintingWorkflowSection } from "./GuidePreview/sections/GuidePaintingWorkflowSection";
 import { GuideRenderModeProvider } from "./GuideRenderModeProvider";
 import { GuideSectionAnchor } from "./GuideSectionAnchor";
+import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
 type GuideExportDocumentProps = {
   viewModel: GuideViewModel;
+  templateSettings: GuideTemplateSettings;
 };
 
 export function GuideExportDocument({
   viewModel,
+  templateSettings,
 }: GuideExportDocumentProps) {
   const TemplatePreview =
     defaultGuideTemplate.Preview;
@@ -22,9 +25,10 @@ export function GuideExportDocument({
       className="guide-pdf-export-root"
     >
       <GuideRenderModeProvider mode="pdf">
-        <article className="guide-document overflow-hidden bg-white text-[#181221]">
+        <article className="guide-document overflow-hidden" style={{backgroundColor:templateSettings.pageBackground,color:templateSettings.textColor}}>
           <TemplatePreview
             guide={viewModel.guide}
+            templateSettings={templateSettings}
           />
 
           {viewModel.hasPaintingWorkflow ? (

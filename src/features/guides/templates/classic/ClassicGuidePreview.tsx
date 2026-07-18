@@ -11,13 +11,16 @@ import { ClassicAssemblySection } from "./sections/ClassicAssemblySection";
 import { ClassicExplodedSection } from "./sections/ClassicExplodedSection";
 import { ClassicModelViewsSection } from "./sections/ClassicModelViewsSection";
 import { ClassicReferencesSection } from "./sections/ClassicReferencesSection";
+import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
 type ClassicGuidePreviewProps = {
   guide: ModelGuide;
+  templateSettings?: GuideTemplateSettings;
 };
 
 export function ClassicGuidePreview({
   guide,
+  templateSettings,
 }: ClassicGuidePreviewProps) {
   const viewModel = getGuideViewModel(guide);
 
@@ -36,7 +39,7 @@ export function ClassicGuidePreview({
   const references = guide.references ?? [];
 
   return (
-    <div className="space-y-16 px-5 py-6 sm:px-10 sm:py-10">
+    <div className="space-y-16 px-5 py-6 sm:px-10 sm:py-10" style={{backgroundColor:templateSettings?.pageBackground,color:templateSettings?.textColor}}>
       <GuideCoverSection
         guide={guide}
         locale={locale}

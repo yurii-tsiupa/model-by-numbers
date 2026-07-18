@@ -31,6 +31,7 @@ import type { ReferenceImageType } from "@/features/references/types/ReferenceIm
 export type GuideReferenceImage = { id:string; name:string; type:ReferenceImageType; dataUrl:string; width:number; height:number; };
 
 export type ModelGuide = {
+  templateId?: string;
   assetReferences?: import("../services/assets/types").GuideAssetReference[];
   locale?: import("@/features/i18n/types/Locale").Locale;
   projectId: string;
