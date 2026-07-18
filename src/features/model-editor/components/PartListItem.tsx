@@ -68,8 +68,8 @@ export function PartListItem({
       ref={itemRef}
       className={`group flex items-center gap-3 rounded-xl border px-3 py-2.5 transition ${
         isSelected
-          ? "border-orange-400/30 bg-orange-400/10"
-          : "border-transparent hover:border-white/10 hover:bg-white/[0.035]"
+          ? "border-[var(--accent)] bg-[var(--bg)]"
+          : "border-transparent hover:border-[var(--border)] hover:bg-[var(--bg)]"
       }`}
     >
       <button
@@ -77,7 +77,7 @@ export function PartListItem({
         onClick={handleToggleGuideInclusion}
         aria-label={isIncludedInGuide ? t("parts.excludeNamed",{name}) : t("parts.includeNamed",{name})}
         title={isIncludedInGuide ? t("parts.excludeGuide") : t("parts.includeGuide")}
-        className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg transition ${isIncludedInGuide ? "text-orange-400 hover:bg-orange-400/10" : "text-neutral-700 hover:bg-white/[0.05] hover:text-neutral-400"}`}
+        className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg transition ${isIncludedInGuide ? "text-[var(--accent-2)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg)]"}`}
       >
         <FileCheck2 className="h-4 w-4" />
       </button>
@@ -90,8 +90,8 @@ export function PartListItem({
         <span
           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-medium ${
             isSelected
-              ? "bg-orange-400/15 text-orange-300"
-              : "bg-white/[0.04] text-neutral-500"
+              ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+              : "bg-[var(--bg)] text-[var(--text-secondary)]"
           }`}
         >
           {String(index + 1).padStart(2, "0")}
@@ -110,10 +110,10 @@ export function PartListItem({
           <span
             className={`truncate text-sm ${
               isSelected
-                ? "text-white"
+                ? "text-[var(--text)]"
                 : isVisible
-                  ? "text-neutral-400"
-                  : "text-neutral-700"
+                  ? "text-[var(--text)]"
+                  : "text-[var(--text-secondary)]"
             }`}
             title={name}
           >
@@ -130,8 +130,8 @@ export function PartListItem({
         }
         className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg transition ${
           isVisible
-            ? "text-neutral-500 hover:bg-white/[0.05] hover:text-white"
-            : "text-neutral-700 hover:bg-white/[0.05] hover:text-neutral-400"
+            ? "text-[var(--text-secondary)] hover:bg-[var(--bg)] hover:text-[var(--text)]"
+            : "text-[var(--text-secondary)] hover:bg-[var(--bg)]"
         }`}
       >
         <VisibilityIcon className="h-4 w-4" />

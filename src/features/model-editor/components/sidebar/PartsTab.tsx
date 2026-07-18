@@ -70,19 +70,19 @@ export function PartsTab() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0 border-b border-white/10 p-4">
+      <div className="shrink-0 border-b border-[var(--border)] p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-600">
+            <p className="font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium uppercase tracking-[0.18em] text-[var(--text-secondary)]">
               {t("editor.structure")}
             </p>
 
-            <h2 className="mt-2 text-lg font-semibold text-white">
+            <h2 className="mt-2 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-[var(--text)]">
               {t("editor.tabs.parts")}
             </h2>
           </div>
 
-          <span className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-xs text-neutral-500">
+          <span className="rounded-full border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1 text-xs text-[var(--text-secondary)]">
             {parts.length}
           </span>
         </div>
@@ -98,11 +98,11 @@ export function PartsTab() {
             }
             placeholder={t("editor.searchParts")}
             disabled={!hasParts}
-            className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.025] pl-9 pr-3 text-sm text-neutral-300 outline-none transition placeholder:text-neutral-700 focus:border-white/20 disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--bg)] pl-9 pr-3 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--text-secondary)] focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {(["all", "painted", "unpainted", "hidden", "included", "excluded"] as const).map((option) => <button key={option} type="button" onClick={() => setFilter(option)} className={`cursor-pointer rounded-full border px-2.5 py-1 text-[11px] transition ${filter === option ? "border-orange-400/30 bg-orange-400/10 text-orange-300" : "border-white/10 text-neutral-500 hover:text-neutral-300"}`}>{filterLabels[option]}</button>)}
+          {(["all", "painted", "unpainted", "hidden", "included", "excluded"] as const).map((option) => <button key={option} type="button" onClick={() => setFilter(option)} className={`cursor-pointer rounded-full border px-2.5 py-1 text-[11px] transition ${filter === option ? "border-[var(--accent)] bg-[var(--bg)] text-[var(--accent)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)]"}`}>{filterLabels[option]}</button>)}
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
           <span className="text-xs text-neutral-600">{t("editor.results",{shown:filteredParts.length,total:parts.length})}</span>

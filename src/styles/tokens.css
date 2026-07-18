@@ -15,6 +15,7 @@
   --border-strong: #c9c2d1;
 
   --accent: #6d28d9;
+  --accent-foreground: #ffffff;
   --accent-hover: #5b21b6;
   --accent-soft: #f0e7ff;
 
@@ -47,6 +48,7 @@
   --border-strong: #493e53;
 
   --accent: #9f67f5;
+  --accent-foreground: #ffffff;
   --accent-hover: #b68af8;
   --accent-soft: #2a1b40;
 

@@ -188,19 +188,19 @@ export function PaletteTab() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0 border-b border-white/10 p-4">
+      <div className="shrink-0 border-b border-[var(--border)] p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-600">
+            <p className="font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium uppercase tracking-[0.18em] text-[var(--text-secondary)]">
               {t("palette.projectColors")}
             </p>
 
-            <h2 className="mt-2 text-lg font-semibold text-white">
+            <h2 className="mt-2 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-[var(--text)]">
               {t("editor.tabs.palette")}
             </h2>
           </div>
 
-          <span className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-xs text-neutral-500">
+          <span className="rounded-full border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1 text-xs text-[var(--text-secondary)]">
             {palette.length}
           </span>
         </div>
@@ -208,7 +208,7 @@ export function PaletteTab() {
         <button
           type="button"
           onClick={openAddColor}
-          className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:bg-white/[0.05] hover:text-white"
+          className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg)] px-4 py-2.5 text-sm font-medium text-[var(--text)] transition hover:border-[var(--accent)]"
         >
           <Plus className="h-4 w-4" />
           {t("palette.addColor")}
@@ -225,7 +225,7 @@ export function PaletteTab() {
 
             setIsGeneratePaletteModalOpen(true);
           }}
-          className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-orange-500/10 bg-orange-500/[0.03] px-4 py-2.5 text-sm font-medium text-orange-400 transition hover:border-orange-500/25 hover:bg-orange-500/[0.08] hover:text-orange-300 active:scale-[0.98]"
+          className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
         >
           <Sparkles className="h-4 w-4 shrink-0" />
           {t("palette.generate")}
@@ -233,7 +233,7 @@ export function PaletteTab() {
       </div>
 
       {selectionMode === "assignPalette" && (
-        <div className="border-b border-orange-500/20 bg-gradient-to-r from-orange-500/[0.08] to-transparent p-4">
+        <div className="border-b border-[var(--border)] bg-[var(--bg)] p-4">
           <div className="flex items-start gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-500/10 text-orange-400">
               <Layers3 className="h-4 w-4" />

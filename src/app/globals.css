@@ -5,6 +5,91 @@
   color-scheme: dark;
 }
 
+/* Editor surfaces inherit the platform theme while legacy controls are migrated component-by-component. */
+[data-editor-ui] [class*="bg-neutral-"],
+[data-editor-ui] [class*="bg-black"],
+[data-editor-ui] [class*="bg-white"] {
+  background-color: var(--card) !important;
+}
+
+[data-editor-ui] [class*="text-neutral-"],
+[data-editor-ui] [class*="placeholder:text-neutral-"],
+[data-editor-ui] [class~="text-white"],
+[data-editor-ui] [class~="text-black"] {
+  color: var(--text-secondary) !important;
+}
+
+[data-editor-ui] [class*="border-white"],
+[data-editor-ui] [class*="border-neutral-"] {
+  border-color: var(--border) !important;
+}
+
+[data-editor-ui] [class*="text-orange-"] {
+  color: var(--accent) !important;
+}
+
+[data-editor-ui] [class*="border-orange-"] {
+  border-color: var(--accent) !important;
+}
+
+[data-editor-ui] [class*="bg-orange-"] {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+[data-editor-ui] [class*="bg-[var(--accent)]"] {
+  color: var(--accent-foreground) !important;
+}
+
+[data-editor-ui] [class*="text-amber-"] {
+  color: var(--text-secondary) !important;
+}
+
+[data-editor-ui] [class*="text-red-"] {
+  color: var(--accent) !important;
+}
+
+[data-editor-ui] [class*="border-red-"] {
+  border-color: var(--border) !important;
+}
+
+[data-editor-ui] [class*="bg-red-"] {
+  background-color: var(--card) !important;
+}
+
+[data-editor-ui] [class*="bg-gradient-"] {
+  background-image: none !important;
+}
+
+[data-editor-ui] [class*="shadow-"] {
+  box-shadow: none !important;
+}
+
+[data-editor-ui] :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+[data-editor-ui] :is(input, select, textarea) {
+  color: var(--text);
+}
+
+[data-editor-ui] :is(.text-lg, .text-xl, .text-2xl, .text-3xl, .text-4xl) {
+  font-size: 1rem !important;
+  line-height: 1.4 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-editor-ui] *,
+  [data-editor-ui] *::before,
+  [data-editor-ui] *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 :root[data-theme="light"] {
   color-scheme: light;
 }

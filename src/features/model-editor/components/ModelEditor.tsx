@@ -280,7 +280,7 @@ export function ModelEditor({
   const defaultSettings:GuideSettings={...PAINTING_GUIDE_SETTINGS,includeExplodedView:canExplode,includeAssemblyInstructions:canAssemble,includeAssemblyStepImages:canAssemble};
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden bg-neutral-950 text-white">
+    <main data-editor-ui className="flex h-dvh w-full min-w-0 flex-col overflow-hidden bg-[var(--bg)] text-[var(--text)]">
       <EditorHeader
         project={project}
         isGuideReady={isGuideReady}

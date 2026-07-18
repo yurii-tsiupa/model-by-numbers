@@ -119,19 +119,19 @@ export function PropertiesPanel() {
   }
 
   return (
-    <aside className="flex max-h-[22rem] min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-white/10 bg-neutral-950/70 lg:h-full lg:max-h-none lg:w-72 lg:border-l lg:border-t-0">
-      <div className="shrink-0 border-b border-white/10 p-4 sm:p-5">
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-600">
+    <aside className="flex max-h-[22rem] min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-[var(--border)] bg-[var(--card)] lg:h-full lg:max-h-none lg:w-72 lg:border-l lg:border-t-0">
+      <div className="shrink-0 border-b border-[var(--border)] p-4">
+        <p className="font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium uppercase tracking-[0.18em] text-[var(--text-secondary)]">
           {t("properties.title")}
         </p>
 
-        <h2 className="mt-2 truncate text-lg font-semibold text-white">
+        <h2 className="mt-2 truncate font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-[var(--text)]">
           {selectedPart
             ? selectedPart.name
             : t("properties.noSelection")}
         </h2>
 
-        <p className="mt-1 text-xs text-neutral-600">
+        <p className="mt-1 text-xs text-[var(--text-secondary)]">
           {selectedPart
             ? t("properties.partNumber",{number:String(selectedPart.index + 1).padStart(2,"0")})
             : t("properties.selectPart")}
@@ -141,7 +141,7 @@ export function PropertiesPanel() {
           <button
             type="button"
             onClick={syncPaletteFromParts}
-            className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-orange-400/20 bg-orange-400/10 px-4 py-2.5 text-sm font-medium text-orange-300 transition hover:bg-orange-400/15"
+            className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[var(--accent-foreground)]"
           >
             <WandSparkles className="h-4 w-4" />
             {t("palette.generate")}

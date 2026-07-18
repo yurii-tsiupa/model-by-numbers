@@ -14,14 +14,6 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { ModelEditor } from "@/features/model-editor/components/ModelEditor";
 import { useProject } from "@/features/models/hooks/useProject";
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Unable to open this project.";
-}
-
 export default function ModelEditorPage() {
   const {t}=useTranslation();
   const router = useRouter();
@@ -40,7 +32,7 @@ export default function ModelEditorPage() {
 
   if (isAuthLoading || !user) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-white">
+      <main className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
         <Loader label={t("models.loading")} />
       </main>
     );
@@ -48,17 +40,17 @@ export default function ModelEditorPage() {
 
   if (projectQuery.isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-white">
+      <main className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
         <div className="flex flex-col items-center gap-4">
-          <LoaderCircle className="h-7 w-7 animate-spin text-orange-400" />
+          <LoaderCircle className="h-7 w-7 animate-spin text-[var(--accent)]" />
 
           <div className="text-center">
-            <p className="text-sm font-medium text-white">
-              Opening project
+            <p className="text-sm font-medium text-[var(--text)]">
+              {t("editor.openingProject")}
             </p>
 
-            <p className="mt-1 text-sm text-neutral-500">
-              Loading project data...
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              {t("editor.loadingProjectData")}
             </p>
           </div>
         </div>
@@ -68,18 +60,18 @@ export default function ModelEditorPage() {
 
   if (projectQuery.isError || !projectQuery.data) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-white">
-        <div className="w-full max-w-md rounded-[1.75rem] border border-white/10 bg-white/[0.025] p-8 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-red-400/20 bg-red-400/10">
-            <Box className="h-6 w-6 text-red-400" />
+      <main className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
+        <div className="w-full max-w-md rounded-[1.75rem] border border-[var(--border)] bg-[var(--card)] p-8 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--bg)]">
+            <Box className="h-6 w-6 text-[var(--accent)]" />
           </div>
 
           <h1 className="mt-5 text-xl font-semibold">
-            Project unavailable
+            {t("editor.projectUnavailable")}
           </h1>
 
-          <p className="mt-2 text-sm leading-6 text-neutral-500">
-            {getErrorMessage(projectQuery.error)}
+          <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+            {t("editor.openFailed")}
           </p>
 
           <div className="mt-6 flex flex-col gap-2 sm:flex-row">
@@ -88,18 +80,18 @@ export default function ModelEditorPage() {
               onClick={() => {
                 void projectQuery.refetch();
               }}
-              className="flex flex-1 cursor-pointer items-center justify-center rounded-full border border-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.05]"
+              className="flex flex-1 cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm font-medium text-[var(--text)]"
             >
-              Try Again
+              {t("common.retry")}
             </button>
 
             <button
               type="button"
               onClick={() => router.push("/models")}
-              className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+              className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[var(--accent-foreground)]"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Models
+              {t("editor.back")}
             </button>
           </div>
         </div>

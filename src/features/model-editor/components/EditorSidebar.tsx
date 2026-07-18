@@ -54,7 +54,7 @@ export function EditorSidebar({
   guideSettings,
 }: EditorSidebarProps) {
   const {t}=useTranslation();
-  const tabs:Array<{id:EditorSidebarTab;label:string;icon:typeof Box}>=[{id:"parts",label:t("editor.tabs.parts"),icon:Box},{id:"paintingOrder",label:t("paintingOrder.tab"),icon:ListOrdered},{id:"palette",label:t("editor.tabs.palette"),icon:Palette},{id:"project",label:t("editor.tabs.project"),icon:FolderCog},{id:"references",label:t("editor.tabs.references"),icon:Images},{id:"assembly",label:t("editor.tabs.assembly"),icon:Wrench}];
+  const tabs:Array<{id:EditorSidebarTab;label:string;icon:typeof Box}>=[{id:"parts",label:t("editor.tabs.parts"),icon:Box},{id:"palette",label:t("editor.tabs.palette"),icon:Palette},{id:"paintingOrder",label:t("paintingOrder.tab"),icon:ListOrdered},{id:"assembly",label:t("editor.tabs.assembly"),icon:Wrench},{id:"project",label:t("editor.tabs.project"),icon:FolderCog},{id:"references",label:t("editor.tabs.references"),icon:Images}];
   const activeTab = useModelEditorStore(
     (state) => state.activeSidebarTab,
   );
@@ -92,13 +92,13 @@ export function EditorSidebar({
   }
 
   return (
-    <aside className="flex max-h-[20rem] min-h-0 w-full shrink-0 flex-col overflow-hidden border-b border-white/10 bg-neutral-950/70 lg:h-full lg:max-h-none lg:w-72 lg:border-b-0 lg:border-r">
+    <aside className="flex max-h-[20rem] min-h-0 w-full shrink-0 flex-col overflow-hidden border-b border-[var(--border)] bg-[var(--card)] lg:h-full lg:max-h-none lg:w-72 lg:border-b-0 lg:border-r">
       <div
         ref={tabListRef}
         role="tablist"
         aria-orientation="horizontal"
         onWheel={handleTabWheel}
-        className="flex shrink-0 gap-1 overflow-x-auto overscroll-x-contain border-b border-white/10 p-2 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.14)_transparent]"
+        className="flex shrink-0 gap-1 overflow-x-auto overscroll-x-contain border-b border-[var(--border)] p-2 [scrollbar-width:thin]"
       >
         {tabs.map((tab, index) => {
           const Icon = tab.icon;
@@ -117,10 +117,10 @@ export function EditorSidebar({
                 setActiveTab(tab.id)
               }
               onKeyDown={(event) => handleTabKeyDown(event, index)}
-              className={`flex min-h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-orange-400/60 ${
+              className={`flex min-h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 font-[family-name:var(--font-inter)] text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
                 isActive
-                  ? "bg-white/[0.07] text-white"
-                  : "text-neutral-600 hover:bg-white/[0.035] hover:text-neutral-300"
+                  ? "bg-[var(--bg)] text-[var(--accent)]"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg)] hover:text-[var(--text)]"
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
