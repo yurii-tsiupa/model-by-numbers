@@ -10,6 +10,7 @@ import {
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 type ViewerToolbarProps = {
+  simplified?: boolean;
   isGridVisible: boolean;
   hasParts: boolean;
   hasSelectedPart: boolean;
@@ -32,6 +33,7 @@ type ToolbarItem = {
 };
 
 export function ViewerToolbar({
+  simplified = false,
   isGridVisible,
   hasParts,
   hasSelectedPart,
@@ -92,7 +94,7 @@ export function ViewerToolbar({
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-4">
       <div className="pointer-events-auto flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/10 bg-black/70 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-xl">
-        {toolbarItems.map((item) => {
+        {toolbarItems.filter((_, index) => !simplified || index < 2).map((item) => {
           const Icon = item.icon;
 
           return (

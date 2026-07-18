@@ -22,6 +22,9 @@ import { ModelViewer } from "./ModelViewer";
 import type { ModelViewerHandle } from "./ModelViewer";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { EditorSidebar } from "./EditorSidebar";
+import { EditorModeSwitch } from "./EditorModeSwitch";
+import { GuideBuilderPanel } from "./GuideBuilderPanel";
+import { useEditorMode } from "../hooks/useEditorMode";
 import type { AssemblyStep } from "@/features/models/types/AssemblyStep";
 import { deleteAssemblyStepImage, saveAssemblyStepImage } from "../services/assemblyStepImage.service";
 import { getAssemblyStepImage } from "../services/assemblyStepImage.service";
@@ -44,6 +47,7 @@ export function ModelEditor({
 }: ModelEditorProps) {
   const router = useRouter();
   const {locale,t}=useTranslation();
+  const { mode, setMode } = useEditorMode();
   const initializedProjectIdRef = useRef<string | null>(null);
   const hydratePaintingOrder=useModelEditorStore(state=>state.hydratePaintingOrder);
   const viewerRef = useRef<ModelViewerHandle | null>(null);
@@ -293,16 +297,19 @@ export function ModelEditor({
         }}
       />
 
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-        <EditorSidebar guideSettings={lastGuideSettings??defaultSettings} project={project} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onFocusAssemblyStep={focusAssemblyStep} onExitAssemblyFocus={exitAssemblyFocus} onCaptureAssemblyImage={captureAssemblyImage} onDeleteAssemblyImage={deleteAssemblyImage} onDeleteAssemblyStep={deleteAssemblyStepWithImage} />
+      <EditorModeSwitch mode={mode} onChange={setMode} />
 
-        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
-          <div className={`${effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-0 min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} /></div>
-          {selectedReference&&effectiveReferenceViewMode!=="viewer"?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={setSelectedReferenceId} onClose={()=>setReferenceViewMode("viewer")}/>:null}
-          <div className="absolute right-3 top-3 z-20 flex rounded-full border border-white/10 bg-black/70 p-1 text-xs">{(["viewer","split","reference"] as const).map(mode=><button key={mode} type="button" disabled={mode!=="viewer"&&references.length===0} onClick={()=>{if(mode==="viewer")setReferenceViewMode("viewer");else openReferenceMode(mode);}} className={`rounded-full px-3 py-1.5 disabled:opacity-40 ${effectiveReferenceViewMode===mode?"bg-orange-400 text-black":"text-neutral-300"}`}>{mode==="viewer"?t("viewer.model"):mode==="split"?t("viewer.split"):t("viewer.reference")}</button>)}</div>
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+        {mode === "advanced" ? <EditorSidebar key="advanced-sidebar" guideSettings={lastGuideSettings??defaultSettings} project={project} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onFocusAssemblyStep={focusAssemblyStep} onExitAssemblyFocus={exitAssemblyFocus} onCaptureAssemblyImage={captureAssemblyImage} onDeleteAssemblyImage={deleteAssemblyImage} onDeleteAssemblyStep={deleteAssemblyStepWithImage} /> : null}
+
+        <div key="viewer-area" className="relative flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
+          <div className={`${mode === "advanced" && effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-[18rem] min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} simplified={mode === "simple"} /></div>
+          {mode === "advanced"&&selectedReference&&effectiveReferenceViewMode!=="viewer"?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={setSelectedReferenceId} onClose={()=>setReferenceViewMode("viewer")}/>:null}
+          {mode === "advanced" ? <div className="absolute right-3 top-3 z-20 flex rounded-full border border-white/10 bg-black/70 p-1 text-xs">{(["viewer","split","reference"] as const).map(viewMode=><button key={viewMode} type="button" disabled={viewMode!=="viewer"&&references.length===0} onClick={()=>{if(viewMode==="viewer")setReferenceViewMode("viewer");else openReferenceMode(viewMode);}} className={`rounded-full px-3 py-1.5 disabled:opacity-40 ${effectiveReferenceViewMode===viewMode?"bg-orange-400 text-black":"text-neutral-300"}`}>{viewMode==="viewer"?t("viewer.model"):viewMode==="split"?t("viewer.split"):t("viewer.reference")}</button>)}</div> : null}
+          {mode === "simple" ? <GuideBuilderPanel canOpenGuide={isGuideReady} onOpenGuide={() => setShowGuideSettings(true)} /> : null}
         </div>
 
-        <PropertiesPanel />
+        {mode === "advanced" ? <PropertiesPanel key="advanced-properties" /> : null}
       </div>
 
       <GuideCaptureOverlay
