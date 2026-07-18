@@ -15,7 +15,8 @@ export type GuideCaptureStep =
   | "painted"
   | "numbers"
   | "exploded"
-  | "assembly-assets";
+  | "assembly-assets"
+  | "step-images";
 
 type GuideGenerationState = {
   status: GuideGenerationStatus;

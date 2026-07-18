@@ -1,5 +1,6 @@
 export type GuidePartInput = {
   id: string;
+  meshUuid?:string;
   name: string;
   visible: boolean;
   includeInGuide?: boolean;

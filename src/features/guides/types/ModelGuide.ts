@@ -15,6 +15,8 @@ export type GuidePart = {
   colorHex: string | null;
   notes: string | null;
   paintingWorkflow?: import("@/features/model-editor/types/PaintingWorkflow").PartPaintingWorkflow;
+  meshUuid?: string;
+  paletteColorId?: string | null;
 };
 
 export type GuideImages = {
@@ -52,6 +54,8 @@ export type ModelGuide = {
   explodedView?: GuideExplodedView | null;
   assemblySteps?: GuideAssemblyStep[];
   workflowPalette?: GuidePaletteColor[];
+  previewPalette?: import("@/features/models/types/PaletteColor").PaletteColor[];
   workflowParts?: GuidePart[];
+  manualDetails?: import("@/features/models/types/ManualDetail").ManualDetail[];
   paintingSummary?: { modelName:string; createdAt:Date; stagesCount:number; estimatedTimeMinutes:number; difficulties:import("@/features/model-editor/types/PaintingWorkflow").PaintingDifficulty[]; isReady:boolean };
 };

@@ -36,6 +36,7 @@ export function GuideExportDocument({
               <GuidePaintingWorkflowSection
                 guide={viewModel.workflowGuide}
                 locale={viewModel.locale}
+                steps={viewModel.paintingSteps}
               />
             </GuideSectionAnchor>
           ) : null}

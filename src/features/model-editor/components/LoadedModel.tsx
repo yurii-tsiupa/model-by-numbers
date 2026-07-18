@@ -47,6 +47,7 @@ type LoadedModelProps = {
   baseColor: string;
   showAllNumberCalloutsForCapture: boolean;
   showAllPartsForCapture: boolean;
+  hideManualDetailPins:boolean;
   forceAssembled:boolean;
   forceFullyExploded: boolean;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
@@ -68,6 +69,7 @@ function LoadedModelContent({
   baseColor,
   showAllNumberCalloutsForCapture,
   showAllPartsForCapture,
+  hideManualDetailPins,
   forceAssembled,
   forceFullyExploded,
   controlsRef,
@@ -323,7 +325,7 @@ function LoadedModelContent({
     addDraftManualDetailPin({position:{x:event.point.x,y:event.point.y,z:event.point.z},normal:surfaceNormal?{x:surfaceNormal.x,y:surfaceNormal.y,z:surfaceNormal.z}:null,camera:{position:{x:camera.position.x,y:camera.position.y,z:camera.position.z},target:{x:controls.target.x,y:controls.target.y,z:controls.target.z},...(camera instanceof PerspectiveCamera?{zoom:camera.zoom}:{})}});
   }
   const draftDetailNumber=manualDetailPlacement?.detailId?manualDetails.find(detail=>detail.id===manualDetailPlacement.detailId)?.number??nextManualDetailNumber:nextManualDetailNumber;
-  const renderedPins=[...manualDetails.flatMap(detail=>detail.pins.map((pin,index)=>({pin,detailId:detail.id,detailName:detail.name,detailNumber:detail.number,locationIndex:index+1,colorId:detail.colorId,isDraft:false}))),...(manualDetailPlacement?.pins.map((pin,index)=>({pin,detailId:manualDetailPlacement.detailId??"draft",detailName:manualDetailPlacement.name,detailNumber:draftDetailNumber,locationIndex:index+1,colorId:null,isDraft:true}))??[])];
+  const renderedPins=hideManualDetailPins?[]:[...manualDetails.flatMap(detail=>detail.pins.map((pin,index)=>({pin,detailId:detail.id,detailName:detail.name,detailNumber:detail.number,locationIndex:index+1,colorId:detail.colorId,isDraft:false}))),...(manualDetailPlacement?.pins.map((pin,index)=>({pin,detailId:manualDetailPlacement.detailId??"draft",detailName:manualDetailPlacement.name,detailNumber:draftDetailNumber,locationIndex:index+1,colorId:null,isDraft:true}))??[])];
 
   return (
     <>

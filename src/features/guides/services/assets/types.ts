@@ -1,4 +1,4 @@
-export type GuideAssetKind = "thumbnail" | "model-original" | "model-base" | "model-painted" | "model-numbers" | "exploded" | "assembly" | "reference";
+export type GuideAssetKind = "thumbnail" | "model-original" | "model-base" | "model-painted" | "model-numbers" | "exploded" | "assembly" | "reference" | "step-preview";
 
 export type GuideAssetReference = {
   id: string;
@@ -7,6 +7,7 @@ export type GuideAssetReference = {
   createdAt: string;
   kind: GuideAssetKind;
   assetId: string;
+  contentKey?:string;
 };
 
 export type SaveGuideAssetInput = {
@@ -14,4 +15,5 @@ export type SaveGuideAssetInput = {
   kind: GuideAssetKind;
   assetId: string;
   blob: Blob;
+  contentKey?:string;
 };

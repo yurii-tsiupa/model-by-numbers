@@ -148,6 +148,7 @@ export default function SavedGuidePage() {
   return (
     <>
       <GuidePreview
+        previewProject={project}
         template={guideTemplate.current}
         guide={{
           ...guide.snapshot,

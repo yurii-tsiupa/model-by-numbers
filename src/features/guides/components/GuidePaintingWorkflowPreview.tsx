@@ -14,6 +14,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import Image from "next/image";
 
 import {
   formatLocalizedDate,
@@ -25,6 +26,7 @@ import { getPaintingStageLabel } from "@/features/model-editor/lib/paintingStage
 import type { PaintingStageType } from "@/features/model-editor/types/PaintingWorkflow";
 
 import type { ModelGuide } from "../types/ModelGuide";
+import type {GuidePaintingStepViewModel} from "../types/GuidePaintingStep";
 
 const ICONS: Record<
   PaintingStageType,
@@ -43,11 +45,13 @@ const ICONS: Record<
 type GuidePaintingWorkflowPreviewProps = {
   guide: ModelGuide;
   locale: Locale;
+  steps:readonly GuidePaintingStepViewModel[];
 };
 
 export function GuidePaintingWorkflowPreview({
   guide,
   locale,
+  steps,
 }: GuidePaintingWorkflowPreviewProps) {
   const t = (
     key: Parameters<typeof translate>[1],
@@ -70,6 +74,7 @@ export function GuidePaintingWorkflowPreview({
   );
 
   const summary = guide.paintingSummary;
+  const stepsById=useMemo(()=>new Map(steps.map(step=>[step.id,step])),[steps]);
 
   function togglePart(partId: string) {
     setCollapsed((current) => {
@@ -377,6 +382,8 @@ export function GuidePaintingWorkflowPreview({
                                     )}
                                   </h4>
 
+                                  {stepsById.get(stage.id) ? <GuideStepPreview step={stepsById.get(stage.id)!} t={t}/> : null}
+
                                   {color ? (
                                     <div className="mt-3 flex flex-wrap items-center gap-2">
                                       <span
@@ -458,6 +465,10 @@ export function GuidePaintingWorkflowPreview({
       </section>
     </div>
   );
+}
+
+function GuideStepPreview({step,t}:{step:GuidePaintingStepViewModel;t:(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>string}){
+ return <div className="mt-3 break-inside-avoid"><p className="text-xs font-medium text-[#716A79]">{step.targetSummary}</p>{step.preview.status==="ready"?<div className="relative mt-3 aspect-[3/2] w-full overflow-hidden border border-[#E3DEEC] bg-[#F7F7F5]"><Image unoptimized fill sizes="(max-width: 640px) 100vw, 640px" src={step.preview.image.src} alt={step.preview.alt} className="object-contain"/></div>:step.preview.status==="loading"?<div role="status" aria-live="polite" className="mt-3 grid aspect-[3/2] w-full place-items-center bg-[#F7F7F5] text-xs text-[#716A79]">{t("guide.steps.preview.generating")}</div>:step.preview.reason!=="general"?<div className="mt-3 grid aspect-[3/2] w-full place-items-center bg-[#F7F7F5] px-4 text-center text-xs text-[#716A79]">{t("guide.steps.preview.unavailable")}</div>:null}</div>
 }
 
 type SummaryProps = {

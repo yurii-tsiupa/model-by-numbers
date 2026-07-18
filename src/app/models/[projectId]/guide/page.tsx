@@ -320,5 +320,5 @@ export default function GuidePage() {
   });
   guide.assetReferences = capturedProjectId === projectId && assetReferences.length > 0 ? assetReferences : storedAssetReferences;
 
-  return <GuidePreview guide={guide} template={guideTemplate.current} userTemplates={guideTemplate.templates} isSelectingTemplate={guideTemplate.isSelecting} onSelectTemplate={async id => { await guideTemplate.select(id); }} />;
+  return <GuidePreview previewProject={project} guide={guide} template={guideTemplate.current} userTemplates={guideTemplate.templates} isSelectingTemplate={guideTemplate.isSelecting} onSelectTemplate={async id => { await guideTemplate.select(id); }} />;
 }

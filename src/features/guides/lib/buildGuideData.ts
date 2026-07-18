@@ -62,13 +62,15 @@ export function buildGuideData({
 
       return {
         id: part.id,
+        meshUuid:part.meshUuid,
+        paletteColorId:part.paletteColorId,
         name: part.name,
         number: orderedIndex + 1,
         colorNumber: color?.number ?? null,
         colorName: color?.name ?? null,
         colorHex: color?.hex ?? null,
         notes: null,
-        paintingWorkflow:part.paintingWorkflow?{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>({...stage}))}:undefined,
+        paintingWorkflow:part.paintingWorkflow?{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>({...stage,targetReferences:stage.targetReferences?.map(reference=>({...reference}))??[]}))}:undefined,
       };
     });
 
@@ -98,7 +100,9 @@ export function buildGuideData({
     explodedView: explodedView ? { ...explodedView } : null,
     assemblySteps: assemblySteps.map(step=>({...step,parts:step.parts.map(part=>({...part}))})).sort((a,b)=>a.order-b.order),
     workflowPalette:getWorkflowPalette(orderedParts,palette),
+    previewPalette:palette.map(color=>({...color})),
     workflowParts,
+    manualDetails:project.manualDetails.map(detail=>({...detail,pins:detail.pins.map(pin=>({...pin,position:{...pin.position},normal:pin.normal?{...pin.normal}:null,camera:{...pin.camera,position:{...pin.camera.position},target:{...pin.camera.target}}}))})),
     paintingSummary:{modelName:project.originalFileName,createdAt:project.createdAt,stagesCount:previewSummary.stagesCount,estimatedTimeMinutes:previewSummary.estimatedTimeMinutes,difficulties:previewSummary.difficulties,isReady:true},
   };
 }

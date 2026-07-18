@@ -35,6 +35,7 @@ export function GuideCaptureOverlay({
     "assembly-assets": t(
       "capture.assemblyAssets",
     ),
+    "step-images":t("capture.stepImages"),
   };
 
   const status = useGuideGenerationStore(

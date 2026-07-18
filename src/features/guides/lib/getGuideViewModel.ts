@@ -5,6 +5,7 @@ import type {
   GuideImages,
   ModelGuide,
 } from "../types/ModelGuide";
+import {buildGuidePaintingStepViewModels} from "./buildGuidePaintingStepViewModels";
 
 export type GuideModelView = {
   key: keyof GuideImages;
@@ -173,6 +174,7 @@ export function getGuideViewModel(
     },
     hasPaintingWorkflow,
     sections,
+    paintingSteps:buildGuidePaintingStepViewModels(guide),
   } as const;
 }
 

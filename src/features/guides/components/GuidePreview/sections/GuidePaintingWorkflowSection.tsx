@@ -1,16 +1,19 @@
 import type { Locale } from "@/features/i18n/types/Locale";
 
 import type { ModelGuide } from "../../../types/ModelGuide";
+import type {GuidePaintingStepViewModel} from "../../../types/GuidePaintingStep";
 import { GuidePaintingWorkflowPreview } from "../../GuidePaintingWorkflowPreview";
 
 type GuidePaintingWorkflowSectionProps = {
   guide: ModelGuide;
   locale: Locale;
+  steps:readonly GuidePaintingStepViewModel[];
 };
 
 export function GuidePaintingWorkflowSection({
   guide,
   locale,
+  steps,
 }: GuidePaintingWorkflowSectionProps) {
   return (
     <div
@@ -29,6 +32,7 @@ export function GuidePaintingWorkflowSection({
       <GuidePaintingWorkflowPreview
         guide={guide}
         locale={locale}
+        steps={steps}
       />
     </div>
   );

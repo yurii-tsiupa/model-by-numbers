@@ -1,0 +1,3 @@
+import type {GuideViewModel} from "../lib/getGuideViewModel";
+import {prepareImageForPdf} from "../services/pdf/prepareImageForPdf";
+export async function prepareGuideStepPreviewsForPdf(viewModel:GuideViewModel){let hasFailures=false;const paintingSteps=[];for(const step of viewModel.paintingSteps){if(step.preview.status!=="ready"){paintingSteps.push(step);continue}try{const image=await prepareImageForPdf(step.preview.image.src,{applyWhiteBackground:true});paintingSteps.push({...step,preview:{...step.preview,image:{...step.preview.image,src:image.source}}})}catch{hasFailures=true;paintingSteps.push({...step,preview:{status:"unavailable" as const,reason:"generation-failed" as const}})}}return{viewModel:{...viewModel,paintingSteps},hasFailures}}

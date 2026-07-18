@@ -35,7 +35,8 @@ import { GuideSettingsModal } from "@/features/guides/components/GuideSettingsMo
 import {getAssemblyGuideReadiness} from "@/features/guides/lib/getAssemblyGuideReadiness";
 import { imageSourceToBlob, saveGuideAsset } from "@/features/guides/services/assets/saveGuideAsset";
 import type { GuideAssetReference } from "@/features/guides/services/assets/types";
-import { registerStepPreviewGenerator } from "../step-previews/stepPreviewService";
+import {configureStepPreviewSource,getOrGenerateStepPreview} from "../step-previews/stepPreviewService";
+import {getStepPreviewCacheKey} from "../step-previews/getStepPreviewCacheKey";
 
 type ModelEditorProps = {
   project: Project;
@@ -66,7 +67,7 @@ export function ModelEditor({
   const selectedReference=references.find(reference=>reference.id===selectedReferenceId)??null;
   const effectiveReferenceViewMode=selectedReference?referenceViewMode:"viewer";
 
-  useEffect(() => registerStepPreviewGenerator(project.id, async (stepId) => { const viewer=viewerRef.current;if(!viewer)throw new Error("modelUnavailable");return viewer.generateStepPreview(stepId); }), [project.id]);
+  configureStepPreviewSource(project.id, {userId:project.userId,modelFormat:project.modelFormat,modelVersion:`${project.originalFileSize}:${project.updatedAt.getTime()}`,baseColor:project.baseColor});
 
   function focusAssemblyStep(stepId: string) {
     useModelEditorStore.getState().focusAssemblyStep(stepId);
@@ -210,7 +211,8 @@ export function ModelEditor({
     }
 
     const paintingSteps=([] as Array<keyof GuideImages>);if(settings.includeOriginalView)paintingSteps.push("original");if(settings.includeBaseView)paintingSteps.push("base");if(settings.includePaintedView)paintingSteps.push("painted");if(settings.includeNumbersView)paintingSteps.push("numbers");
-    const totalSteps=paintingSteps.length+(settings.includeExplodedView?1:0)+(settings.includeAssemblyInstructions&&settings.includeAssemblyStepImages?1:0);
+    const targetedPaintingStages=editorState.parts.flatMap(part=>part.paintingWorkflow.stages).filter(stage=>Boolean(stage.targetReferences?.length));
+    const totalSteps=paintingSteps.length+(settings.includeExplodedView?1:0)+(settings.includeAssemblyInstructions&&settings.includeAssemblyStepImages?1:0)+(targetedPaintingStages.length?1:0);
     isGeneratingRef.current = true;
     startCapture(project.id,totalSteps);
 
@@ -236,6 +238,7 @@ export function ModelEditor({
       const assemblyGuideSteps:GuideAssemblyStep[]=[];
       if(settings.includeAssemblyInstructions){if(settings.includeAssemblyStepImages)setCaptureStep("assembly-assets",++progress);const partById=new Map(editorState.parts.map(part=>[part.id,part]));for(const step of editorState.assemblySteps.slice().sort((a,b)=>a.order-b.order)){const resolved=step.partIds.map(id=>partById.get(id)).filter((part):part is NonNullable<typeof part>=>Boolean(part));if(!step.title.trim()||resolved.length===0)continue;let image:string|null=null;if(settings.includeAssemblyStepImages&&step.imageKey){try{const blob=await getAssemblyStepImage(project.id,step.id);if(blob)image=await blobToDataUrl(blob);}catch{image=null;}}assemblyGuideSteps.push({id:step.id,order:step.order,title:step.title.trim(),description:step.description.trim(),parts:resolved.map(part=>({id:part.id,number:part.index+1,name:part.name})),image});}}
       for(const step of assemblyGuideSteps){if(step.image)assetReferences.push(await saveGuideAsset({projectId:project.id,kind:"assembly",assetId:step.id,blob:await imageSourceToBlob(step.image)}));}
+      if(targetedPaintingStages.length){setCaptureStep("step-images",++progress);for(const stage of targetedPaintingStages){const cacheKey=getStepPreviewCacheKey(project.id,stage,editorState.parts,editorState.manualDetails,editorState.palette);try{const preview=await getOrGenerateStepPreview(project.id,stage.id,cacheKey);assetReferences.push(await saveGuideAsset({projectId:project.id,kind:"step-preview",assetId:stage.id,contentKey:cacheKey,blob:await imageSourceToBlob(preview.imageUrl)}))}catch{/* A single unavailable close-up must not block the guide. */}}}
       setGuideExtras(settings,explodedView,assemblyGuideSteps,assetReferences);
       setImages(project.id, images);
       router.push(`/models/${project.id}/guide`);
@@ -311,7 +314,7 @@ export function ModelEditor({
         {mode === "advanced" ? <EditorSidebar key="advanced-sidebar" guideSettings={lastGuideSettings??defaultSettings} project={project} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onFocusAssemblyStep={focusAssemblyStep} onExitAssemblyFocus={exitAssemblyFocus} onCaptureAssemblyImage={captureAssemblyImage} onDeleteAssemblyImage={deleteAssemblyImage} onDeleteAssemblyStep={deleteAssemblyStepWithImage} /> : null}
 
         <div key="viewer-area" className="relative flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
-          <div className={`${mode === "advanced" && effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-[18rem] min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} simplified={mode === "simple"} /></div>
+          <div className={`${mode === "advanced" && effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-[18rem] min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} simplified={mode === "simple"} hideManualDetailPins={showGuideSettings} /></div>
           {mode === "advanced"&&selectedReference&&effectiveReferenceViewMode!=="viewer"?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={setSelectedReferenceId} onClose={()=>setReferenceViewMode("viewer")}/>:null}
           {mode === "advanced" ? <div className="absolute right-3 top-3 z-20 flex rounded-full border border-white/10 bg-black/70 p-1 text-xs">{(["viewer","split","reference"] as const).map(viewMode=><button key={viewMode} type="button" disabled={viewMode!=="viewer"&&references.length===0} onClick={()=>{if(viewMode==="viewer")setReferenceViewMode("viewer");else openReferenceMode(viewMode);}} className={`rounded-full px-3 py-1.5 disabled:opacity-40 ${effectiveReferenceViewMode===viewMode?"bg-orange-400 text-black":"text-neutral-300"}`}>{viewMode==="viewer"?t("viewer.model"):viewMode==="split"?t("viewer.split"):t("viewer.reference")}</button>)}</div> : null}
           {mode === "simple" ? <GuideBuilderPanel projectId={project.id} canOpenGuide={isGuideReady} onOpenGuide={() => setShowGuideSettings(true)} /> : null}

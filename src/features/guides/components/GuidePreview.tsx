@@ -7,6 +7,7 @@ import { translate } from "@/features/i18n/lib/i18n";
 
 import { useGuidePdfExport } from "../hooks/useGuidePdfExport";
 import { useResolvedGuideAssets } from "../hooks/useResolvedGuideAssets";
+import type { Project } from "@/features/models/types/Project";
 import { useGuideViewModel } from "../hooks/useGuideViewModel";
 import { useSaveGeneratedGuide } from "../hooks/useSaveGeneratedGuide";
 import { defaultGuideTemplate } from "../templates/registry/guideTemplates";
@@ -21,6 +22,7 @@ import { GuideTemplateSection } from "./GuideTemplateSection";
 import type { GuideLibraryTemplate, UserGuideTemplate } from "@/features/templates/types/GuideLibraryTemplate";
 
 type GuidePreviewProps = {
+  previewProject?: Project;
   guide: ModelGuide;
   savedFileName?: string;
   savedPdfBlob?: Blob | null;
@@ -33,6 +35,7 @@ type GuidePreviewProps = {
 };
 
 export function GuidePreview({
+  previewProject,
   guide,
   savedFileName,
   savedPdfBlob,
@@ -43,7 +46,7 @@ export function GuidePreview({
   isSelectingTemplate = false,
   onSelectTemplate,
 }: GuidePreviewProps) {
-  const resolvedGuide = useResolvedGuideAssets(guide);
+  const resolvedGuide = useResolvedGuideAssets(guide, previewProject);
   const viewModel = useGuideViewModel(resolvedGuide);
 
   const {
@@ -197,6 +200,7 @@ export function GuidePreview({
               <GuidePaintingWorkflowSection
                 guide={workflowGuide}
                 locale={locale}
+                steps={viewModel.paintingSteps}
               />
             </GuideSectionAnchor>
           ) : null}
