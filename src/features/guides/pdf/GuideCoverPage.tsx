@@ -7,7 +7,6 @@ import {
 } from "@react-pdf/renderer";
 
 import type { ModelGuide } from "../types/ModelGuide";
-import { GuidePageFooter } from "./GuidePageFooter";
 import {
   guidePdfStyles,
   pdfColors,
@@ -16,6 +15,7 @@ import { formatLocalizedDate,translate } from "@/features/i18n/lib/i18n";
 
 type GuideCoverPageProps = {
   guide: ModelGuide;
+  exportDate: Date;
 };
 
 const styles = StyleSheet.create({
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export function GuideCoverPage({ guide }: GuideCoverPageProps) {
+export function GuideCoverPage({ guide, exportDate }: GuideCoverPageProps) {
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
   const coverImage=guide.images.painted??guide.images.base??guide.images.original??guide.images.numbers;
   const metadata = [
@@ -78,8 +78,9 @@ export function GuideCoverPage({ guide }: GuideCoverPageProps) {
     [t("guide.usedColors"), String(guide.colorsCount)],
     [t("guide.printer"), guide.printerType.toUpperCase()],
     [t("guide.material"), guide.material.toUpperCase()],
-    [t("guide.generated"), formatLocalizedDate(guide.generatedAt,locale)],
-  ];
+    [t("guide.generated"), formatLocalizedDate(exportDate,locale,{day:"numeric",month:"long",year:"numeric"})],
+    [t("language.label"), t(`language.${locale}`)],
+  ].filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
 
   return (
     <Page size="A4" orientation="portrait" style={styles.page}>
@@ -109,7 +110,6 @@ export function GuideCoverPage({ guide }: GuideCoverPageProps) {
           ))}
         </View>
       </View>
-      <GuidePageFooter pageNumber={1} locale={locale}/>
     </Page>
   );
 }

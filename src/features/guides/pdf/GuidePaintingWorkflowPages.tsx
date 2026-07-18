@@ -16,7 +16,7 @@ export function GuidePaintingWorkflowPages({viewModel}:{viewModel:GuideViewModel
   const summary=guide.paintingSummary;
   const palette=new Map((guide.workflowPalette??[]).map(color=>[color.id,color]));
 
-  return <GuidePage id="painting-workflow" locale={locale}>
+  return <GuidePage id="painting-workflow" locale={locale} projectName={guide.title}>
     <PrintSectionStart>
       <Text style={guidePdfStyles.eyebrow}>{t("guide.paintingGuide")}</Text>
       <Text style={guidePdfStyles.pageTitle}>{t("guide.workflow.instructions")}</Text>

@@ -36,6 +36,7 @@ import {
   GuideTableOfContentsPage,
 } from "../../pdf/GuideTableOfContentsPage";
 import type { ModelGuide } from "../../types/ModelGuide";
+import { createPdfDocumentMetadata } from "../../pdf/pdfDocumentMetadata";
 
 type ClassicGuideDocumentProps = {
   guide: ModelGuide;
@@ -48,14 +49,14 @@ export function ClassicGuideDocument({
 }: ClassicGuideDocumentProps) {
   const model =
     viewModel ?? getGuideViewModel(guide);
+  const exportDate = new Date();
+  const metadata = createPdfDocumentMetadata(guide, exportDate);
 
   return (
     <GuideDocument
-      title={guide.title}
-      author={guide.author}
-      creator="Model by Numbers"
+      {...metadata}
     >
-      <GuideCoverPage guide={guide} />
+      <GuideCoverPage guide={guide} exportDate={exportDate} />
 
       <GuideTableOfContentsPage
         viewModel={model}
@@ -103,6 +104,7 @@ export function ClassicGuideDocument({
                   guide.references ?? []
                 }
                 locale={model.locale}
+                projectName={guide.title}
               />
             );
 

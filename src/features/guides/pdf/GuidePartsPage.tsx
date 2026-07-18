@@ -7,6 +7,7 @@ import {
 
 import type { ModelGuide } from "../types/ModelGuide";
 import { GuidePageFooter } from "./GuidePageFooter";
+import { GuidePageHeader } from "./GuidePageHeader";
 import {
   guidePdfStyles,
   pdfColors,
@@ -17,7 +18,6 @@ type GuidePartsPageProps = {
   guide: ModelGuide;
 };
 
-const COLORS_PER_PAGE = 12;
 const PARTS_PER_PAGE = 10;
 
 const styles = StyleSheet.create({
@@ -87,11 +87,6 @@ export function GuidePartsPage({
   guide,
 }: GuidePartsPageProps) {
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
-  const palettePageCount = Math.max(
-    1,
-    Math.ceil(guide.palette.length / COLORS_PER_PAGE),
-  );
-  const firstPartsPageNumber = 4 + palettePageCount;
   const pageCount = Math.max(
     1,
     Math.ceil(guide.parts.length / PARTS_PER_PAGE),
@@ -107,6 +102,7 @@ export function GuidePartsPage({
           orientation="portrait"
           style={guidePdfStyles.page}
         >
+          <GuidePageHeader projectName={guide.title}/>
           <Text style={guidePdfStyles.eyebrow}>{t("guide.stepReference")}</Text>
           <Text style={guidePdfStyles.pageTitle}>
             {t("guide.parts")}{pageIndex > 0 ? ` (${t("guide.continued")})` : ""}
@@ -161,10 +157,7 @@ export function GuidePartsPage({
                 );
               })}
           </View>
-          <GuidePageFooter
-            pageNumber={firstPartsPageNumber + pageIndex}
-            locale={locale}
-          />
+          <GuidePageFooter locale={locale}/>
         </Page>
       ))}
     </>

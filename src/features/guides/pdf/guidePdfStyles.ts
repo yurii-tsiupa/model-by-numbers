@@ -70,6 +70,15 @@ export const guidePdfStyles = StyleSheet.create({
     right: 42,
     textAlign: "center",
   },
+  header: {
+    color: pdfColors.muted,
+    fontSize: 8,
+    left: PDF_PAGE_POINTS.marginLeft,
+    position: "absolute",
+    right: PDF_PAGE_POINTS.marginRight,
+    textAlign: "left",
+    top: 22,
+  },
   placeholder: {
     alignItems: "center",
     backgroundColor: pdfColors.surface,

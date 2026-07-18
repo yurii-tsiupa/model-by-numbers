@@ -7,6 +7,7 @@ import {
 
 import type { ModelGuide } from "../types/ModelGuide";
 import { GuidePageFooter } from "./GuidePageFooter";
+import { GuidePageHeader } from "./GuidePageHeader";
 import {
   guidePdfStyles,
   pdfColors,
@@ -90,6 +91,7 @@ export function GuidePalettePage({
           orientation="portrait"
           style={guidePdfStyles.page}
         >
+          <GuidePageHeader projectName={guide.title}/>
           <Text style={guidePdfStyles.eyebrow}>{t("guide.paintReference")}</Text>
           <Text style={guidePdfStyles.pageTitle}>
             {t("guide.palette")}{pageIndex > 0 ? ` (${t("guide.continued")})` : ""}
@@ -123,7 +125,7 @@ export function GuidePalettePage({
                 </View>
               ))}
           </View>
-          <GuidePageFooter pageNumber={4 + pageIndex} locale={locale}/>
+          <GuidePageFooter locale={locale}/>
         </Page>
       ))}
     </>

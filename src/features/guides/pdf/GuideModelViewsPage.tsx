@@ -11,6 +11,7 @@ import type {
   ModelGuide,
 } from "../types/ModelGuide";
 import { GuidePageFooter } from "./GuidePageFooter";
+import { GuidePageHeader } from "./GuidePageHeader";
 import { guidePdfStyles } from "./guidePdfStyles";
 import { translate } from "@/features/i18n/lib/i18n";
 import {getGuideSettings} from "../lib/guideSettings";
@@ -58,6 +59,7 @@ export function GuideModelViewsPage({
   const locale=guide.locale??"en",settings=getGuideSettings(guide);const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);const enabled:Record<keyof GuideImages,boolean>={original:settings.includeOriginalView,base:settings.includeBaseView,painted:settings.includePaintedView,numbers:settings.includeNumbersView};const modelViews=([{key:"original",label:t("guide.original")},{key:"base",label:t("guide.base")},{key:"painted",label:t("guide.painted")},{key:"numbers",label:t("guide.numbers")}] as Array<{key:keyof GuideImages;label:string}>).filter(view=>enabled[view.key]);
   return (
     <Page id="model-views" size="A4" orientation="portrait" style={guidePdfStyles.page}>
+      <GuidePageHeader projectName={guide.title}/>
       <Text style={guidePdfStyles.eyebrow}>{t("guide.visual")}</Text>
       <Text style={guidePdfStyles.pageTitle}>{t("guide.modelViews")}</Text>
       <Text style={guidePdfStyles.sectionDescription}>
@@ -84,7 +86,7 @@ export function GuideModelViewsPage({
           );
         })}
       </View>
-      <GuidePageFooter pageNumber={3} locale={locale}/>
+      <GuidePageFooter locale={locale}/>
     </Page>
   );
 }

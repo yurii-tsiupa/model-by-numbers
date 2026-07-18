@@ -14,7 +14,7 @@ const ASSEMBLY_IMAGE_PRESENCE_POINTS=270;
 export function GuideAssemblyPages({guide}:{guide:ModelGuide}) {
   const settings=getGuideSettings(guide),locale=guide.locale??"en";
   const t=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values);
-  return <GuidePage id="assembly" locale={locale}>
+  return <GuidePage id="assembly" locale={locale} projectName={guide.title}>
     <PrintSectionStart><Text style={guidePdfStyles.eyebrow}>{t("guide.assembly.eyebrow")}</Text><Text style={guidePdfStyles.pageTitle}>{t("guide.assembly.title")}</Text><Text style={guidePdfStyles.sectionDescription}>{t("guide.assembly.description")}</Text></PrintSectionStart>
     {guide.assemblySteps?.map(step=><View key={step.id} style={styles.card}>
       <PrintSectionStart firstBlockHeight={settings.includeAssemblyStepImages?ASSEMBLY_IMAGE_PRESENCE_POINTS:undefined}><Text style={styles.step}>{t("guide.assembly.step",{number:String(step.order).padStart(2,"0")})}</Text><Text style={styles.title}>{step.title}</Text>{step.description?<Text style={styles.description}>{step.description}</Text>:null}</PrintSectionStart>

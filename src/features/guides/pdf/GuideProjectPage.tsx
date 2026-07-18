@@ -7,6 +7,7 @@ import {
 
 import type { ModelGuide } from "../types/ModelGuide";
 import { GuidePageFooter } from "./GuidePageFooter";
+import { GuidePageHeader } from "./GuidePageHeader";
 import {
   guidePdfStyles,
   pdfColors,
@@ -59,6 +60,7 @@ export function GuideProjectPage({
 
   return (
     <Page id="project-overview" size="A4" orientation="portrait" style={guidePdfStyles.page}>
+      <GuidePageHeader projectName={guide.title}/>
       <Text style={guidePdfStyles.eyebrow}>{t("guide.projectReference")}</Text>
       <Text style={guidePdfStyles.pageTitle}>{guide.title}</Text>
 
@@ -93,7 +95,7 @@ export function GuideProjectPage({
           </View>
         </View>
       </View>
-      <GuidePageFooter pageNumber={2} locale={locale}/>
+      <GuidePageFooter locale={locale}/>
     </Page>
   );
 }

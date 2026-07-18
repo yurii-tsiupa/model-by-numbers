@@ -7,7 +7,6 @@ import { translate } from "@/features/i18n/lib/i18n";
 export function GuidePageFooter({
   locale = "en",
 }: {
-  pageNumber?: number;
   locale?: Locale;
 }) {
   return (
