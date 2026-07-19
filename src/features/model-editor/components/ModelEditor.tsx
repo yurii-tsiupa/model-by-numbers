@@ -37,6 +37,7 @@ import { imageSourceToBlob, saveGuideAsset } from "@/features/guides/services/as
 import type { GuideAssetReference } from "@/features/guides/services/assets/types";
 import {configureStepPreviewSource,getOrGenerateStepPreview} from "../step-previews/stepPreviewService";
 import {getStepPreviewCacheKey} from "../step-previews/getStepPreviewCacheKey";
+import {suppressManualDetailPins} from "../store/viewerOverlayStore";
 
 type ModelEditorProps = {
   project: Project;
@@ -54,6 +55,7 @@ export function ModelEditor({
   const hydratePaintingOrder=useModelEditorStore(state=>state.hydratePaintingOrder);
   const viewerRef = useRef<ModelViewerHandle | null>(null);
   const isGeneratingRef = useRef(false);
+  const restoreManualDetailPinsRef=useRef<(()=>void)|null>(null);
   const autoThumbnailAttemptedRef = useRef(false);
   const [thumbnailError, setThumbnailError] = useState<string | null>(null);
   const [showGuideSettings,setShowGuideSettings]=useState(false);
@@ -223,6 +225,8 @@ export function ModelEditor({
       numbers: null,
     };
     const assetReferences: GuideAssetReference[] = [];
+    const restoreManualDetailPins=suppressManualDetailPins();
+    restoreManualDetailPinsRef.current=restoreManualDetailPins;
 
     try {
       let progress=0;
@@ -248,6 +252,8 @@ export function ModelEditor({
         t("editor.captureFailed"),
       );
     } finally {
+      restoreManualDetailPins();
+      if(restoreManualDetailPinsRef.current===restoreManualDetailPins)restoreManualDetailPinsRef.current=null;
       isGeneratingRef.current = false;
     }
   }
@@ -327,7 +333,7 @@ export function ModelEditor({
         onRetry={() => {
           if(lastGuideSettings)void generateGuidePreview(lastGuideSettings);
         }}
-        onCancel={resetGuideGeneration}
+        onCancel={()=>{restoreManualDetailPinsRef.current?.();restoreManualDetailPinsRef.current=null;resetGuideGeneration();}}
       />
       {showGuideSettings?<GuideSettingsModal initial={lastGuideSettings??defaultSettings} canExplode={canExplode} canAssemble={canAssemble} onClose={()=>setShowGuideSettings(false)} onConfirm={settings=>{setShowGuideSettings(false);setLastGuideSettings(settings);void generateGuidePreview(settings);}}/>:null}
     </main>

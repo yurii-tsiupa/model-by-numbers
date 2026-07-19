@@ -37,6 +37,7 @@ import { ViewerErrorBoundary } from "./ViewerErrorBoundary";
 import { ViewerLoading } from "./ViewerLoading";
 import { ViewerToolbar } from "./ViewerToolbar";
 import { useModelEditorStore } from "../store/modelEditorStore";
+import { useViewerOverlayStore } from "../store/viewerOverlayStore";
 import { fitCameraToBounds } from "../lib/fitCameraToBounds";
 import { getModelBounds } from "../lib/getModelBounds";
 import {getVisibleModelBounds} from "../lib/getVisibleModelBounds";
@@ -203,6 +204,7 @@ export const ModelViewer = forwardRef<
   ref,
 ) {
   const {t}=useTranslation();
+  const areManualDetailPinsSuppressed=useViewerOverlayStore(state=>state.manualDetailPinSuppressions>0);
   const manualDetailPlacement=useModelEditorStore(state=>state.manualDetailPlacement);
   const cancelManualDetailPlacement=useModelEditorStore(state=>state.cancelManualDetailPlacement);
   const undoDraftManualDetailPin=useModelEditorStore(state=>state.undoDraftManualDetailPin);
@@ -703,7 +705,7 @@ export const ModelViewer = forwardRef<
                 showAllNumberCalloutsForCapture
               }
               showAllPartsForCapture={showAllPartsForCapture}
-              hideManualDetailPins={hideManualDetailPins}
+              hideManualDetailPins={hideManualDetailPins||areManualDetailPinsSuppressed}
               forceAssembled={forceAssembled}
             forceFullyExploded={forceFullyExploded}
             onControlsStart={cancelFocusAnimation}

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import {
   useEffect,
+  useRef,
   type ReactNode,
 } from "react";
 
@@ -38,15 +39,27 @@ export function ConfirmationModal({
   onClose,
 }: ConfirmationModalProps) {
   const { t } = useTranslation();
+  const dialogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector);
+    focusable?.[0]?.focus();
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape" && !isLoading) {
         onClose();
+      } else if (event.key === "Tab") {
+        const items = dialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector);
+        if (!items?.length) return;
+        const first = items[0],last=items[items.length-1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
       }
     }
 
@@ -58,6 +71,7 @@ export function ConfirmationModal({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
     };
   }, [isLoading, isOpen, onClose]);
 
@@ -81,6 +95,7 @@ export function ConfirmationModal({
       }}
     >
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirmation-modal-title"

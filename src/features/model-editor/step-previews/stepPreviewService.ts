@@ -99,7 +99,9 @@ async function renderWithRetry(request: StepPreviewRequest): Promise<{ blob: Blo
 }
 
 export function invalidatePaintingStepPreview(projectId: string, stepId: string): void {
-  for (const key of invalidateStepPreviewsForStep(projectId, stepId)) {
+  const keys=new Set(invalidateStepPreviewsForStep(projectId, stepId));
+  for(const key of inflight.keys()){try{const value=JSON.parse(key) as {projectId?:unknown;stepId?:unknown};if(value.projectId===projectId&&value.stepId===stepId)keys.add(key)}catch{/* Ignore obsolete cache keys. */}}
+  for (const key of keys) {
     generations.set(key, (generations.get(key) ?? 0) + 1);
     inflight.delete(key);
   }
