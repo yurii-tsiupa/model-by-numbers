@@ -41,9 +41,12 @@ export function useResolvedGuideAssets(guide: ModelGuide, project?: Project): Mo
           ownedUrls.push(item.owner);
           continue;
         }
-        const stage = workflowParts.flatMap(part => part.paintingWorkflow?.stages ?? []).find(candidate => candidate.id === item.reference.assetId);
+        const [stageId,shotId] = item.reference.assetId.split(":");
+        const stage = workflowParts.flatMap(part => part.paintingWorkflow?.stages ?? []).find(candidate => candidate.id === stageId);
         if (!stage) { ownedUrls.push(item.owner); continue; }
-        const cacheKey = getStepPreviewCacheKey(guide.projectId, stage, workflowParts, details, palette);
+        if(!shotId&&stage.overviewPreviewEnabled===false){ownedUrls.push(item.owner);continue;}
+        const shot=shotId?stage.previewShots?.find(candidate=>candidate.id===shotId):undefined;
+        const cacheKey = getStepPreviewCacheKey(guide.projectId, stage, workflowParts, details, palette,shot);
         if (item.reference.contentKey !== cacheKey) { ownedUrls.push(item.owner); continue; }
         setCachedStepPreview(cacheKey, {
           stepId: stage.id,
@@ -58,9 +61,9 @@ export function useResolvedGuideAssets(guide: ModelGuide, project?: Project): Mo
 
       if (project) {
         const stages = project.parts.flatMap(part => part.paintingWorkflow?.stages ?? []).filter(stage => stage.targetReferences?.length);
-        for (const stage of stages) {
+        for (const stage of stages) { for(const shot of [...(stage.overviewPreviewEnabled!==false?[undefined]:[]),...(stage.previewShots??[])]){
           if (!active) return;
-          const cacheKey = getStepPreviewCacheKey(project.id, stage, project.parts, project.manualDetails, project.palette);
+          const cacheKey = getStepPreviewCacheKey(project.id, stage, project.parts, project.manualDetails, project.palette,shot);
           if (getCachedStepPreview(cacheKey)) continue;
           try {
             const preview = await requestStepPreview({
@@ -74,12 +77,13 @@ export function useResolvedGuideAssets(guide: ModelGuide, project?: Project): Mo
               manualDetails: project.manualDetails,
               palette: project.palette,
               cacheKey,
+              shot,
             });
-            await saveGuideAsset({ projectId: project.id, kind: "step-preview", assetId: stage.id, contentKey: cacheKey, blob: await imageSourceToBlob(preview.imageUrl) });
+            await saveGuideAsset({ projectId: project.id, kind: "step-preview", assetId: shot?`${stage.id}:${shot.id}`:stage.id, contentKey: cacheKey, blob: await imageSourceToBlob(preview.imageUrl) });
           } catch (error) {
             if (process.env.NODE_ENV === "development") console.warn("Guide step preview unavailable", { projectId: project.id, stepId: stage.id, error });
           }
-        }
+        }}
       }
 
       if (!active) return;

@@ -3,7 +3,7 @@ import type { ManualDetail } from "@/features/models/types/ManualDetail";
 import type { PaletteColor } from "@/features/models/types/PaletteColor";
 import type { ProjectPart } from "@/features/models/types/ProjectPart";
 
-import type { PaintingStage } from "../types/PaintingWorkflow";
+import type { PaintingStage,PaintingStepPreviewShot } from "../types/PaintingWorkflow";
 import { useModelEditorStore } from "../store/modelEditorStore";
 import {
   getCachedStepPreview,
@@ -27,6 +27,7 @@ export type StepPreviewRequest = {
   manualDetails: ManualDetail[];
   palette: PaletteColor[];
   cacheKey: string;
+  shot?:PaintingStepPreviewShot;
 };
 
 type LoadedModel = Awaited<ReturnType<typeof loadStepPreviewModel>>;
@@ -86,6 +87,7 @@ async function renderWithRetry(request: StepPreviewRequest): Promise<{ blob: Blo
         manualDetails: request.manualDetails,
         palette: request.palette,
         baseColor: complete.baseColor,
+        shot:request.shot,
       });
     } catch (error) {
       lastError = error;
@@ -143,7 +145,7 @@ export function requestStepPreview(request: StepPreviewRequest, force = false): 
   return result;
 }
 
-export function getOrGenerateStepPreview(projectId: string, stepId: string, cacheKey: string, force = false): Promise<StepPreviewResult> {
+export function getOrGenerateStepPreview(projectId: string, stepId: string, cacheKey: string, force = false,shot?:PaintingStepPreviewShot): Promise<StepPreviewResult> {
   const state = useModelEditorStore.getState();
   const step = state.parts.flatMap(part => part.paintingWorkflow.stages).find(candidate => candidate.id === stepId);
   if (!step) return Promise.reject(new Error("targetsUnavailable"));
@@ -154,5 +156,6 @@ export function getOrGenerateStepPreview(projectId: string, stepId: string, cach
     manualDetails: state.manualDetails,
     palette: state.palette,
     cacheKey,
+    shot,
   }, force);
 }

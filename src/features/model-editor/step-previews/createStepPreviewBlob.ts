@@ -21,7 +21,7 @@ import type { PaletteColor } from "@/features/models/types/PaletteColor";
 
 import { resolvePaintingTargetReferences } from "../lib/paintingTargets";
 import type { ModelPart } from "../types/ModelPart";
-import type { PaintingStage } from "../types/PaintingWorkflow";
+import type { PaintingStage,PaintingStepPreviewShot } from "../types/PaintingWorkflow";
 import {
   STEP_PREVIEW_ASPECT_RATIO,
   STEP_PREVIEW_HEIGHT,
@@ -59,6 +59,7 @@ export async function createStepPreviewBlob({
   manualDetails,
   palette,
   baseColor,
+  shot,
 }: {
   model: Object3D;
   step: PaintingStage;
@@ -66,9 +67,11 @@ export async function createStepPreviewBlob({
   manualDetails: ManualDetail[];
   palette: PaletteColor[];
   baseColor: string;
+  shot?:PaintingStepPreviewShot;
 }): Promise<{ blob: Blob; framing: StepPreviewFraming }> {
   const resolved = resolvePaintingTargetReferences(step.targetReferences, parts, manualDetails);
-  const pinTargets = resolved.manualDetails.flatMap(detail => detail.pins.map(pin => ({ pin, number: detail.number })));
+  const pinTargets = resolved.manualDetails.flatMap(detail => detail.pins.filter(pin=>!shot||(detail.id===shot.manualDetailId&&pin.id===shot.pinId)).map(pin => ({ pin, number: detail.number })));
+  if(shot&&!pinTargets.length)throw new Error("targetsUnavailable");
   if (!resolved.parts.length && !pinTargets.length) throw new Error("targetsUnavailable");
 
   const { canvas, renderer } = getRenderer();

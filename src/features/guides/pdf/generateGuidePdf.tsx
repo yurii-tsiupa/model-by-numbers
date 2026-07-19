@@ -18,7 +18,7 @@ export async function generateGuidePdf(
   if (!guide.projectId || !guide.title || guide.partsCount < 0) {
     throw new PdfExportError("GUIDE_DATA_UNAVAILABLE");
   }
-  const unavailableStepImages=viewModel.paintingSteps.filter(step=>step.preview.status!=="ready"&&!(step.preview.status==="unavailable"&&step.preview.reason==="general")).length;
+  const unavailableStepImages=viewModel.paintingSteps.flatMap(step=>step.previews).filter(preview=>preview.status!=="ready"&&!(preview.status==="unavailable"&&preview.reason==="general")).length;
   if(unavailableStepImages)onImageWarning?.({code:"IMAGE_LOAD_FAILED",count:unavailableStepImages});
 
   let prepared,preparedSteps;

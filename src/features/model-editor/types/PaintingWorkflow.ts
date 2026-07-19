@@ -1,7 +1,8 @@
 export type PaintingStageType = "primer" | "base-coat" | "secondary-color" | "wash" | "dry-brush" | "highlight" | "finish" | "custom";
 export type PaintingTargetReference = { type: "part" | "manualDetail"; id: string };
 export type PaintingDifficulty = "easy" | "medium" | "hard";
-export type PaintingStage = { id: string; order: number; type: PaintingStageType; customName: string | null; paletteColorId: string | null; recommendedCoats: number | null; notes: string; targetReferences?: PaintingTargetReference[]; createdAt: string; updatedAt: string };
+export type PaintingStepPreviewShot = { id:string;type:"manualDetailLocation";manualDetailId:string;pinId:string };
+export type PaintingStage = { id: string; order: number; type: PaintingStageType; customName: string | null; paletteColorId: string | null; recommendedCoats: number | null; notes: string; targetReferences?: PaintingTargetReference[]; overviewPreviewEnabled?:boolean; previewShots?:PaintingStepPreviewShot[]; createdAt: string; updatedAt: string };
 export type PartPaintingWorkflow = { stages: PaintingStage[]; notes: string; paintBeforeAssembly: boolean; difficulty: PaintingDifficulty | null; estimatedTimeMinutes: number | null };
 export type CreatePaintingStageInput = Omit<PaintingStage, "id" | "order" | "createdAt" | "updatedAt">;
 export type UpdatePaintingStageInput = Partial<CreatePaintingStageInput>;
