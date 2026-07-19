@@ -12,6 +12,7 @@ import { useSaveProjectThumbnail } from "@/features/models/hooks/useSaveProjectT
 import { createThumbnailBlob } from "@/features/models/lib/createThumbnailBlob";
 import { useReferenceImages } from "@/features/references/hooks/useReferenceImages";
 import { ReferenceSplitPanel } from "@/features/references/components/ReferenceSplitPanel";
+import {SimpleReferenceViewer} from "@/features/references/components/SimpleReferenceViewer";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 
 import { useProjectAutosave } from "../hooks/useProjectAutosave";
@@ -64,10 +65,14 @@ export function ModelEditor({
   const saveThumbnail = useSaveProjectThumbnail();
   const [referenceViewMode,setReferenceViewMode]=useState<"viewer"|"split"|"reference">("viewer");
   const [selectedReferenceId,setSelectedReferenceId]=useState<string|null>(null);
+  const [simpleReferenceOpen,setSimpleReferenceOpen]=useState(false);
+  const [isDesktopReferenceLayout,setIsDesktopReferenceLayout]=useState(false);
   const referencesQuery=useReferenceImages(project.id);
   const references=referencesQuery.data??[];
   const selectedReference=references.find(reference=>reference.id===selectedReferenceId)??null;
   const effectiveReferenceViewMode=selectedReference?referenceViewMode:"viewer";
+
+  useEffect(()=>{const media=window.matchMedia("(min-width: 1024px)"),update=()=>setIsDesktopReferenceLayout(media.matches);update();media.addEventListener("change",update);return()=>media.removeEventListener("change",update)},[]);
 
   configureStepPreviewSource(project.id, {userId:project.userId,modelFormat:project.modelFormat,modelVersion:`${project.originalFileSize}:${project.updatedAt.getTime()}`,baseColor:project.baseColor});
 
@@ -95,8 +100,12 @@ export function ModelEditor({
     const remaining = references.filter((reference) => reference.id !== referenceId);
     const nextReference = remaining[Math.min(Math.max(deletedIndex, 0), remaining.length - 1)];
     if (nextReference) setSelectedReferenceId(nextReference.id);
-    else { setSelectedReferenceId(null); setReferenceViewMode("viewer"); }
+    else { setSelectedReferenceId(null); setReferenceViewMode("viewer"); setSimpleReferenceOpen(false); }
   }
+
+  const showSimpleReference=useCallback((referenceId:string)=>{setSelectedReferenceId(referenceId);setSimpleReferenceOpen(true)},[]);
+  const closeSimpleReference=useCallback(()=>setSimpleReferenceOpen(false),[]);
+  const selectReference=useCallback((referenceId:string)=>setSelectedReferenceId(referenceId),[]);
 
   const generationStatus = useGuideGenerationStore(
     (state) => state.status,
@@ -322,12 +331,15 @@ export function ModelEditor({
         <div key="viewer-area" className="relative flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
           <div className={`${mode === "advanced" && effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-[18rem] min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} simplified={mode === "simple"} hideManualDetailPins={showGuideSettings} /></div>
           {mode === "advanced"&&selectedReference&&effectiveReferenceViewMode!=="viewer"?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={setSelectedReferenceId} onClose={()=>setReferenceViewMode("viewer")}/>:null}
+          {mode==="simple"&&simpleReferenceOpen&&selectedReference&&isDesktopReferenceLayout?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={selectReference} onClose={closeSimpleReference}/>:null}
           {mode === "advanced" ? <div className="absolute right-3 top-3 z-20 flex rounded-full border border-white/10 bg-black/70 p-1 text-xs">{(["viewer","split","reference"] as const).map(viewMode=><button key={viewMode} type="button" disabled={viewMode!=="viewer"&&references.length===0} onClick={()=>{if(viewMode==="viewer")setReferenceViewMode("viewer");else openReferenceMode(viewMode);}} className={`rounded-full px-3 py-1.5 disabled:opacity-40 ${effectiveReferenceViewMode===viewMode?"bg-orange-400 text-black":"text-neutral-300"}`}>{viewMode==="viewer"?t("viewer.model"):viewMode==="split"?t("viewer.split"):t("viewer.reference")}</button>)}</div> : null}
-          {mode === "simple" ? <GuideBuilderPanel projectId={project.id} canOpenGuide={isGuideReady} onOpenGuide={() => setShowGuideSettings(true)} /> : null}
+          {mode === "simple" ? <GuideBuilderPanel projectId={project.id} canOpenGuide={isGuideReady} onOpenGuide={() => setShowGuideSettings(true)} activeReferenceId={selectedReference?.id??null} onSelectReference={selectReference} onShowReference={showSimpleReference} onReferenceDeleted={handleReferenceDeleted}/> : null}
         </div>
 
         {mode === "advanced" ? <PropertiesPanel key="advanced-properties" /> : null}
       </div>
+
+      {mode==="simple"&&simpleReferenceOpen&&selectedReference&&!isDesktopReferenceLayout?<SimpleReferenceViewer reference={selectedReference} references={references} onSelect={selectReference} onClose={closeSimpleReference}/>:null}
 
       <GuideCaptureOverlay
         onRetry={() => {
