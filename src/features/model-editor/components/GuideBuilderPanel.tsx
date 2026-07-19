@@ -51,11 +51,11 @@ export function GuideBuilderPanel({
     <header className="shrink-0 border-b border-[var(--border)] p-4">
       <h2 className="font-[family-name:var(--font-space-grotesk)] text-base font-semibold">{t("editor.guideBuilder.title")}</h2>
       <p className="mt-1 text-xs text-[var(--text-secondary)]">{t("editor.guideBuilder.description")}</p>
-      <nav aria-label={t("editor.accessibility.builderSections")} className="mt-3 grid grid-cols-4 gap-1">
+      <nav aria-label={t("editor.accessibility.builderSections")} className="mt-3 flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {SECTIONS.map((item, index) => {
           const Icon = item.icon;
           const active = section === item.id;
-          return <button key={item.id} type="button" aria-current={active ? "step" : undefined} onClick={() => setSection(item.id)} className={`flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${active ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg)]"}`}><span aria-hidden="true" className="flex items-center gap-1"><span>{index + 1}</span><Icon className="size-3.5" /></span><span className="max-w-full truncate">{t(`editor.guideBuilder.sections.${item.id}`)}</span></button>;
+          return <button key={item.id} type="button" aria-current={active ? "step" : undefined} onClick={() => setSection(item.id)} className={`flex min-w-[4.25rem] flex-1 shrink-0 flex-col items-center gap-1 rounded-lg px-2 py-2 text-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${active ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg)]"}`}><span aria-hidden="true" className="flex items-center gap-1"><span>{index + 1}</span><Icon className="size-3.5" /></span><span className="whitespace-nowrap text-center">{t(`editor.guideBuilder.sections.${item.id}`)}</span></button>;
         })}
       </nav>
     </header>
