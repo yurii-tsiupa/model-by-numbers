@@ -10,6 +10,9 @@ import type { Project } from "@/features/models/types/Project";
 import { useProjectThumbnail } from "@/features/models/hooks/useProjectThumbnail";
 import { useSaveProjectThumbnail } from "@/features/models/hooks/useSaveProjectThumbnail";
 import { createThumbnailBlob } from "@/features/models/lib/createThumbnailBlob";
+import { useUpdateProjectBaseColor } from "@/features/models/hooks/useUpdateProjectBaseColor";
+import { normalizeHexColor } from "../lib/normalizeHexColor";
+import { subscribeToBaseColorSynchronization } from "../lib/baseColorSynchronization";
 import { useReferenceImages } from "@/features/references/hooks/useReferenceImages";
 import { ReferenceSplitPanel } from "@/features/references/components/ReferenceSplitPanel";
 import {SimpleReferenceViewer} from "@/features/references/components/SimpleReferenceViewer";
@@ -58,11 +61,19 @@ export function ModelEditor({
   const isGeneratingRef = useRef(false);
   const restoreManualDetailPinsRef=useRef<(()=>void)|null>(null);
   const autoThumbnailAttemptedRef = useRef(false);
+  const observedBaseColorRef = useRef({
+    projectId: project.id,
+    color: normalizeHexColor(project.baseColor) ?? project.baseColor,
+  });
   const [thumbnailError, setThumbnailError] = useState<string | null>(null);
   const [showGuideSettings,setShowGuideSettings]=useState(false);
   const [lastGuideSettings,setLastGuideSettings]=useState<GuideSettings|null>(null);
   const thumbnailQuery = useProjectThumbnail(project.id);
   const saveThumbnail = useSaveProjectThumbnail();
+  const { mutate: updateProjectBaseColor, isPending: isUpdatingBaseColor } = useUpdateProjectBaseColor(project.id, userId);
+  useEffect(() => subscribeToBaseColorSynchronization((baseColor) => {
+    if ((normalizeHexColor(project.baseColor) ?? project.baseColor) !== baseColor) updateProjectBaseColor(baseColor);
+  }), [project.baseColor, updateProjectBaseColor]);
   const [referenceViewMode,setReferenceViewMode]=useState<"viewer"|"split"|"reference">("viewer");
   const [selectedReferenceId,setSelectedReferenceId]=useState<string|null>(null);
   const [simpleReferenceOpen,setSimpleReferenceOpen]=useState(false);
@@ -178,11 +189,24 @@ export function ModelEditor({
       const source = await viewer.captureView("painted");
       const image = await createThumbnailBlob(source);
       const now = new Date();
-      await saveThumbnail.mutateAsync({ projectId: project.id, ...image, createdAt: thumbnailQuery.data?.createdAt ?? now, updatedAt: now });
+      await saveThumbnail.mutateAsync({ userId, thumbnail: { projectId: project.id, ...image, baseColor: normalizeHexColor(project.baseColor) ?? project.baseColor, createdAt: thumbnailQuery.data?.createdAt ?? now, updatedAt: now } });
     } catch {
       setThumbnailError(t("editor.thumbnailFailed"));
     }
-  }, [project.id, saveThumbnail, t, thumbnailQuery.data]);
+  }, [project.baseColor, project.id, saveThumbnail, t, thumbnailQuery.data, userId]);
+
+  useEffect(() => {
+    const color = normalizeHexColor(project.baseColor) ?? project.baseColor;
+    const observed = observedBaseColorRef.current;
+    if (observed.projectId !== project.id) {
+      observedBaseColorRef.current = { projectId: project.id, color };
+      return;
+    }
+    if (observed.color === color || parts.length === 0 || saveThumbnail.isPending) return;
+    observedBaseColorRef.current = { projectId: project.id, color };
+    const timer = window.setTimeout(() => { void generateThumbnail(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [generateThumbnail, parts.length, project.baseColor, project.id, saveThumbnail.isPending]);
 
   useEffect(() => {
     if (autoThumbnailAttemptedRef.current || thumbnailQuery.isLoading || thumbnailQuery.data || parts.length === 0) return;
@@ -326,7 +350,7 @@ export function ModelEditor({
       <EditorModeSwitch mode={mode} onChange={setMode} />
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-        {mode === "advanced" ? <EditorSidebar key="advanced-sidebar" guideSettings={lastGuideSettings??defaultSettings} project={project} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onFocusAssemblyStep={focusAssemblyStep} onExitAssemblyFocus={exitAssemblyFocus} onCaptureAssemblyImage={captureAssemblyImage} onDeleteAssemblyImage={deleteAssemblyImage} onDeleteAssemblyStep={deleteAssemblyStepWithImage} /> : null}
+        {mode === "advanced" ? <EditorSidebar key="advanced-sidebar" guideSettings={lastGuideSettings??defaultSettings} project={project} isUpdatingBaseColor={isUpdatingBaseColor} onUpdateBaseColor={updateProjectBaseColor} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onFocusAssemblyStep={focusAssemblyStep} onExitAssemblyFocus={exitAssemblyFocus} onCaptureAssemblyImage={captureAssemblyImage} onDeleteAssemblyImage={deleteAssemblyImage} onDeleteAssemblyStep={deleteAssemblyStepWithImage} /> : null}
 
         <div key="viewer-area" className="relative flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
           <div className={`${mode === "advanced" && effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-[18rem] min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} simplified={mode === "simple"} hideManualDetailPins={showGuideSettings} /></div>

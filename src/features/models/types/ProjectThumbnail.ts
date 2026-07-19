@@ -4,6 +4,7 @@ export type ProjectThumbnail = {
   mimeType: "image/webp" | "image/png";
   width: number;
   height: number;
+  baseColor?: string;
   createdAt: Date;
   updatedAt: Date;
 };

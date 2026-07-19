@@ -33,6 +33,7 @@ export type Project = {
   originalDimensions: ModelDimensions | null;
 
   thumbnailUrl: string | null;
+  thumbnailVersion?: number;
   selectedGuideTemplateId?: string;
 
   status: ProjectStatus;

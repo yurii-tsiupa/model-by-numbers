@@ -26,6 +26,8 @@ import type { GuideSettings } from "@/features/guides/types/ModelGuide";
 
 type EditorSidebarProps = {
   project: Project;
+  isUpdatingBaseColor: boolean;
+  onUpdateBaseColor: (color: string) => void;
   isGeneratingThumbnail: boolean;
   thumbnailError: string | null;
   onRegenerateThumbnail: () => void;
@@ -41,6 +43,8 @@ type EditorSidebarProps = {
 
 export function EditorSidebar({
   project,
+  isUpdatingBaseColor,
+  onUpdateBaseColor,
   isGeneratingThumbnail,
   thumbnailError,
   onRegenerateThumbnail,
@@ -140,7 +144,7 @@ export function EditorSidebar({
       {activeTab === "paintingOrder" ? <PaintingOrderTab /> : null}
 
       {activeTab === "project" ? (
-        <ProjectTab project={project} guideSettings={guideSettings} isGeneratingThumbnail={isGeneratingThumbnail} thumbnailError={thumbnailError} onRegenerateThumbnail={onRegenerateThumbnail} />
+        <ProjectTab project={project} isUpdatingBaseColor={isUpdatingBaseColor} onUpdateBaseColor={onUpdateBaseColor} guideSettings={guideSettings} isGeneratingThumbnail={isGeneratingThumbnail} thumbnailError={thumbnailError} onRegenerateThumbnail={onRegenerateThumbnail} />
       ) : null}
       {activeTab === "references" ? <ReferencesTab projectId={project.id} onOpenReferenceMode={onOpenReferenceMode} onReferenceDeleted={onReferenceDeleted} /> : null}
       {activeTab === "assembly" ? <AssemblyTab projectId={project.id} onFocusStep={onFocusAssemblyStep} onExitFocus={onExitAssemblyFocus} onCaptureImage={onCaptureAssemblyImage} onDeleteImage={onDeleteAssemblyImage} onDeleteStep={onDeleteAssemblyStep} /> : null}

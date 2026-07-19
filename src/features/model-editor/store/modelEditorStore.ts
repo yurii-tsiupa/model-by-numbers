@@ -16,6 +16,9 @@ import type { CreatePaintingStageInput, PaintingDifficulty, PartPaintingWorkflow
 import { normalizePaintingOrder } from "../lib/paintingOrder";
 import type { CreateManualDetailPinInput,ManualDetail,ManualDetailPin } from "@/features/models/types/ManualDetail";
 import { assignColorToTarget,type ColorAssignmentTarget } from "../lib/assignColorToTarget";
+import { ensurePaletteColor } from "../lib/ensurePaletteColor";
+import { assignDetectedPartColor } from "../lib/assignDetectedPartColor";
+import { requestBaseColorSynchronization } from "../lib/baseColorSynchronization";
 
 export type EditorSaveStatus =
   | "saved"
@@ -238,41 +241,6 @@ function markStateDirty(
     changeVersion: state.changeVersion + 1,
     saveError: null,
   };
-}
-
-function getNextPaletteColorNumber(
-  palette: PaletteColor[],
-): number {
-  return (
-    palette.reduce(
-      (largestNumber, color) =>
-        Math.max(largestNumber, color.number),
-      0,
-    ) + 1
-  );
-}
-
-function createPaletteColorId(
-  palette: PaletteColor[],
-  number: number,
-): string {
-  let candidateId = `color-${number}`;
-  let suffix = 1;
-
-  while (
-    palette.some((color) => color.id === candidateId)
-  ) {
-    candidateId = `color-${number}-${suffix}`;
-    suffix += 1;
-  }
-
-  return candidateId;
-}
-
-function createPaletteColorName(
-  number: number,
-): string {
-  return `C${String(number).padStart(2, "0")}`;
 }
 
 export const useModelEditorStore =
@@ -584,39 +552,17 @@ export const useModelEditorStore =
       partId,
       paletteColorId,
     ) => {
+      let synchronizedBaseColor: string | null = null;
       set((state) => {
-        const paletteColorExists = state.palette.some(
-          (color) => color.id === paletteColorId,
-        );
-
-        if (!paletteColorExists) {
-          return state;
-        }
-
-        const selectedPart = state.parts.find(
-          (part) => part.id === partId,
-        );
-
-        if (
-          !selectedPart ||
-          selectedPart.paletteColorId === paletteColorId
-        ) {
-          return state;
-        }
-
+        const assignment = assignDetectedPartColor({ parts: state.parts, palette: state.palette, partId, paletteColorId });
+        if (!assignment?.changed) return state;
+        synchronizedBaseColor = assignment.synchronizedBaseColor;
         return {
-          parts: state.parts.map((part) =>
-            part.id === partId
-              ? {
-                  ...part,
-                  color: null,
-                  paletteColorId,
-                }
-              : part,
-          ),
+          parts: assignment.parts,
           ...markStateDirty(state),
         };
       });
+      if (synchronizedBaseColor) requestBaseColorSynchronization(synchronizedBaseColor);
     },
 
     createAndAssignPaletteColor: (
@@ -627,16 +573,21 @@ export const useModelEditorStore =
       hex,
     ),
 
-    createAndAssignPaletteColorToTarget: (target, hex) => set((state) => {
-      const result = assignColorToTarget(state, target, hex);
-      if (!result?.changed) return state;
-      return {
-        palette: result.palette,
-        parts: result.parts,
-        manualDetails: result.manualDetails,
-        ...markStateDirty(state),
-      };
-    }),
+    createAndAssignPaletteColorToTarget: (target, hex) => {
+      let synchronizedBaseColor: string | null = null;
+      set((state) => {
+        const result = assignColorToTarget(state, target, hex);
+        if (!result?.changed) return state;
+        synchronizedBaseColor = result.synchronizedBaseColor;
+        return {
+          palette: result.palette,
+          parts: result.parts,
+          manualDetails: result.manualDetails,
+          ...markStateDirty(state),
+        };
+      });
+      if (synchronizedBaseColor) requestBaseColorSynchronization(synchronizedBaseColor);
+    },
 
     clearPaletteColor: (partId) => {
       set((state) => {
@@ -755,43 +706,17 @@ export const useModelEditorStore =
 
     addPaletteColor: ({ name, hex }) => {
       set((state) => {
-        const normalizedHex = normalizeHexColor(hex);
-
-        if (!normalizedHex) {
-          return state;
-        }
-
-        const existingColor = state.palette.find(
-          (color) =>
-            normalizeHexColor(color.hex) === normalizedHex,
-        );
-
-        if (existingColor) {
+        const ensured = ensurePaletteColor(state.palette, hex, name);
+        if (!ensured) return state;
+        if (!ensured.created) {
           return {
-            highlightedPaletteColorId: existingColor.id,
+            highlightedPaletteColorId: ensured.color.id,
             activeSidebarTab: "palette",
           };
         }
-
-        const number = getNextPaletteColorNumber(
-          state.palette,
-        );
-
-        const newColor: PaletteColor = {
-          id: createPaletteColorId(
-            state.palette,
-            number,
-          ),
-          number,
-          name:
-            name.trim() ||
-            createPaletteColorName(number),
-          hex: normalizedHex,
-        };
-
         return {
-          palette: [...state.palette, newColor],
-          highlightedPaletteColorId: newColor.id,
+          palette: ensured.palette,
+          highlightedPaletteColorId: ensured.color.id,
           ...markStateDirty(state),
         };
       });

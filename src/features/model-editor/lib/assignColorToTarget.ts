@@ -1,7 +1,8 @@
 import type { ManualDetail } from "@/features/models/types/ManualDetail";
 import type { PaletteColor } from "@/features/models/types/PaletteColor";
 import type { ModelPart } from "../types/ModelPart";
-import { normalizeHexColor } from "./normalizeHexColor";
+import { ensurePaletteColor } from "./ensurePaletteColor";
+import { assignDetectedPartColor } from "./assignDetectedPartColor";
 
 export type ColorAssignmentTarget =
   | { type: "part"; id: string }
@@ -17,57 +18,31 @@ export function assignColorToTarget(
   state: ColorAssignmentState,
   target: ColorAssignmentTarget,
   value: string,
-): (ColorAssignmentState & { changed: boolean }) | null {
-  const hex = normalizeHexColor(value);
-  if (!hex) return null;
+): (ColorAssignmentState & { changed: boolean; synchronizedBaseColor: string | null }) | null {
   const targetExists = target.type === "part"
     ? state.parts.some((item) => item.id === target.id)
     : state.manualDetails.some((item) => item.id === target.id);
   if (!targetExists) return null;
 
-  let color = state.palette.find(
-    (item) => normalizeHexColor(item.hex) === hex,
-  );
-  let palette = state.palette;
-
-  if (!color) {
-    const number = state.palette.reduce(
-      (largest, item) => Math.max(largest, item.number),
-      0,
-    ) + 1;
-    let id = `color-${number}`;
-    let suffix = 1;
-    while (state.palette.some((item) => item.id === id)) {
-      id = `color-${number}-${suffix}`;
-      suffix += 1;
-    }
-    color = {
-      id,
-      number,
-      name: `C${String(number).padStart(2, "0")}`,
-      hex,
-    };
-    palette = [...state.palette, color];
-  }
+  const ensured = ensurePaletteColor(state.palette, value);
+  if (!ensured) return null;
+  const { color, palette } = ensured;
 
   if (target.type === "part") {
-    const part = state.parts.find((item) => item.id === target.id);
-    if (!part || part.paletteColorId === color.id) {
-      return { ...state, palette, changed: palette !== state.palette };
-    }
+    const assignment = assignDetectedPartColor({ parts: state.parts, palette, partId: target.id, paletteColorId: color.id });
+    if (!assignment) return null;
     return {
       palette,
-      parts: state.parts.map((item) => item.id === target.id
-        ? { ...item, color: null, paletteColorId: color.id }
-        : item),
+      parts: assignment.parts,
       manualDetails: state.manualDetails,
-      changed: true,
+      changed: assignment.changed || palette !== state.palette,
+      synchronizedBaseColor: assignment.synchronizedBaseColor,
     };
   }
 
   const detail = state.manualDetails.find((item) => item.id === target.id);
   if (!detail || detail.colorId === color.id) {
-    return { ...state, palette, changed: palette !== state.palette };
+    return { ...state, palette, changed: palette !== state.palette, synchronizedBaseColor: null };
   }
   return {
     palette,
@@ -76,5 +51,6 @@ export function assignColorToTarget(
       ? { ...item, colorId: color.id, updatedAt: Date.now() }
       : item),
     changed: true,
+    synchronizedBaseColor: null,
   };
 }

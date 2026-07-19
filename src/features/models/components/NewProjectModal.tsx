@@ -221,7 +221,7 @@ export function NewProjectModal({
 
       failedStage = "thumbnail";
       setCreationStage("thumbnail");
-      try{const capture=importPreviewCaptureRef.current;if(!capture)throw new Error("Preview unavailable");const dataUrl=await capture();const image=await createThumbnailBlob(dataUrl);const now=new Date();await saveThumbnail.mutateAsync({projectId:createdProject.id,...image,createdAt:now,updatedAt:now});}catch(error){onThumbnailWarning?.();if(process.env.NODE_ENV!=="production")console.error("Project created, but its initial thumbnail could not be saved.",error);}
+      try{const capture=importPreviewCaptureRef.current;if(!capture)throw new Error("Preview unavailable");const dataUrl=await capture();const image=await createThumbnailBlob(dataUrl);const now=new Date();await saveThumbnail.mutateAsync({userId,thumbnail:{projectId:createdProject.id,...image,baseColor:createdProject.baseColor,createdAt:now,updatedAt:now}});}catch(error){onThumbnailWarning?.();if(process.env.NODE_ENV!=="production")console.error("Project created, but its initial thumbnail could not be saved.",error);}
       failedStage = "opening";
       setCreationStage("opening");
 

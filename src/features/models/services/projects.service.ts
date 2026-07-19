@@ -29,6 +29,9 @@ import { getModelFileExtension } from "@/features/model-import/lib/getModelFileE
 import { normalizePaintingWorkflow } from "@/features/model-editor/lib/paintingWorkflow";
 import type { PaintMarker, Vector3Like } from "../types/PaintMarker";
 import type { ManualDetail,ManualDetailPin } from "../types/ManualDetail";
+import { ensurePaletteColor } from "@/features/model-editor/lib/ensurePaletteColor";
+import { normalizeHexColor } from "@/features/model-editor/lib/normalizeHexColor";
+import { assignDetectedPartColor,getSingleIncludedDetectedPart } from "@/features/model-editor/lib/assignDetectedPartColor";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -95,6 +98,7 @@ function mapProjectDocument(
     originalDimensions: data.originalDimensions && [data.originalDimensions.width, data.originalDimensions.height, data.originalDimensions.depth].every((value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= 0) ? { width: data.originalDimensions.width, height: data.originalDimensions.height, depth: data.originalDimensions.depth } : null,
 
     thumbnailUrl: data.thumbnailUrl ?? null,
+    thumbnailVersion: typeof data.thumbnailVersion === "number" ? data.thumbnailVersion : undefined,
     selectedGuideTemplateId: typeof data.selectedGuideTemplateId === "string" ? data.selectedGuideTemplateId : undefined,
 
     status: data.status,
@@ -278,6 +282,13 @@ export async function createProject({
 
   const projectReference = doc(collection(db, "projects"));
   const projectId = projectReference.id;
+  const initialPalette = ensurePaletteColor([], baseColor)?.palette ?? [];
+  const sourceParts = parts ?? [];
+  const singlePart = getSingleIncludedDetectedPart(sourceParts);
+  const initialParts = singlePart && initialPalette[0]
+    ? assignDetectedPartColor({ parts: sourceParts, palette: initialPalette, partId: singlePart.id, paletteColorId: initialPalette[0].id })?.parts ?? sourceParts
+    : sourceParts;
+  const normalizedBaseColor = normalizeHexColor(baseColor) ?? baseColor;
 
   const localModel = await uploadModel({
     userId,
@@ -308,15 +319,15 @@ export async function createProject({
 
     printerType,
     material,
-    baseColor,
+    baseColor: normalizedBaseColor,
 
-    parts: (parts ?? []).map(serializeProjectPart),
+    parts: initialParts.map(serializeProjectPart),
     manualDetails: [],
     nextManualDetailNumber: 1,
     importSchemaVersion: importSchemaVersion ?? null,
-    palette: [],
+    palette: initialPalette,
     assemblySteps: [],
-    paintingOrder: paintingOrder ?? (parts ?? []).map((part)=>part.id),
+    paintingOrder: paintingOrder ?? initialParts.map((part)=>part.id),
 
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -397,4 +408,37 @@ export async function saveProjectGuideTemplate(projectId: string, userId: string
   const snapshot = await getDoc(reference);
   if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error("Unable to update this project.");
   await updateDoc(reference, { selectedGuideTemplateId: templateId, updatedAt: serverTimestamp() });
+}
+
+export async function saveProjectThumbnailReference({
+  projectId,
+  userId,
+  thumbnailUrl,
+  thumbnailVersion,
+}: {
+  projectId: string;
+  userId: string;
+  thumbnailUrl: string;
+  thumbnailVersion: number;
+}): Promise<void> {
+  const reference = doc(db, "projects", projectId);
+  const snapshot = await getDoc(reference);
+  if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error("Unable to update this project.");
+  await updateDoc(reference, { thumbnailUrl, thumbnailVersion, updatedAt: serverTimestamp() });
+}
+
+export async function updateProjectBaseColor(
+  projectId: string,
+  userId: string,
+  value: string,
+): Promise<{ baseColor: string; updatedAt: Date }> {
+  const baseColor = normalizeHexColor(value);
+  if (!baseColor) throw new Error("Invalid base color.");
+  const reference = doc(db, "projects", projectId);
+  const snapshot = await getDoc(reference);
+  if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error("Unable to update this project.");
+  if (normalizeHexColor(String(snapshot.data().baseColor ?? "")) !== baseColor) {
+    await updateDoc(reference, { baseColor, updatedAt: serverTimestamp() });
+  }
+  return { baseColor, updatedAt: new Date() };
 }

@@ -18,6 +18,8 @@ import { PaintingProjectInsightsPanel } from "./PaintingProjectInsightsPanel";
 
 type ProjectTabProps = {
   project: Project;
+  isUpdatingBaseColor: boolean;
+  onUpdateBaseColor: (color: string) => void;
   isGeneratingThumbnail: boolean;
   thumbnailError: string | null;
   onRegenerateThumbnail: () => void;
@@ -26,6 +28,8 @@ type ProjectTabProps = {
 
 export function ProjectTab({
   project,
+  isUpdatingBaseColor,
+  onUpdateBaseColor,
   isGeneratingThumbnail,
   thumbnailError,
   onRegenerateThumbnail,
@@ -79,11 +83,13 @@ export function ProjectTab({
           </div>
 
           <div className="mt-2 flex items-center gap-2">
-            <span
-              className="h-5 w-5 rounded-full border border-white/20"
-              style={{
-                backgroundColor: project.baseColor,
-              }}
+            <input
+              type="color"
+              value={project.baseColor}
+              disabled={isUpdatingBaseColor}
+              onChange={(event) => onUpdateBaseColor(event.target.value)}
+              aria-label={t("guide.baseColor")}
+              className="h-8 w-10 cursor-pointer rounded-lg border border-white/20 bg-transparent p-1 disabled:cursor-wait disabled:opacity-50"
             />
 
             <span className="font-mono text-xs uppercase text-neutral-400">

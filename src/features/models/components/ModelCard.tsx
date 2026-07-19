@@ -34,6 +34,11 @@ type ModelCardProps = {
   isLocalDataLoading: boolean;
 };
 
+function versionedThumbnailUrl(url: string, version?: number): string {
+  if (!url || !version || url.startsWith("data:") || url.startsWith("blob:")) return url;
+  return `${url}${url.includes("?") ? "&" : "?"}v=${version}`;
+}
+
 function formatFileSize(bytes: number,unknown:string): string {
   if (!bytes) {
     return unknown;
@@ -64,7 +69,7 @@ export function ModelCard({
   const [failedThumbnailUrl, setFailedThumbnailUrl] = useState<string | null>(null);
   const localThumbnailUrl = useMemo(() => thumbnail ? URL.createObjectURL(thumbnail.blob) : null, [thumbnail]);
   useEffect(() => () => { if (localThumbnailUrl) URL.revokeObjectURL(localThumbnailUrl); }, [localThumbnailUrl]);
-  const thumbnailUrl = localThumbnailUrl ?? project.thumbnailUrl ?? "";
+  const thumbnailUrl = versionedThumbnailUrl(project.thumbnailUrl ?? "", project.thumbnailVersion) || localThumbnailUrl || "";
   const shouldShowThumbnail = Boolean(thumbnailUrl) && failedThumbnailUrl !== thumbnailUrl;
   const includedParts = getGuideParts(project.parts);
   const usedColors = getGuidePalette(project.parts, project.palette);
