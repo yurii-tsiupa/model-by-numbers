@@ -40,6 +40,7 @@ import {getAssemblyGuideReadiness} from "@/features/guides/lib/getAssemblyGuideR
 import { imageSourceToBlob, saveGuideAsset } from "@/features/guides/services/assets/saveGuideAsset";
 import type { GuideAssetReference } from "@/features/guides/services/assets/types";
 import {configureStepPreviewSource,getOrGenerateStepPreview} from "../step-previews/stepPreviewService";
+import {getLegacyTargetModeCounts,inferSimpleTargetMode} from "../lib/simpleTargetMode";
 import {getStepPreviewCacheKey} from "../step-previews/getStepPreviewCacheKey";
 import {suppressManualDetailPins} from "../store/viewerOverlayStore";
 
@@ -85,7 +86,7 @@ export function ModelEditor({
 
   useEffect(()=>{const media=window.matchMedia("(min-width: 1024px)"),update=()=>setIsDesktopReferenceLayout(media.matches);update();media.addEventListener("change",update);return()=>media.removeEventListener("change",update)},[]);
 
-  configureStepPreviewSource(project.id, {userId:project.userId,modelFormat:project.modelFormat,modelVersion:`${project.originalFileSize}:${project.updatedAt.getTime()}`,baseColor:project.baseColor});
+  useEffect(()=>{configureStepPreviewSource(project.id,{userId:project.userId,modelFormat:project.modelFormat,modelVersion:`${project.originalFileSize}:${project.updatedAt.getTime()}`,baseColor:project.baseColor},()=>viewerRef.current?.getCurrentPreviewCamera()??null)},[project.baseColor,project.id,project.modelFormat,project.originalFileSize,project.updatedAt,project.userId]);
 
   function focusAssemblyStep(stepId: string) {
     useModelEditorStore.getState().focusAssemblyStep(stepId);
@@ -147,6 +148,7 @@ export function ModelEditor({
   );
   const setAssemblySteps = useModelEditorStore((state) => state.setAssemblySteps);
   const setManualDetails=useModelEditorStore(state=>state.setManualDetails);
+  const hydrateSimpleTargetMode=useModelEditorStore(state=>state.hydrateSimpleTargetMode);
 
   const parts = useModelEditorStore(
     (state) => state.parts,
@@ -306,6 +308,10 @@ export function ModelEditor({
     setPalette(project.palette);
     setAssemblySteps(project.assemblySteps);
     setManualDetails(project.manualDetails,project.nextManualDetailNumber);
+    const inferredMode=project.simpleTargetMode??inferSimpleTargetMode(project.manualDetails);
+    const legacyCounts=getLegacyTargetModeCounts(project.manualDetails);
+    const mixedLegacy=legacyCounts.markers>0&&legacyCounts.region>0;
+    hydrateSimpleTargetMode(inferredMode,project.simpleTargetMode===null&&inferredMode!==null&&!mixedLegacy);
 
     initializedProjectIdRef.current = project.id;
   }, [
@@ -320,6 +326,8 @@ export function ModelEditor({
     project.assemblySteps,
     project.manualDetails,
     project.nextManualDetailNumber,
+    project.simpleTargetMode,
+    hydrateSimpleTargetMode,
   ]);
 
   useEffect(() => {

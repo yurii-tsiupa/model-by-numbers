@@ -5,6 +5,7 @@ import type { AssemblyStep } from "./AssemblyStep";
 import type { ModelFormat } from "@/features/model-import/types/ModelFormat";
 import type { ModelDimensions, ModelUnits } from "@/features/model-import/types/ModelUnits";
 import type { ManualDetail } from "./ManualDetail";
+import type {SimpleTargetMode} from "./SimpleTargetMode";
 
 export type PrinterType = "fdm" | "resin" | "other";
 
@@ -48,6 +49,7 @@ export type Project = {
   palette: PaletteColor[];
   assemblySteps: AssemblyStep[];
   paintingOrder: string[];
+  simpleTargetMode:SimpleTargetMode|null;
   importSchemaVersion?: 1;
 
   createdAt: Date;

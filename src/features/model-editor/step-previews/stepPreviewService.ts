@@ -3,7 +3,7 @@ import type { ManualDetail } from "@/features/models/types/ManualDetail";
 import type { PaletteColor } from "@/features/models/types/PaletteColor";
 import type { ProjectPart } from "@/features/models/types/ProjectPart";
 
-import type { PaintingStage,PaintingStepPreviewShot } from "../types/PaintingWorkflow";
+import type { PaintingPreviewCamera,PaintingStage,PaintingStepPreviewShot } from "../types/PaintingWorkflow";
 import { useModelEditorStore } from "../store/modelEditorStore";
 import {
   getCachedStepPreview,
@@ -35,11 +35,14 @@ const models = new Map<string, Promise<LoadedModel>>();
 const inflight = new Map<string, Promise<StepPreviewResult>>();
 const generations = new Map<string, number>();
 const sources = new Map<string, Required<Pick<StepPreviewRequest, "userId" | "modelFormat" | "modelVersion" | "baseColor">>>();
+const cameraSources=new Map<string,()=>PaintingPreviewCamera|null>();
 let queue: Promise<void> = Promise.resolve();
 
-export function configureStepPreviewSource(projectId: string, source: Required<Pick<StepPreviewRequest, "userId" | "modelFormat" | "modelVersion" | "baseColor">>): void {
+export function configureStepPreviewSource(projectId: string, source: Required<Pick<StepPreviewRequest, "userId" | "modelFormat" | "modelVersion" | "baseColor">>,getCurrentCamera?:()=>PaintingPreviewCamera|null): void {
   sources.set(projectId, source);
+  if(getCurrentCamera)cameraSources.set(projectId,getCurrentCamera);
 }
+export function getCurrentStepPreviewCamera(projectId:string){return cameraSources.get(projectId)?.()??null}
 
 export function hasStepPreviewGenerator(projectId: string): boolean {
   return sources.has(projectId);

@@ -9,14 +9,34 @@ import {
   useState,
 } from "react";
 import {
+  Box3,
   Mesh,
+  BufferGeometry,
+  Float32BufferAttribute,
+  DoubleSide,
   Matrix3,
   PerspectiveCamera,
   MathUtils,
+  Quaternion,
   Vector3,
   type Object3D,
 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+
+function brushTriangles(mesh:Mesh,faceIndex:number,point:Vector3,radius:number){
+  const geometry=mesh.geometry,position=geometry.getAttribute("position"),index=geometry.index,triangleCount=Math.floor((index?.count??position.count)/3),normalMatrix=new Matrix3().getNormalMatrix(mesh.matrixWorld);
+  const vertices=(triangle:number)=>[0,1,2].map(offset=>index?index.getX(triangle*3+offset):triangle*3+offset);
+  const triangleNormal=(triangle:number)=>{const ids=vertices(triangle),a=new Vector3().fromBufferAttribute(position,ids[0]),b=new Vector3().fromBufferAttribute(position,ids[1]),c=new Vector3().fromBufferAttribute(position,ids[2]);return b.sub(a).cross(c.sub(a)).normalize().applyMatrix3(normalMatrix).normalize()};
+  const originNormal=triangleNormal(faceIndex),selected:number[]=[];
+  for(let triangle=0;triangle<triangleCount;triangle++){
+    const ids=vertices(triangle),centroid=new Vector3();
+    for(const id of ids)centroid.add(new Vector3().fromBufferAttribute(position,id));
+    centroid.multiplyScalar(1/3).applyMatrix4(mesh.matrixWorld);
+    if(centroid.distanceToSquared(point)<=radius*radius&&originNormal.dot(triangleNormal(triangle))>.2)selected.push(triangle);
+  }
+  return selected.length?selected:[faceIndex];
+}
+function regionBrushRadius(modelDiagonal:number,value:number){const normalized=Math.max(0,Math.min(1,value/100));return modelDiagonal*(.003+(.08-.003)*normalized**2)}
 
 import { extractModelParts } from "../lib/extractModelParts";
 import { normalizeModel } from "../lib/normalizeModel";
@@ -79,6 +99,7 @@ function LoadedModelContent({
   const hasInitializedPartsRef = useRef(false);
   const isTransformDraggingRef = useRef(false);
   const [transformError, setTransformError] = useState(false);
+  const [brushHover,setBrushHover]=useState<{sessionId:string;position:Vector3;normal:Vector3;erase:boolean}|null>(null);
 
   const parts = useModelEditorStore(
     (state) => state.parts,
@@ -131,6 +152,8 @@ function LoadedModelContent({
   const selectedManualDetailPinId=useModelEditorStore(state=>state.selectedManualDetailPinId);
   const activePaintingStageId=useModelEditorStore(state=>state.activePaintingStageId);
   const manualDetailPlacement=useModelEditorStore(state=>state.manualDetailPlacement);
+  const regionPlacement=useModelEditorStore(state=>state.regionPlacement);
+  const applyRegionTriangles=useModelEditorStore(state=>state.applyRegionTriangles);
   const addDraftManualDetailPin=useModelEditorStore(state=>state.addDraftManualDetailPin);
   const selectManualDetail=useModelEditorStore(state=>state.selectManualDetail);
 
@@ -141,6 +164,8 @@ function LoadedModelContent({
 
     return normalizedModel;
   }, [sourceScene]);
+  const modelDiagonal=useMemo(()=>new Box3().setFromObject(model).getSize(new Vector3()).length(),[model]);
+  const brushQuaternion=useMemo(()=>brushHover?new Quaternion().setFromUnitVectors(new Vector3(0,0,1),brushHover.normal):undefined,[brushHover]);
   const activePaintingStage = useMemo(() => parts.flatMap((part) => part.paintingWorkflow.stages).find((stage) => stage.id === activePaintingStageId), [activePaintingStageId, parts]);
   const highlightedPaintingPartIds = useMemo(() => activePaintingStage?.targetReferences?.filter((reference) => reference.type === "part").map((reference) => reference.id) ?? [], [activePaintingStage]);
   const highlightedPaintingManualDetailIds=useMemo(()=>new Set(activePaintingStage?.targetReferences?.filter(reference=>reference.type!=="part").map(reference=>reference.id)??[]),[activePaintingStage]);
@@ -324,8 +349,25 @@ function LoadedModelContent({
     const surfaceNormal = event.face?.normal.clone().applyMatrix3(new Matrix3().getNormalMatrix(event.object.matrixWorld)).normalize();
     addDraftManualDetailPin({position:{x:event.point.x,y:event.point.y,z:event.point.z},normal:surfaceNormal?{x:surfaceNormal.x,y:surfaceNormal.y,z:surfaceNormal.z}:null,camera:{position:{x:camera.position.x,y:camera.position.y,z:camera.position.z},target:{x:controls.target.x,y:controls.target.y,z:controls.target.z},...(camera instanceof PerspectiveCamera?{zoom:camera.zoom}:{})}});
   }
+  function handleRegionPlacement(event:ThreeEvent<PointerEvent>){
+    if(!regionPlacement||!(event.object instanceof Mesh)||event.faceIndex===undefined||event.faceIndex===null)return;
+    event.stopPropagation();
+    const radius=regionBrushRadius(modelDiagonal,regionPlacement.brush);
+    const part=parts.find(candidate=>candidate.meshUuid===event.object.uuid);
+    applyRegionTriangles(part?.id??event.object.uuid,brushTriangles(event.object,event.faceIndex,event.point,radius));
+  }
+  function handleRegionHover(event:ThreeEvent<PointerEvent>){
+    if(!regionPlacement||!(event.object instanceof Mesh)||!event.face)return;
+    event.stopPropagation();
+    const radius=regionBrushRadius(modelDiagonal,regionPlacement.brush);
+    const normal=event.face.normal.clone().applyMatrix3(new Matrix3().getNormalMatrix(event.object.matrixWorld)).normalize();
+    setBrushHover({sessionId:regionPlacement.sessionId,position:event.point.clone().addScaledVector(normal,radius*.012),normal,erase:regionPlacement.erase});
+    if(event.buttons===1){if(controlsRef.current)controlsRef.current.enabled=false;handleRegionPlacement(event)}
+  }
+  const regionOverlays=useMemo(()=>{const rows:Array<{id:string;color:string;geometry:BufferGeometry}>=[],draftId=regionPlacement?.detailId;for(const detail of manualDetails){const selections=detail.id===draftId?regionPlacement?.selections:detail.region?.selections;if(detail.targetMode!=="region"||!selections?.length)continue;const color=palette.find(item=>item.id===detail.colorId)?.hex??"#F97316";for(const selection of selections){const meshUuid=parts.find(part=>part.id===selection.meshId)?.meshUuid??selection.meshId,mesh=model.getObjectByProperty("uuid",meshUuid);if(!(mesh instanceof Mesh))continue;const source=mesh.geometry,position=source.getAttribute("position"),index=source.index,values:number[]=[];for(const triangle of selection.triangleIndices)for(let offset=0;offset<3;offset++){const vertex=index?index.getX(triangle*3+offset):triangle*3+offset;if(vertex>=position.count)continue;const point=new Vector3().fromBufferAttribute(position,vertex).applyMatrix4(mesh.matrixWorld);values.push(point.x,point.y,point.z)}if(values.length){const geometry=new BufferGeometry();geometry.setAttribute("position",new Float32BufferAttribute(values,3));geometry.computeVertexNormals();rows.push({id:`${detail.id}:${selection.meshId}`,color,geometry})}}}return rows},[manualDetails,model,palette,parts,regionPlacement]);
+  useEffect(()=>()=>{for(const overlay of regionOverlays)overlay.geometry.dispose()},[regionOverlays]);
   const draftDetailNumber=manualDetailPlacement?.detailId?manualDetails.find(detail=>detail.id===manualDetailPlacement.detailId)?.number??nextManualDetailNumber:nextManualDetailNumber;
-  const renderedPins=hideManualDetailPins?[]:[...manualDetails.flatMap(detail=>detail.pins.map((pin,index)=>({pin,detailId:detail.id,detailName:detail.name,detailNumber:detail.number,locationIndex:index+1,colorId:detail.colorId,isDraft:false}))),...(manualDetailPlacement?.pins.map((pin,index)=>({pin,detailId:manualDetailPlacement.detailId??"draft",detailName:manualDetailPlacement.name,detailNumber:draftDetailNumber,locationIndex:index+1,colorId:null,isDraft:true}))??[])];
+  const renderedPins=hideManualDetailPins?[]:[...manualDetails.flatMap(detail=>detail.targetMode==="region"?[]:detail.pins.map((pin,index)=>({pin,detailId:detail.id,detailName:detail.name,detailNumber:detail.number,locationIndex:index+1,colorId:detail.colorId,isDraft:false}))),...(manualDetailPlacement?.pins.map((pin,index)=>({pin,detailId:manualDetailPlacement.detailId??"draft",detailName:manualDetailPlacement.name,detailNumber:draftDetailNumber,locationIndex:index+1,colorId:null,isDraft:true}))??[])];
 
   return (
     <>
@@ -333,7 +375,12 @@ function LoadedModelContent({
         object={model}
         onPointerDown={handlePointerDown}
         onClick={handleMarkerPlacement}
+        onPointerMove={handleRegionHover}
+        onPointerUp={(event:ThreeEvent<PointerEvent>)=>{if(controlsRef.current)controlsRef.current.enabled=true;handleRegionPlacement(event)}}
+        onPointerOut={()=>setBrushHover(null)}
       />
+      {regionOverlays.map(overlay=><mesh key={overlay.id} geometry={overlay.geometry} renderOrder={8}><meshStandardMaterial color={overlay.color} emissive={overlay.color} emissiveIntensity={.18} transparent opacity={.78} depthWrite={false} side={DoubleSide} polygonOffset polygonOffsetFactor={-2}/></mesh>)}
+      {brushHover&&brushQuaternion&&brushHover.sessionId===regionPlacement?.sessionId?<mesh position={brushHover.position} quaternion={brushQuaternion} renderOrder={12}><ringGeometry args={[regionBrushRadius(modelDiagonal,regionPlacement.brush)*.82,regionBrushRadius(modelDiagonal,regionPlacement.brush),48]}/><meshBasicMaterial color={brushHover.erase?"#ef4444":"#38bdf8"} transparent opacity={.82} depthTest={false} side={DoubleSide}/></mesh>:null}
 
       {!showAllPartsForCapture?renderedPins.map(({pin,detailId,detailName,detailNumber,locationIndex,colorId,isDraft})=>{const targetHighlighted=highlightedPaintingManualDetailIds.has(detailId),detailSelected=selectedManualDetailId===detailId,pinSelected=selectedManualDetailPinId===pin.id,hasActiveTargets=Boolean(activePaintingStage?.targetReferences?.length),assignedColor=colorId?palette.find(color=>color.id===colorId)?.hex:undefined;return <Html key={pin.id} position={[pin.position.x,pin.position.y,pin.position.z]} center sprite><button type="button" aria-label={t("editor.manualDetails.accessibility.selectLocation",{number:detailNumber,name:detailName,location:locationIndex})} aria-pressed={pinSelected||detailSelected||targetHighlighted} onClick={event=>{event.stopPropagation();if(!isDraft)selectManualDetail(detailId,pin.id)}} style={!pinSelected&&!detailSelected&&!targetHighlighted&&assignedColor?{borderColor:assignedColor}:undefined} className={`grid min-w-7 place-items-center rounded-full border-2 px-1 text-xs font-bold shadow-lg ${targetHighlighted||pinSelected?"h-9 border-[var(--accent-foreground)] bg-[var(--accent)] text-[var(--accent-foreground)]":detailSelected||isDraft?"h-7 border-[var(--accent)] bg-[var(--card)] text-[var(--text)]":`h-7 border-[var(--border)] bg-[var(--card)] text-[var(--text)] ${hasActiveTargets?"opacity-50":""}`}`}>{detailNumber}</button></Html>}) : null}
 

@@ -12,13 +12,14 @@ import type { ExplodedLabelsMode } from "../types/ExplodedLabelsMode";
 import type { ExplodedOffset } from "../types/ExplodedOffset";
 import { MAX_EXPLODED_OFFSET } from "../lib/exploded/exploded.constants";
 import type { AssemblyStep, CreateAssemblyStepInput, UpdateAssemblyStepInput } from "@/features/models/types/AssemblyStep";
-import type { CreatePaintingStageInput, PaintingDifficulty, PartPaintingWorkflow, UpdatePaintingStageInput } from "../types/PaintingWorkflow";
+import type { CreatePaintingStageInput, PaintingDifficulty,PaintingPreviewCamera,PaintingStage, PartPaintingWorkflow, UpdatePaintingStageInput } from "../types/PaintingWorkflow";
 import { normalizePaintingOrder } from "../lib/paintingOrder";
-import type { CreateManualDetailPinInput,ManualDetail,ManualDetailPin } from "@/features/models/types/ManualDetail";
+import type { CreateManualDetailPinInput,DetailRegion,ManualDetail,ManualDetailPin,ManualDetailTargetMode } from "@/features/models/types/ManualDetail";
 import { assignColorToTarget,type ColorAssignmentTarget } from "../lib/assignColorToTarget";
 import { ensurePaletteColor } from "../lib/ensurePaletteColor";
 import { assignDetectedPartColor } from "../lib/assignDetectedPartColor";
 import { requestBaseColorSynchronization } from "../lib/baseColorSynchronization";
+import type {SimpleTargetMode} from "../lib/simpleTargetMode";
 
 export type EditorSaveStatus =
   | "saved"
@@ -33,6 +34,7 @@ export type SelectionMode =
 type ModelEditorState = {
   parts: ModelPart[];
   paintingOrder:string[];
+  simpleTargetMode:SimpleTargetMode|null;
   assemblySteps: AssemblyStep[];
   focusedAssemblyStepId: string | null;
   assemblyFocusSnapshot: {
@@ -46,10 +48,13 @@ type ModelEditorState = {
   selectedManualDetailId:string|null;
   selectedManualDetailPinId:string|null;
   manualDetailPlacement:{detailId:string|null;name:string;pins:ManualDetailPin[]}|null;
+  regionPlacement:{detailId:string;sessionId:string;selections:DetailRegion["selections"];history:DetailRegion["selections"][];future:DetailRegion["selections"][];brush:number;erase:boolean}|null;
   manualDetailFocusRequest:{detailId:string;pinId:string|null;revision:number}|null;
   activePaintingStageId: string | null;
   paintingTargetFocusRevision: number;
   setManualDetails:(details:ManualDetail[],nextDetailNumber:number)=>void;
+  hydrateSimpleTargetMode:(mode:SimpleTargetMode|null,persist:boolean)=>void;
+  applySimpleTargetMode:(mode:SimpleTargetMode)=>void;
   startManualDetailPlacement:(name:string,detailId?:string)=>void;
   cancelManualDetailPlacement:()=>void;
   addDraftManualDetailPin:(input:CreateManualDetailPinInput)=>void;
@@ -57,7 +62,18 @@ type ModelEditorState = {
   clearDraftManualDetailPins:()=>void;
   finishManualDetailPlacement:()=>void;
   selectManualDetail:(detailId:string|null,pinId?:string|null)=>void;
-  updateManualDetail:(detailId:string,changes:{name?:string;colorId?:string|null})=>void;
+  createRegionManualDetail:(name:string,colorId:string|null)=>string;
+  updateManualDetail:(detailId:string,changes:{name?:string;colorId?:string|null;targetMode?:ManualDetailTargetMode;region?:DetailRegion;pins?:ManualDetailPin[]})=>void;
+  startRegionPlacement:(detailId:string)=>void;
+  applyRegionTriangles:(meshId:string,triangleIndices:number[])=>void;
+  setRegionBrush:(brush:number)=>void;
+  setRegionErase:(erase:boolean)=>void;
+  undoRegion:()=>void;
+  redoRegion:()=>void;
+  clearRegion:()=>void;
+  finishRegionPlacement:()=>void;
+  cancelRegionPlacement:()=>void;
+  clearManualDetailTargeting:(detailId:string,nextMode:ManualDetailTargetMode)=>void;
   deleteManualDetail:(detailId:string)=>void;
   deleteManualDetailPin:(detailId:string,pinId:string)=>void;
   focusManualDetail:(detailId:string)=>void;
@@ -136,6 +152,8 @@ type ModelEditorState = {
   movePaintingStage: (partId:string,stageId:string,direction:"up"|"down")=>void;
   duplicatePaintingStage: (partId:string,stageId:string)=>void;
   addPaintingStagePreviewShot:(partId:string,stageId:string,manualDetailId:string,pinId:string)=>void;
+  addPaintingStageRegionPreviewShot:(partId:string,stageId:string,manualDetailId:string,camera:PaintingPreviewCamera)=>void;
+  replacePaintingStageRegionPreviewShot:(partId:string,stageId:string,shotId:string,camera:PaintingPreviewCamera)=>void;
   removePaintingStagePreviewShot:(partId:string,stageId:string,shotId:string)=>void;
   setPaintingStageOverviewPreviewEnabled:(partId:string,stageId:string,enabled:boolean)=>void;
   setPartPaintingNotes:(partId:string,notes:string)=>void;
@@ -252,10 +270,12 @@ export const useModelEditorStore =
     selectedManualDetailId:null,
     selectedManualDetailPinId:null,
     manualDetailPlacement:null,
+    regionPlacement:null,
     manualDetailFocusRequest:null,
     activePaintingStageId: null,
     paintingTargetFocusRevision: 0,
     paintingOrder:[],
+    simpleTargetMode:null,
     assemblySteps: [],
     focusedAssemblyStepId: null,
     assemblyFocusSnapshot: null,
@@ -341,7 +361,9 @@ export const useModelEditorStore =
     deletePaintingStage:(partId,stageId)=>set((state)=>{const part=state.parts.find(p=>p.id===partId),index=part?.paintingWorkflow.stages.findIndex(s=>s.id===stageId)??-1;if(!part||index<0)return state;const stages=part.paintingWorkflow.stages.filter(s=>s.id!==stageId).map((s,i)=>({...s,order:i+1})),nextActive=state.activePaintingStageId===stageId?(stages[index]?.id??stages[index-1]?.id??null):state.activePaintingStageId;return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages}}:p),activePaintingStageId:nextActive,...markStateDirty(state)}}),
     movePaintingStage:(partId,stageId,direction)=>set((state)=>{const part=state.parts.find(p=>p.id===partId);if(!part)return state;const stages=[...part.paintingWorkflow.stages],i=stages.findIndex(s=>s.id===stageId),j=direction==="up"?i-1:i+1;if(i<0||j<0||j>=stages.length)return state;[stages[i],stages[j]]=[stages[j],stages[i]];const normalized=stages.map((s,index)=>({...s,order:index+1}));return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:normalized}}:p),...markStateDirty(state)}}),
     duplicatePaintingStage:(partId,stageId)=>set((state)=>{const part=state.parts.find(p=>p.id===partId),index=part?.paintingWorkflow.stages.findIndex(s=>s.id===stageId)??-1;if(!part||index<0)return state;const source=part.paintingWorkflow.stages[index],now=new Date().toISOString(),duplicate={...source,id:crypto.randomUUID(),targetReferences:source.targetReferences?.map(reference=>({...reference})),previewShots:source.previewShots?.map(shot=>({...shot,id:crypto.randomUUID()})),createdAt:now,updatedAt:now},stages=[...part.paintingWorkflow.stages.slice(0,index+1),duplicate,...part.paintingWorkflow.stages.slice(index+1)].map((stage,i)=>({...stage,order:i+1}));return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages}}:p),activePaintingStageId:duplicate.id,...markStateDirty(state)}}),
-    addPaintingStagePreviewShot:(partId,stageId,manualDetailId,pinId)=>set(state=>{const part=state.parts.find(p=>p.id===partId),stage=part?.paintingWorkflow.stages.find(s=>s.id===stageId),detail=state.manualDetails.find(d=>d.id===manualDetailId);if(!part||!stage||!detail?.pins.some(pin=>pin.id===pinId)||!stage.targetReferences?.some(reference=>reference.type==="manualDetail"&&reference.id===manualDetailId)||stage.previewShots?.some(shot=>shot.manualDetailId===manualDetailId&&shot.pinId===pinId))return state;const shot={id:crypto.randomUUID(),type:"manualDetailLocation" as const,manualDetailId,pinId},now=new Date().toISOString();return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:p.paintingWorkflow.stages.map(s=>s.id===stageId?{...s,previewShots:[...(s.previewShots??[]),shot],updatedAt:now}:s)}}:p),...markStateDirty(state)}}),
+    addPaintingStagePreviewShot:(partId,stageId,manualDetailId,pinId)=>set(state=>{const part=state.parts.find(p=>p.id===partId),stage=part?.paintingWorkflow.stages.find(s=>s.id===stageId),detail=state.manualDetails.find(d=>d.id===manualDetailId);if(!part||!stage||!detail?.pins.some(pin=>pin.id===pinId)||!stage.targetReferences?.some(reference=>reference.type==="manualDetail"&&reference.id===manualDetailId)||stage.previewShots?.some(shot=>shot.type==="manualDetailLocation"&&shot.manualDetailId===manualDetailId&&shot.pinId===pinId))return state;const shot={id:crypto.randomUUID(),type:"manualDetailLocation" as const,manualDetailId,pinId},now=new Date().toISOString();return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:p.paintingWorkflow.stages.map(s=>s.id===stageId?{...s,previewShots:[...(s.previewShots??[]),shot],updatedAt:now}:s)}}:p),...markStateDirty(state)}}),
+    addPaintingStageRegionPreviewShot:(partId,stageId,manualDetailId,camera)=>set(state=>{const part=state.parts.find(p=>p.id===partId),stage=part?.paintingWorkflow.stages.find(s=>s.id===stageId),detail=state.manualDetails.find(d=>d.id===manualDetailId);if(!part||!stage||detail?.targetMode!=="region"||!detail.region?.selections.length||!stage.targetReferences?.some(reference=>reference.type==="manualDetail"&&reference.id===manualDetailId))return state;const shot={id:crypto.randomUUID(),type:"manualDetailRegion" as const,manualDetailId,camera},now=new Date().toISOString();return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:p.paintingWorkflow.stages.map(s=>s.id===stageId?{...s,previewShots:[...(s.previewShots??[]),shot],updatedAt:now}:s)}}:p),...markStateDirty(state)}}),
+    replacePaintingStageRegionPreviewShot:(partId,stageId,shotId,camera)=>set(state=>{const part=state.parts.find(p=>p.id===partId),stage=part?.paintingWorkflow.stages.find(s=>s.id===stageId);if(!part||!stage?.previewShots?.some(shot=>shot.id===shotId&&shot.type==="manualDetailRegion"))return state;return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:p.paintingWorkflow.stages.map(s=>s.id===stageId?{...s,previewShots:s.previewShots?.map(shot=>shot.id===shotId&&shot.type==="manualDetailRegion"?{...shot,camera}:shot),updatedAt:new Date().toISOString()}:s)}}:p),...markStateDirty(state)}}),
     removePaintingStagePreviewShot:(partId,stageId,shotId)=>set(state=>{const part=state.parts.find(p=>p.id===partId),stage=part?.paintingWorkflow.stages.find(s=>s.id===stageId);if(!part||!stage?.previewShots?.some(shot=>shot.id===shotId))return state;return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:p.paintingWorkflow.stages.map(s=>s.id===stageId?{...s,previewShots:s.previewShots?.filter(shot=>shot.id!==shotId),updatedAt:new Date().toISOString()}:s)}}:p),...markStateDirty(state)}}),
     setPaintingStageOverviewPreviewEnabled:(partId,stageId,enabled)=>set(state=>{const part=state.parts.find(p=>p.id===partId),stage=part?.paintingWorkflow.stages.find(s=>s.id===stageId);if(!part||!stage||(stage.overviewPreviewEnabled!==false)===enabled)return state;return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:p.paintingWorkflow.stages.map(s=>s.id===stageId?{...s,overviewPreviewEnabled:enabled,updatedAt:new Date().toISOString()}:s)}}:p),...markStateDirty(state)}}),
     setPartPaintingNotes:(partId,notes)=>{const part=useModelEditorStore.getState().parts.find(p=>p.id===partId);if(part&&notes.trim().length<=1500)useModelEditorStore.getState().setPartPaintingWorkflow(partId,{...part.paintingWorkflow,notes:notes.trim()})},
@@ -379,16 +401,73 @@ export const useModelEditorStore =
       });
     },
 
-    setManualDetails:(manualDetails,nextManualDetailNumber)=>set({manualDetails,nextManualDetailNumber,selectedManualDetailId:null,selectedManualDetailPinId:null,manualDetailPlacement:null,manualDetailFocusRequest:null}),
-    startManualDetailPlacement:(name,detailId)=>set({manualDetailPlacement:{detailId:detailId??null,name:name.trim(),pins:[]},selectedManualDetailId:detailId??null,selectedManualDetailPinId:null,selectedPartId:null}),
+    setManualDetails:(manualDetails,nextManualDetailNumber)=>set({manualDetails,nextManualDetailNumber,selectedManualDetailId:null,selectedManualDetailPinId:null,manualDetailPlacement:null,regionPlacement:null,manualDetailFocusRequest:null}),
+    hydrateSimpleTargetMode:(simpleTargetMode,persist)=>set(state=>({simpleTargetMode,...(persist?markStateDirty(state):{})})),
+    applySimpleTargetMode:(simpleTargetMode)=>set(state=>{
+      if(state.simpleTargetMode===simpleTargetMode)return state;
+      if(state.simpleTargetMode!==null){
+        const hadPrimer=state.parts.some(part=>part.paintingWorkflow.stages.some(stage=>stage.type==="primer")),now=new Date().toISOString();
+        const primer:PaintingStage={id:crypto.randomUUID(),order:1,type:"primer",customName:null,paletteColorId:null,recommendedCoats:null,notes:"",targetReferences:[],overviewPreviewEnabled:true,previewShots:[],createdAt:now,updatedAt:now};
+        return{
+          simpleTargetMode,
+          parts:state.parts.map((part,index)=>({...part,paintingWorkflow:{...part.paintingWorkflow,stages:index===0&&hadPrimer?[primer]:[]}})),
+          manualDetails:[],
+          nextManualDetailNumber:1,
+          selectedManualDetailId:null,
+          selectedManualDetailPinId:null,
+          manualDetailPlacement:null,
+          regionPlacement:null,
+          manualDetailFocusRequest:null,
+          activePaintingStageId:null,
+          paintingTargetFocusRevision:state.paintingTargetFocusRevision+1,
+          selectedPartIds:[],
+          highlightedPaletteColorId:null,
+          ...markStateDirty(state),
+        };
+      }
+      const incompatibleIds=new Set(state.manualDetails.filter(detail=>(detail.targetMode==="region"||Boolean(detail.region?.selections.length)?"region":"markers")!==simpleTargetMode).map(detail=>detail.id));
+      const now=Date.now();
+      return{
+        simpleTargetMode,
+        manualDetails:state.manualDetails.map(detail=>incompatibleIds.has(detail.id)?{...detail,targetMode:simpleTargetMode,pins:[],region:{selections:[]},updatedAt:now}:{...detail,targetMode:simpleTargetMode}),
+        parts:state.parts.map(part=>({...part,paintingWorkflow:{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>({...stage,previewShots:stage.previewShots?.filter(shot=>!incompatibleIds.has(shot.manualDetailId)),updatedAt:stage.previewShots?.some(shot=>incompatibleIds.has(shot.manualDetailId))?new Date().toISOString():stage.updatedAt}))}})),
+        manualDetailPlacement:null,
+        regionPlacement:null,
+        selectedManualDetailPinId:null,
+        ...markStateDirty(state),
+      };
+    }),
+    startManualDetailPlacement:(name,detailId)=>set({manualDetailPlacement:{detailId:detailId??null,name:name.trim(),pins:[]},regionPlacement:null,selectedManualDetailId:detailId??null,selectedManualDetailPinId:null,selectedPartId:null}),
     cancelManualDetailPlacement:()=>set({manualDetailPlacement:null}),
     addDraftManualDetailPin:(input)=>set(state=>{const draft=state.manualDetailPlacement;if(!draft)return state;const now=Date.now(),pin:ManualDetailPin={...input,id:`pin_${crypto.randomUUID()}`,createdAt:now,updatedAt:now};return{manualDetailPlacement:{...draft,pins:[...draft.pins,pin]},selectedManualDetailPinId:pin.id}}),
     undoDraftManualDetailPin:()=>set(state=>state.manualDetailPlacement?.pins.length?{manualDetailPlacement:{...state.manualDetailPlacement,pins:state.manualDetailPlacement.pins.slice(0,-1)},selectedManualDetailPinId:state.manualDetailPlacement.pins.at(-2)?.id??null}:state),
     clearDraftManualDetailPins:()=>set(state=>state.manualDetailPlacement?.pins.length?{manualDetailPlacement:{...state.manualDetailPlacement,pins:[]},selectedManualDetailPinId:null}:state),
     finishManualDetailPlacement:()=>set(state=>{const draft=state.manualDetailPlacement;if(!draft?.pins.length||!draft.name.trim())return state;const now=Date.now();if(draft.detailId){const existing=state.manualDetails.find(detail=>detail.id===draft.detailId);if(!existing)return{manualDetailPlacement:null};return{manualDetails:state.manualDetails.map(detail=>detail.id===draft.detailId?{...detail,pins:[...detail.pins,...draft.pins],updatedAt:now}:detail),manualDetailPlacement:null,selectedManualDetailId:draft.detailId,selectedManualDetailPinId:draft.pins.at(-1)?.id??null,...markStateDirty(state)}}const detail:ManualDetail={id:`detail_${crypto.randomUUID()}`,number:state.nextManualDetailNumber,name:draft.name.trim(),colorId:null,pins:draft.pins,createdAt:now,updatedAt:now};return{manualDetails:[...state.manualDetails,detail],nextManualDetailNumber:state.nextManualDetailNumber+1,manualDetailPlacement:null,selectedManualDetailId:detail.id,selectedManualDetailPinId:draft.pins.at(-1)?.id??null,...markStateDirty(state)}}),
+    createRegionManualDetail:(name,colorId)=>{const id=`detail_${crypto.randomUUID()}`,now=Date.now();set(state=>{const detail:ManualDetail={id,number:state.nextManualDetailNumber,name:name.trim(),colorId,pins:[],targetMode:"region",region:{selections:[]},createdAt:now,updatedAt:now};return{manualDetails:[...state.manualDetails,detail],nextManualDetailNumber:state.nextManualDetailNumber+1,selectedManualDetailId:id,...markStateDirty(state)}});return id},
+    startRegionPlacement:(detailId)=>set(state=>{const detail=state.manualDetails.find(item=>item.id===detailId);return detail?{regionPlacement:{detailId,sessionId:crypto.randomUUID(),selections:detail.region?.selections.map(selection=>({...selection,triangleIndices:[...selection.triangleIndices]}))??[],history:[],future:[],brush:50,erase:false},manualDetailPlacement:null,selectedManualDetailId:detailId}:state}),
+    applyRegionTriangles:(meshId,triangleIndices)=>set(state=>{const draft=state.regionPlacement;if(!draft||!triangleIndices.length)return state;const before=draft.selections.map(selection=>({...selection,triangleIndices:[...selection.triangleIndices]})),current=draft.selections.find(selection=>selection.meshId===meshId),values=new Set(current?.triangleIndices??[]);for(const index of triangleIndices){if(draft.erase)values.delete(index);else values.add(index)}const selections=[...draft.selections.filter(selection=>selection.meshId!==meshId),...(values.size?[{meshId,triangleIndices:[...values].sort((a,b)=>a-b)}]:[])];return{regionPlacement:{...draft,selections,history:[...draft.history,before],future:[]}}}),
+    setRegionBrush:(brush)=>set(state=>state.regionPlacement?{regionPlacement:{...state.regionPlacement,brush:Math.max(0,Math.min(100,brush))}}:state),
+    setRegionErase:(erase)=>set(state=>state.regionPlacement?{regionPlacement:{...state.regionPlacement,erase}}:state),
+    undoRegion:()=>set(state=>{const draft=state.regionPlacement,previous=draft?.history.at(-1);return draft&&previous?{regionPlacement:{...draft,selections:previous,history:draft.history.slice(0,-1),future:[draft.selections,...draft.future]}}:state}),
+    redoRegion:()=>set(state=>{const draft=state.regionPlacement,next=draft?.future[0];return draft&&next?{regionPlacement:{...draft,selections:next,history:[...draft.history,draft.selections],future:draft.future.slice(1)}}:state}),
+    clearRegion:()=>set(state=>state.regionPlacement?.selections.length?{regionPlacement:{...state.regionPlacement,history:[...state.regionPlacement.history,state.regionPlacement.selections],selections:[],future:[]}}:state),
+    finishRegionPlacement:()=>set(state=>{const draft=state.regionPlacement;if(!draft)return state;return{manualDetails:state.manualDetails.map(detail=>detail.id===draft.detailId?{...detail,targetMode:"region" as const,region:{selections:draft.selections},pins:[],updatedAt:Date.now()}:detail),regionPlacement:null,...markStateDirty(state)}}),
+    cancelRegionPlacement:()=>set({regionPlacement:null}),
+    clearManualDetailTargeting:(detailId,nextMode)=>set(state=>{
+      const detail=state.manualDetails.find(item=>item.id===detailId);
+      if(!detail)return state;
+      return{
+        manualDetails:state.manualDetails.map(item=>item.id===detailId?{...item,targetMode:nextMode,pins:[],region:{selections:[]},updatedAt:Date.now()}:item),
+        parts:state.parts.map(part=>({...part,paintingWorkflow:{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>({...stage,previewShots:stage.previewShots?.filter(shot=>shot.manualDetailId!==detailId),updatedAt:stage.previewShots?.some(shot=>shot.manualDetailId===detailId)?new Date().toISOString():stage.updatedAt}))}})),
+        manualDetailPlacement:null,
+        regionPlacement:null,
+        selectedManualDetailPinId:null,
+        ...markStateDirty(state),
+      };
+    }),
     selectManualDetail:(selectedManualDetailId,selectedManualDetailPinId=null)=>set({selectedManualDetailId,selectedManualDetailPinId,selectedPartId:null,highlightedPaletteColorId:null}),
-    updateManualDetail:(detailId,changes)=>set(state=>{const detail=state.manualDetails.find(item=>item.id===detailId);if(!detail)return state;const name=changes.name===undefined?detail.name:changes.name.trim(),colorId=changes.colorId===undefined?detail.colorId:changes.colorId;if(!name||(colorId&&!state.palette.some(color=>color.id===colorId))||(name===detail.name&&colorId===detail.colorId))return state;return{manualDetails:state.manualDetails.map(item=>item.id===detailId?{...item,name,colorId,updatedAt:Date.now()}:item),...markStateDirty(state)}}),
-    deleteManualDetail:(detailId)=>set(state=>state.manualDetails.some(detail=>detail.id===detailId)?{manualDetails:state.manualDetails.filter(detail=>detail.id!==detailId),parts:state.parts.map(part=>({...part,paintingWorkflow:{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>({...stage,targetReferences:stage.targetReferences?.filter(reference=>!(reference.type==="manualDetail"&&reference.id===detailId))??[],previewShots:stage.previewShots?.filter(shot=>shot.manualDetailId!==detailId)}))}})),selectedManualDetailId:state.selectedManualDetailId===detailId?null:state.selectedManualDetailId,selectedManualDetailPinId:state.selectedManualDetailId===detailId?null:state.selectedManualDetailPinId,manualDetailPlacement:state.manualDetailPlacement?.detailId===detailId?null:state.manualDetailPlacement,manualDetailFocusRequest:state.manualDetailFocusRequest?.detailId===detailId?null:state.manualDetailFocusRequest,...markStateDirty(state)}:state),
+    updateManualDetail:(detailId,changes)=>set(state=>{const detail=state.manualDetails.find(item=>item.id===detailId);if(!detail)return state;const name=changes.name===undefined?detail.name:changes.name.trim(),colorId=changes.colorId===undefined?detail.colorId:changes.colorId;if(!name||(colorId&&!state.palette.some(color=>color.id===colorId)))return state;const next={...detail,...changes,name,colorId,updatedAt:Date.now()};if(JSON.stringify(next)===JSON.stringify(detail))return state;return{manualDetails:state.manualDetails.map(item=>item.id===detailId?next:item),...markStateDirty(state)}}),
+    deleteManualDetail:(detailId)=>set(state=>state.manualDetails.some(detail=>detail.id===detailId)?{manualDetails:state.manualDetails.filter(detail=>detail.id!==detailId),parts:state.parts.map(part=>({...part,paintingWorkflow:{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>({...stage,targetReferences:stage.targetReferences?.filter(reference=>!(reference.type==="manualDetail"&&reference.id===detailId))??[],previewShots:stage.previewShots?.filter(shot=>shot.manualDetailId!==detailId)}))}})),selectedManualDetailId:state.selectedManualDetailId===detailId?null:state.selectedManualDetailId,selectedManualDetailPinId:state.selectedManualDetailId===detailId?null:state.selectedManualDetailPinId,manualDetailPlacement:state.manualDetailPlacement?.detailId===detailId?null:state.manualDetailPlacement,regionPlacement:state.regionPlacement?.detailId===detailId?null:state.regionPlacement,manualDetailFocusRequest:state.manualDetailFocusRequest?.detailId===detailId?null:state.manualDetailFocusRequest,...markStateDirty(state)}:state),
     deleteManualDetailPin:(detailId,pinId)=>set(state=>{const detail=state.manualDetails.find(item=>item.id===detailId);if(!detail||!detail.pins.some(pin=>pin.id===pinId))return state;if(detail.pins.length===1)return{manualDetails:state.manualDetails.filter(item=>item.id!==detailId),parts:state.parts.map(part=>({...part,paintingWorkflow:{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>({...stage,targetReferences:stage.targetReferences?.filter(reference=>!(reference.type==="manualDetail"&&reference.id===detailId))??[]}))}})),selectedManualDetailId:state.selectedManualDetailId===detailId?null:state.selectedManualDetailId,selectedManualDetailPinId:null,...markStateDirty(state)};return{manualDetails:state.manualDetails.map(item=>item.id===detailId?{...item,pins:item.pins.filter(pin=>pin.id!==pinId),updatedAt:Date.now()}:item),selectedManualDetailPinId:state.selectedManualDetailPinId===pinId?null:state.selectedManualDetailPinId,...markStateDirty(state)}}),
     focusManualDetail:(detailId)=>set(state=>({manualDetailFocusRequest:{detailId,pinId:null,revision:(state.manualDetailFocusRequest?.revision??0)+1}})),
     focusManualDetailPin:(detailId,pinId)=>set(state=>({manualDetailFocusRequest:{detailId,pinId,revision:(state.manualDetailFocusRequest?.revision??0)+1}})),
@@ -944,10 +1023,12 @@ export const useModelEditorStore =
         selectedManualDetailId:null,
         selectedManualDetailPinId:null,
         manualDetailPlacement:null,
+        regionPlacement:null,
         manualDetailFocusRequest:null,
         activePaintingStageId: null,
         paintingTargetFocusRevision: 0,
         paintingOrder:[],
+        simpleTargetMode:null,
         assemblySteps: [],
         focusedAssemblyStepId: null,
         assemblyFocusSnapshot: null,

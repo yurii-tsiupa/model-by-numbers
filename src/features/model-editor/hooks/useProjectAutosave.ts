@@ -95,6 +95,7 @@ export function useProjectAutosave({
         paintingOrder:serializedPaintingOrder,
         manualDetails:serializedManualDetails,
         nextManualDetailNumber:editorState.nextManualDetailNumber,
+        simpleTargetMode:editorState.simpleTargetMode,
       });
 
       useModelEditorStore
@@ -116,6 +117,7 @@ export function useProjectAutosave({
             paintingOrder:serializedPaintingOrder,
             manualDetails:serializedManualDetails,
             nextManualDetailNumber:editorState.nextManualDetailNumber,
+            simpleTargetMode:editorState.simpleTargetMode,
             updatedAt: new Date(),
           };
         },

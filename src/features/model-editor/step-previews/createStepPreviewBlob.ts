@@ -1,9 +1,12 @@
 import {
   AmbientLight,
   Box3,
+  BufferGeometry,
   CanvasTexture,
   Color,
   DirectionalLight,
+  DoubleSide,
+  Float32BufferAttribute,
   Mesh,
   MeshStandardMaterial,
   Object3D,
@@ -71,10 +74,13 @@ export async function createStepPreviewBlob({
 }): Promise<{ blob: Blob; framing: StepPreviewFraming }> {
   const resolved = resolvePaintingTargetReferences(step.targetReferences, parts, manualDetails);
   const wholeModel = step.type === "primer" && (step.targetReferences?.length ?? 0) === 0;
-  const resolvedParts = wholeModel ? parts : resolved.parts;
-  const pinTargets = resolved.manualDetails.flatMap(detail => detail.pins.filter(pin=>!shot||(detail.id===shot.manualDetailId&&pin.id===shot.pinId)).map(pin => ({ pin, number: detail.number })));
-  if(shot&&!pinTargets.length)throw new Error("targetsUnavailable");
-  if (!resolvedParts.length && !pinTargets.length) throw new Error("targetsUnavailable");
+  const resolvedParts = shot?.type==="manualDetailRegion"?[]:wholeModel ? parts : resolved.parts;
+  const regionSelections=new Map<string,{color:string;triangles:number[]}>();
+  for(const detail of resolved.manualDetails)if(detail.targetMode==="region"&&(!shot||shot.type!=="manualDetailRegion"||detail.id===shot.manualDetailId))for(const selection of detail.region?.selections??[]){const meshUuid=parts.find(part=>part.id===selection.meshId)?.meshUuid??selection.meshId;regionSelections.set(meshUuid,{color:detail.colorId?palette.find(color=>color.id===detail.colorId)?.hex??baseColor:baseColor,triangles:selection.triangleIndices})}
+  const pinTargets = shot?.type==="manualDetailRegion"?[]:resolved.manualDetails.flatMap(detail => detail.pins.filter(pin=>!shot||(detail.id===shot.manualDetailId&&pin.id===shot.pinId)).map(pin => ({ pin, number: detail.number })));
+  if(shot?.type==="manualDetailLocation"&&!pinTargets.length)throw new Error("targetsUnavailable");
+  if(shot?.type==="manualDetailRegion"&&!resolved.manualDetails.some(detail=>detail.id===shot.manualDetailId&&detail.targetMode==="region"&&detail.region?.selections.length))throw new Error("targetsUnavailable");
+  if (!resolvedParts.length && !pinTargets.length && !regionSelections.size) throw new Error("targetsUnavailable");
 
   const { canvas, renderer } = getRenderer();
   const materials: Material[] = [];
@@ -90,6 +96,7 @@ export async function createStepPreviewBlob({
   scene.add(fillLight);
 
   const clone = model.clone(true);
+  clone.updateWorldMatrix(true,true);
   const sourceMeshes: Mesh[] = [];
   const cloneMeshes: Mesh[] = [];
   model.traverse(value => { if (value instanceof Mesh) sourceMeshes.push(value); });
@@ -101,7 +108,8 @@ export async function createStepPreviewBlob({
 
   cloneMeshes.forEach((mesh, index) => {
     const part = partByMesh.get(sourceMeshes[index]?.uuid ?? "");
-    const targeted = Boolean(part && targets.has(part.id));
+    const regionSelection=regionSelections.get(sourceMeshes[index]?.uuid??"");
+    const targeted = Boolean((part && targets.has(part.id))||regionSelection);
     const sourceMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     const copies = sourceMaterials.map(source => {
       const copy = source.clone();
@@ -118,15 +126,21 @@ export async function createStepPreviewBlob({
       return copy;
     });
     mesh.material = Array.isArray(mesh.material) ? copies : copies[0];
-    if (targeted) targetBounds.expandByObject(mesh, true);
+    if(regionSelection){
+      const source=mesh.geometry,position=source.getAttribute("position"),indexBuffer=source.index,values:number[]=[];
+      for(const triangle of regionSelection.triangles)for(let offset=0;offset<3;offset++){const vertex=indexBuffer?indexBuffer.getX(triangle*3+offset):triangle*3+offset;if(vertex<position.count){values.push(position.getX(vertex),position.getY(vertex),position.getZ(vertex))}}
+      if(values.length){const geometry=new BufferGeometry();geometry.setAttribute("position",new Float32BufferAttribute(values,3));geometry.computeVertexNormals();const material=new MeshStandardMaterial({color:regionSelection.color,emissive:STEP_PREVIEW_THEME.targetEmissive,emissiveIntensity:.1,side:DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});materials.push(material);const overlay=new Mesh(geometry,material);mesh.add(overlay);for(let valueIndex=0;valueIndex<values.length;valueIndex+=3)targetBounds.expandByPoint(new Vector3(values[valueIndex],values[valueIndex+1],values[valueIndex+2]).applyMatrix4(mesh.matrixWorld))}
+    }
+    if (targeted&&!regionSelection) targetBounds.expandByObject(mesh, true);
   });
 
   for (const { pin } of pinTargets) targetBounds.expandByPoint(new Vector3(pin.position.x, pin.position.y, pin.position.z));
   const modelBounds = new Box3().setFromObject(clone, true);
   const pins = pinTargets.map(target => target.pin);
-  const framing = getStepPreviewFraming(targetBounds, modelBounds, pins.length === 1 && !resolvedParts.length ? pins[0] : undefined);
+  const framing = shot?.type==="manualDetailRegion"?{cameraPosition:shot.camera.position,target:shot.camera.target,up:shot.camera.up,targetRadius:shot.camera.targetRadius}:getStepPreviewFraming(targetBounds, modelBounds, pins.length === 1 && !resolvedParts.length ? pins[0] : undefined);
   const camera = new PerspectiveCamera(42, STEP_PREVIEW_ASPECT_RATIO, 0.01, 1000);
   camera.position.set(framing.cameraPosition.x, framing.cameraPosition.y, framing.cameraPosition.z);
+  if(shot?.type==="manualDetailRegion")camera.zoom=shot.camera.zoom;
   camera.up.set(framing.up.x, framing.up.y, framing.up.z);
   camera.lookAt(framing.target.x, framing.target.y, framing.target.z);
   const modelSize = modelBounds.getSize(new Vector3()).length();

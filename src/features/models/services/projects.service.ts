@@ -51,7 +51,7 @@ function parsePaintMarker(value: unknown, index: number): PaintMarker | null {
   return { id: value.id, number: typeof value.number === "number" && Number.isInteger(value.number) && value.number > 0 ? value.number : index + 1, name: typeof value.name === "string" ? value.name : "", colorId: typeof value.colorId === "string" ? value.colorId : null, position: value.position, normal: isVector3Like(value.normal) ? value.normal : null, camera: { position: value.camera.position, target: value.camera.target, ...(typeof value.camera.zoom === "number" && Number.isFinite(value.camera.zoom) ? { zoom: value.camera.zoom } : {}) }, createdAt, updatedAt: typeof value.updatedAt === "number" && Number.isFinite(value.updatedAt) ? value.updatedAt : createdAt };
 }
 function parseManualDetailPin(value:unknown):ManualDetailPin|null{if(!isRecord(value)||typeof value.id!=="string"||!isVector3Like(value.position)||!isRecord(value.camera)||!isVector3Like(value.camera.position)||!isVector3Like(value.camera.target))return null;const createdAt=typeof value.createdAt==="number"?value.createdAt:0;return{id:value.id,position:value.position,normal:isVector3Like(value.normal)?value.normal:null,camera:{position:value.camera.position,target:value.camera.target,...(typeof value.camera.zoom==="number"&&Number.isFinite(value.camera.zoom)?{zoom:value.camera.zoom}:{})},...(typeof value.label==="string"?{label:value.label}:{}),createdAt,updatedAt:typeof value.updatedAt==="number"?value.updatedAt:createdAt}}
-function parseManualDetail(value:unknown):ManualDetail|null{if(!isRecord(value)||typeof value.id!=="string"||!Array.isArray(value.pins))return null;const pins=value.pins.map(parseManualDetailPin).filter((pin):pin is ManualDetailPin=>pin!==null);if(!pins.length)return null;const createdAt=typeof value.createdAt==="number"?value.createdAt:0,pinNumbers=value.pins.flatMap(pin=>isRecord(pin)&&typeof pin.number==="number"&&Number.isInteger(pin.number)&&pin.number>0?[pin.number]:[]);return{id:value.id,number:typeof value.number==="number"&&Number.isInteger(value.number)&&value.number>0?value.number:Math.min(...pinNumbers,Number.POSITIVE_INFINITY),name:typeof value.name==="string"?value.name:"",colorId:typeof value.colorId==="string"?value.colorId:null,pins,createdAt,updatedAt:typeof value.updatedAt==="number"?value.updatedAt:createdAt}}
+function parseManualDetail(value:unknown):ManualDetail|null{if(!isRecord(value)||typeof value.id!=="string"||!Array.isArray(value.pins))return null;const pins=value.pins.map(parseManualDetailPin).filter((pin):pin is ManualDetailPin=>pin!==null),selections=isRecord(value.region)&&Array.isArray(value.region.selections)?value.region.selections.flatMap(selection=>isRecord(selection)&&typeof selection.meshId==="string"&&Array.isArray(selection.triangleIndices)?[{meshId:selection.meshId,triangleIndices:[...new Set(selection.triangleIndices.filter(index=>typeof index==="number"&&Number.isInteger(index)&&index>=0))]}]:[]):[],targetMode=value.targetMode==="region"?"region" as const:"markers" as const;if(!pins.length&&!(targetMode==="region"&&selections.some(selection=>selection.triangleIndices.length)))return null;const createdAt=typeof value.createdAt==="number"?value.createdAt:0,pinNumbers=value.pins.flatMap(pin=>isRecord(pin)&&typeof pin.number==="number"&&Number.isInteger(pin.number)&&pin.number>0?[pin.number]:[]);return{id:value.id,number:typeof value.number==="number"&&Number.isInteger(value.number)&&value.number>0?value.number:Math.min(...pinNumbers,Number.POSITIVE_INFINITY),name:typeof value.name==="string"?value.name:"",colorId:typeof value.colorId==="string"?value.colorId:null,pins,targetMode,...(selections.length?{region:{selections}}:{}),createdAt,updatedAt:typeof value.updatedAt==="number"?value.updatedAt:createdAt}}
 function legacyMarkerToManualDetail(marker:PaintMarker):ManualDetail{return{id:marker.id,number:marker.number,name:marker.name,colorId:marker.colorId,pins:[{id:`${marker.id}_pin`,position:marker.position,normal:marker.normal,camera:marker.camera,createdAt:marker.createdAt,updatedAt:marker.updatedAt}],createdAt:marker.createdAt,updatedAt:marker.updatedAt}}
 function normalizeManualDetailNumbers(details:ManualDetail[],persistedNext:unknown){const validNumbers=details.flatMap(detail=>Number.isInteger(detail.number)&&detail.number>0?[detail.number]:[]),persisted=typeof persistedNext==="number"&&Number.isInteger(persistedNext)&&persistedNext>0?persistedNext:1;let next=Math.max(persisted,Math.max(0,...validNumbers)+1);const used=new Set<number>();const manualDetails=details.map(detail=>{let number=detail.number;if(!Number.isInteger(number)||number<=0||used.has(number)){while(used.has(next))next+=1;number=next;next+=1}used.add(number);return{...detail,number}});return{manualDetails,nextManualDetailNumber:Math.max(next,Math.max(0,...manualDetails.map(detail=>detail.number))+1)}}
 
@@ -192,6 +192,7 @@ function mapProjectDocument(
         }))
       : [],
     paintingOrder: Array.isArray(data.paintingOrder) ? [...new Set(data.paintingOrder.filter((id:unknown):id is string=>typeof id==="string"))] : [],
+    simpleTargetMode:data.simpleTargetMode==="markers"||data.simpleTargetMode==="region"?data.simpleTargetMode:null,
     importSchemaVersion: data.importSchemaVersion === 1 ? 1 : undefined,
 
     createdAt:
@@ -330,6 +331,7 @@ export async function createProject({
     palette: initialPalette,
     assemblySteps: [],
     paintingOrder: paintingOrder ?? initialParts.map((part)=>part.id),
+    simpleTargetMode:null,
 
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -356,6 +358,7 @@ export async function saveProjectEditorState({
   paintingOrder,
   manualDetails,
   nextManualDetailNumber,
+  simpleTargetMode,
 }: {
   projectId: string;
   userId: string;
@@ -365,6 +368,7 @@ export async function saveProjectEditorState({
   paintingOrder:string[];
   manualDetails:ManualDetail[];
   nextManualDetailNumber:number;
+  simpleTargetMode:"markers"|"region"|null;
 }): Promise<void> {
   if (!projectId || !userId) {
     throw new Error(
@@ -401,6 +405,7 @@ export async function saveProjectEditorState({
     paintingOrder,
     manualDetails,
     nextManualDetailNumber,
+    simpleTargetMode,
     updatedAt: serverTimestamp(),
   });
 }

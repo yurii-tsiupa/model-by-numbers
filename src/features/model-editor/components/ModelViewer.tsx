@@ -44,6 +44,7 @@ import {getVisibleModelBounds} from "../lib/getVisibleModelBounds";
 import {getManualDetailFocusBounds} from "../lib/manualDetails/manualDetailFocus";
 import { ViewerModeSwitcher } from "./ViewerModeSwitcher";
 import type { ViewerMode } from "../types/ViewerMode";
+import type {PaintingPreviewCamera} from "../types/PaintingWorkflow";
 import { waitForAnimationFrames } from "../lib/waitForAnimationFrames";
 import {ExplodedViewToolbar} from "./ExplodedViewToolbar";
 import type { ExplodedLabelsMode } from "../types/ExplodedLabelsMode";
@@ -61,6 +62,7 @@ export type ModelViewerHandle = {
   captureView: (mode: ViewerMode) => Promise<string>;
   fitView: () => void;
   captureAssemblyStep: (options: {partIds:string[];labelsMode:ExplodedLabelsMode}) => Promise<Blob>;
+  getCurrentPreviewCamera:()=>PaintingPreviewCamera|null;
 };
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
@@ -470,6 +472,12 @@ export const ModelViewer = forwardRef<
   useImperativeHandle (
     ref,
     () => ({
+      getCurrentPreviewCamera:()=>{
+        const controls=controlsRef.current,camera=controls?.object;
+        if(!controls||!(camera instanceof PerspectiveCamera))return null;
+        const distance=camera.position.distanceTo(controls.target);
+        return{position:{x:camera.position.x,y:camera.position.y,z:camera.position.z},target:{x:controls.target.x,y:controls.target.y,z:controls.target.z},up:{x:camera.up.x,y:camera.up.y,z:camera.up.z},zoom:camera.zoom,targetRadius:distance*Math.tan(MathUtils.degToRad(camera.fov/2))/Math.max(camera.zoom,.01)};
+      },
       fitView: handleFitModel,
       captureAssemblyStep: async ({partIds,labelsMode}) => {
         cancelFocusAnimation();
