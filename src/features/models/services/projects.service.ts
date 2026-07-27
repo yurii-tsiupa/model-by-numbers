@@ -32,6 +32,7 @@ import type { ManualDetail,ManualDetailPin } from "../types/ManualDetail";
 import { ensurePaletteColor } from "@/features/model-editor/lib/ensurePaletteColor";
 import { normalizeHexColor } from "@/features/model-editor/lib/normalizeHexColor";
 import { assignDetectedPartColor,getSingleIncludedDetectedPart } from "@/features/model-editor/lib/assignDetectedPartColor";
+import { initializeDefaultPaintingStep } from "@/features/model-editor/lib/initializeDefaultPaintingStep";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -285,9 +286,10 @@ export async function createProject({
   const initialPalette = ensurePaletteColor([], baseColor)?.palette ?? [];
   const sourceParts = parts ?? [];
   const singlePart = getSingleIncludedDetectedPart(sourceParts);
-  const initialParts = singlePart && initialPalette[0]
+  const colorAssignedParts = singlePart && initialPalette[0]
     ? assignDetectedPartColor({ parts: sourceParts, palette: initialPalette, partId: singlePart.id, paletteColorId: initialPalette[0].id })?.parts ?? sourceParts
     : sourceParts;
+  const initialParts = initializeDefaultPaintingStep(colorAssignedParts);
   const normalizedBaseColor = normalizeHexColor(baseColor) ?? baseColor;
 
   const localModel = await uploadModel({

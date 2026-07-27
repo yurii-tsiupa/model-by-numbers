@@ -27,7 +27,7 @@ import type { ModelViewerHandle } from "./ModelViewer";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { EditorSidebar } from "./EditorSidebar";
 import { EditorModeSwitch } from "./EditorModeSwitch";
-import { GuideBuilderPanel } from "./GuideBuilderPanel";
+import { GuideBuilderPanel, SimplePalettePanel } from "./GuideBuilderPanel";
 import { useEditorMode } from "../hooks/useEditorMode";
 import type { AssemblyStep } from "@/features/models/types/AssemblyStep";
 import { deleteAssemblyStepImage, saveAssemblyStepImage } from "../services/assemblyStepImage.service";
@@ -352,13 +352,14 @@ export function ModelEditor({
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         {mode === "advanced" ? <EditorSidebar key="advanced-sidebar" guideSettings={lastGuideSettings??defaultSettings} project={project} isUpdatingBaseColor={isUpdatingBaseColor} onUpdateBaseColor={updateProjectBaseColor} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onFocusAssemblyStep={focusAssemblyStep} onExitAssemblyFocus={exitAssemblyFocus} onCaptureAssemblyImage={captureAssemblyImage} onDeleteAssemblyImage={deleteAssemblyImage} onDeleteAssemblyStep={deleteAssemblyStepWithImage} /> : null}
 
-        <div key="viewer-area" className="relative flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
+        {mode === "simple" ? <SimplePalettePanel /> : null}
+        <div key="viewer-area" className="order-1 relative flex min-h-[45dvh] min-w-0 flex-1 flex-col lg:order-2 lg:min-h-0 lg:flex-row">
           <div className={`${mode === "advanced" && effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-[18rem] min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} simplified={mode === "simple"} hideManualDetailPins={showGuideSettings} /></div>
           {mode === "advanced"&&selectedReference&&effectiveReferenceViewMode!=="viewer"?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={setSelectedReferenceId} onClose={()=>setReferenceViewMode("viewer")}/>:null}
           {mode==="simple"&&simpleReferenceOpen&&selectedReference&&isDesktopReferenceLayout?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={selectReference} onClose={closeSimpleReference}/>:null}
           {mode === "advanced" ? <div className="absolute right-3 top-3 z-20 flex rounded-full border border-white/10 bg-black/70 p-1 text-xs">{(["viewer","split","reference"] as const).map(viewMode=><button key={viewMode} type="button" disabled={viewMode!=="viewer"&&references.length===0} onClick={()=>{if(viewMode==="viewer")setReferenceViewMode("viewer");else openReferenceMode(viewMode);}} className={`rounded-full px-3 py-1.5 disabled:opacity-40 ${effectiveReferenceViewMode===viewMode?"bg-orange-400 text-black":"text-neutral-300"}`}>{viewMode==="viewer"?t("viewer.model"):viewMode==="split"?t("viewer.split"):t("viewer.reference")}</button>)}</div> : null}
-          {mode === "simple" ? <GuideBuilderPanel projectId={project.id} canOpenGuide={isGuideReady} onOpenGuide={() => setShowGuideSettings(true)} activeReferenceId={selectedReference?.id??null} onSelectReference={selectReference} onShowReference={showSimpleReference} onReferenceDeleted={handleReferenceDeleted}/> : null}
         </div>
+        {mode === "simple" ? <GuideBuilderPanel projectId={project.id} activeReferenceId={selectedReference?.id??null} onSelectReference={selectReference} onShowReference={showSimpleReference} onReferenceDeleted={handleReferenceDeleted}/> : null}
 
         {mode === "advanced" ? <PropertiesPanel key="advanced-properties" /> : null}
       </div>

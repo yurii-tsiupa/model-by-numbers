@@ -70,9 +70,11 @@ export async function createStepPreviewBlob({
   shot?:PaintingStepPreviewShot;
 }): Promise<{ blob: Blob; framing: StepPreviewFraming }> {
   const resolved = resolvePaintingTargetReferences(step.targetReferences, parts, manualDetails);
+  const wholeModel = step.type === "primer" && (step.targetReferences?.length ?? 0) === 0;
+  const resolvedParts = wholeModel ? parts : resolved.parts;
   const pinTargets = resolved.manualDetails.flatMap(detail => detail.pins.filter(pin=>!shot||(detail.id===shot.manualDetailId&&pin.id===shot.pinId)).map(pin => ({ pin, number: detail.number })));
   if(shot&&!pinTargets.length)throw new Error("targetsUnavailable");
-  if (!resolved.parts.length && !pinTargets.length) throw new Error("targetsUnavailable");
+  if (!resolvedParts.length && !pinTargets.length) throw new Error("targetsUnavailable");
 
   const { canvas, renderer } = getRenderer();
   const materials: Material[] = [];
@@ -94,7 +96,7 @@ export async function createStepPreviewBlob({
   clone.traverse(value => { if (value instanceof Mesh) cloneMeshes.push(value); });
   const partByMesh = new Map(parts.map(part => [part.meshUuid, part]));
   const colors = new Map(palette.map(color => [color.id, color.hex]));
-  const targets = new Set(resolved.parts.map(part => part.id));
+  const targets = new Set(resolvedParts.map(part => part.id));
   const targetBounds = new Box3();
 
   cloneMeshes.forEach((mesh, index) => {
@@ -122,7 +124,7 @@ export async function createStepPreviewBlob({
   for (const { pin } of pinTargets) targetBounds.expandByPoint(new Vector3(pin.position.x, pin.position.y, pin.position.z));
   const modelBounds = new Box3().setFromObject(clone, true);
   const pins = pinTargets.map(target => target.pin);
-  const framing = getStepPreviewFraming(targetBounds, modelBounds, pins.length === 1 && !resolved.parts.length ? pins[0] : undefined);
+  const framing = getStepPreviewFraming(targetBounds, modelBounds, pins.length === 1 && !resolvedParts.length ? pins[0] : undefined);
   const camera = new PerspectiveCamera(42, STEP_PREVIEW_ASPECT_RATIO, 0.01, 1000);
   camera.position.set(framing.cameraPosition.x, framing.cameraPosition.y, framing.cameraPosition.z);
   camera.up.set(framing.up.x, framing.up.y, framing.up.z);
