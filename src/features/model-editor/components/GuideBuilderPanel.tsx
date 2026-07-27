@@ -1,7 +1,5 @@
 "use client";
 
-import { ChevronDown, Palette } from "lucide-react";
-import { useState } from "react";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { SimpleReferencesSection } from "@/features/references/components/SimpleReferencesSection";
 import { SimpleColorsSection } from "./SimpleColorsSection";
@@ -17,14 +15,12 @@ type ReferenceProps = {
 
 export function SimplePalettePanel() {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
   return <aside className="order-2 w-full min-w-0 shrink-0 border-t border-[var(--border)] bg-[var(--card)] lg:order-1 lg:h-full lg:w-[340px] lg:overflow-x-hidden lg:overflow-y-auto lg:border-r lg:border-t-0">
-    <button type="button" aria-expanded={open} onClick={() => setOpen(value => !value)} className="flex min-h-12 w-full items-center gap-2 px-4 text-left lg:pointer-events-none">
-      <Palette className="size-4 text-[var(--accent)]" />
-      <span className="flex-1 text-sm font-semibold">{t("editor.workflow.palette")}</span>
-      <ChevronDown className={`size-4 transition-transform lg:hidden ${open ? "rotate-180" : ""}`} />
-    </button>
-    <div className={`${open ? "block" : "hidden"} border-t border-[var(--border)] p-4 lg:block`}><SimpleColorsSection /></div>
+    <header className="flex min-h-14 items-center gap-2.5 border-b border-[var(--border)] px-5">
+      <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-[var(--accent)]" />
+      <h2 className="text-sm font-semibold">{t("editor.workflow.palette")}</h2>
+    </header>
+    <div className="p-5"><SimpleColorsSection /></div>
   </aside>;
 }
 

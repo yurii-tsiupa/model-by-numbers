@@ -62,10 +62,6 @@ export function ModelEditor({
   const isGeneratingRef = useRef(false);
   const restoreManualDetailPinsRef=useRef<(()=>void)|null>(null);
   const autoThumbnailAttemptedRef = useRef(false);
-  const observedBaseColorRef = useRef({
-    projectId: project.id,
-    color: normalizeHexColor(project.baseColor) ?? project.baseColor,
-  });
   const [thumbnailError, setThumbnailError] = useState<string | null>(null);
   const [showGuideSettings,setShowGuideSettings]=useState(false);
   const [lastGuideSettings,setLastGuideSettings]=useState<GuideSettings|null>(null);
@@ -196,19 +192,6 @@ export function ModelEditor({
       setThumbnailError(t("editor.thumbnailFailed"));
     }
   }, [project.baseColor, project.id, saveThumbnail, t, thumbnailQuery.data, userId]);
-
-  useEffect(() => {
-    const color = normalizeHexColor(project.baseColor) ?? project.baseColor;
-    const observed = observedBaseColorRef.current;
-    if (observed.projectId !== project.id) {
-      observedBaseColorRef.current = { projectId: project.id, color };
-      return;
-    }
-    if (observed.color === color || parts.length === 0 || saveThumbnail.isPending) return;
-    observedBaseColorRef.current = { projectId: project.id, color };
-    const timer = window.setTimeout(() => { void generateThumbnail(); }, 0);
-    return () => window.clearTimeout(timer);
-  }, [generateThumbnail, parts.length, project.baseColor, project.id, saveThumbnail.isPending]);
 
   useEffect(() => {
     if (autoThumbnailAttemptedRef.current || thumbnailQuery.isLoading || thumbnailQuery.data || parts.length === 0) return;
