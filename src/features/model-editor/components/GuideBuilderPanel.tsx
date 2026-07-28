@@ -8,8 +8,10 @@ import { SimplePaintingSteps } from "./painting/SimplePaintingSteps";
 type ReferenceProps = {
   projectId: string;
   activeReferenceId: string | null;
+  isReferenceVisible: boolean;
   onSelectReference: (id: string) => void;
   onShowReference: (id: string) => void;
+  onHideReference: () => void;
   onReferenceDeleted: (id: string) => void;
 };
 
@@ -26,14 +28,17 @@ export function SimplePalettePanel() {
 
 export function GuideBuilderPanel(props: ReferenceProps) {
   const { t } = useTranslation();
-  return <aside className="order-3 flex max-h-[38rem] min-h-0 w-full min-w-0 shrink-0 flex-col overflow-hidden border-t border-[var(--border)] bg-[var(--card)] lg:h-full lg:max-h-none lg:w-[400px] lg:border-l lg:border-t-0">
-    <header className="shrink-0 border-b border-[var(--border)] px-4 py-3">
-      <h2 className="font-[family-name:var(--font-space-grotesk)] text-base font-semibold">{t("editor.workflow.title")}</h2>
-      <p className="mt-1 text-xs text-[var(--text-secondary)]">{t("editor.workflow.description")}</p>
+  return <aside className="simple-steps-panel order-3 flex max-h-[38rem] min-h-0 w-full min-w-0 shrink-0 flex-col overflow-hidden border-t border-[var(--border)] lg:h-full lg:max-h-none lg:w-[400px] lg:border-l lg:border-t-0">
+    <header className="shrink-0 px-5 pb-3 pt-5">
+      <div className="flex items-center gap-2.5">
+        <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-[var(--accent-2)]" />
+        <h2 className="text-sm font-semibold text-[var(--text)]">{t("editor.workflow.title")}</h2>
+      </div>
+      <p className="mt-1.5 max-w-[19rem] text-xs leading-5 text-[var(--text-muted)]">{t("editor.workflow.description")}</p>
     </header>
-    <div className="min-h-0 flex-1 overflow-y-auto">
-      <SimpleReferencesSection projectId={props.projectId} activeReferenceId={props.activeReferenceId} onSelect={props.onSelectReference} onShow={props.onShowReference} onDeleted={props.onReferenceDeleted} />
-      <div className="p-4"><SimplePaintingSteps projectId={props.projectId} activeReferenceId={props.activeReferenceId} onSelectReference={props.onSelectReference} onShowReference={props.onShowReference} onReferenceDeleted={props.onReferenceDeleted} /></div>
+    <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
+      <SimpleReferencesSection projectId={props.projectId} activeReferenceId={props.activeReferenceId} isVisible={props.isReferenceVisible} onSelect={props.onSelectReference} onShow={props.onShowReference} onHide={props.onHideReference} onDeleted={props.onReferenceDeleted} />
+      <SimplePaintingSteps projectId={props.projectId} activeReferenceId={props.activeReferenceId} onSelectReference={props.onSelectReference} onShowReference={props.onShowReference} onReferenceDeleted={props.onReferenceDeleted} />
     </div>
   </aside>;
 }

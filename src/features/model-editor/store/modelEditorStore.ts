@@ -53,6 +53,7 @@ type ModelEditorState = {
   activePaintingStageId: string | null;
   paintingTargetFocusRevision: number;
   setManualDetails:(details:ManualDetail[],nextDetailNumber:number)=>void;
+  restoreManualDetailsSnapshot:(details:ManualDetail[],nextDetailNumber:number)=>void;
   hydrateSimpleTargetMode:(mode:SimpleTargetMode|null,persist:boolean)=>void;
   applySimpleTargetMode:(mode:SimpleTargetMode)=>void;
   startManualDetailPlacement:(name:string,detailId?:string)=>void;
@@ -402,9 +403,12 @@ export const useModelEditorStore =
     },
 
     setManualDetails:(manualDetails,nextManualDetailNumber)=>set({manualDetails,nextManualDetailNumber,selectedManualDetailId:null,selectedManualDetailPinId:null,manualDetailPlacement:null,regionPlacement:null,manualDetailFocusRequest:null}),
+    restoreManualDetailsSnapshot:(manualDetails,nextManualDetailNumber)=>set(state=>({manualDetails,nextManualDetailNumber,selectedManualDetailId:null,selectedManualDetailPinId:null,manualDetailPlacement:null,regionPlacement:null,manualDetailFocusRequest:null,...markStateDirty(state)})),
     hydrateSimpleTargetMode:(simpleTargetMode,persist)=>set(state=>({simpleTargetMode,...(persist?markStateDirty(state):{})})),
     applySimpleTargetMode:(simpleTargetMode)=>set(state=>{
-      if(state.simpleTargetMode===simpleTargetMode)return state;
+      if(state.simpleTargetMode===simpleTargetMode)return simpleTargetMode==="markers"
+        ?{manualDetailPlacement:state.manualDetailPlacement,regionPlacement:null}
+        :{manualDetailPlacement:null,regionPlacement:state.regionPlacement};
       if(state.simpleTargetMode!==null){
         const hadPrimer=state.parts.some(part=>part.paintingWorkflow.stages.some(stage=>stage.type==="primer")),now=new Date().toISOString();
         const primer:PaintingStage={id:crypto.randomUUID(),order:1,type:"primer",customName:null,paletteColorId:null,recommendedCoats:null,notes:"",targetReferences:[],overviewPreviewEnabled:true,previewShots:[],createdAt:now,updatedAt:now};
@@ -437,14 +441,14 @@ export const useModelEditorStore =
         ...markStateDirty(state),
       };
     }),
-    startManualDetailPlacement:(name,detailId)=>set({manualDetailPlacement:{detailId:detailId??null,name:name.trim(),pins:[]},regionPlacement:null,selectedManualDetailId:detailId??null,selectedManualDetailPinId:null,selectedPartId:null}),
+    startManualDetailPlacement:(name,detailId)=>set(state=>state.simpleTargetMode!=="markers"?{manualDetailPlacement:null}:{manualDetailPlacement:{detailId:detailId??null,name:name.trim(),pins:[]},regionPlacement:null,selectedManualDetailId:detailId??null,selectedManualDetailPinId:null,...(detailId?{selectedPartId:null}:{})}),
     cancelManualDetailPlacement:()=>set({manualDetailPlacement:null}),
     addDraftManualDetailPin:(input)=>set(state=>{const draft=state.manualDetailPlacement;if(!draft)return state;const now=Date.now(),pin:ManualDetailPin={...input,id:`pin_${crypto.randomUUID()}`,createdAt:now,updatedAt:now};return{manualDetailPlacement:{...draft,pins:[...draft.pins,pin]},selectedManualDetailPinId:pin.id}}),
     undoDraftManualDetailPin:()=>set(state=>state.manualDetailPlacement?.pins.length?{manualDetailPlacement:{...state.manualDetailPlacement,pins:state.manualDetailPlacement.pins.slice(0,-1)},selectedManualDetailPinId:state.manualDetailPlacement.pins.at(-2)?.id??null}:state),
     clearDraftManualDetailPins:()=>set(state=>state.manualDetailPlacement?.pins.length?{manualDetailPlacement:{...state.manualDetailPlacement,pins:[]},selectedManualDetailPinId:null}:state),
     finishManualDetailPlacement:()=>set(state=>{const draft=state.manualDetailPlacement;if(!draft?.pins.length||!draft.name.trim())return state;const now=Date.now();if(draft.detailId){const existing=state.manualDetails.find(detail=>detail.id===draft.detailId);if(!existing)return{manualDetailPlacement:null};return{manualDetails:state.manualDetails.map(detail=>detail.id===draft.detailId?{...detail,pins:[...detail.pins,...draft.pins],updatedAt:now}:detail),manualDetailPlacement:null,selectedManualDetailId:draft.detailId,selectedManualDetailPinId:draft.pins.at(-1)?.id??null,...markStateDirty(state)}}const detail:ManualDetail={id:`detail_${crypto.randomUUID()}`,number:state.nextManualDetailNumber,name:draft.name.trim(),colorId:null,pins:draft.pins,createdAt:now,updatedAt:now};return{manualDetails:[...state.manualDetails,detail],nextManualDetailNumber:state.nextManualDetailNumber+1,manualDetailPlacement:null,selectedManualDetailId:detail.id,selectedManualDetailPinId:draft.pins.at(-1)?.id??null,...markStateDirty(state)}}),
     createRegionManualDetail:(name,colorId)=>{const id=`detail_${crypto.randomUUID()}`,now=Date.now();set(state=>{const detail:ManualDetail={id,number:state.nextManualDetailNumber,name:name.trim(),colorId,pins:[],targetMode:"region",region:{selections:[]},createdAt:now,updatedAt:now};return{manualDetails:[...state.manualDetails,detail],nextManualDetailNumber:state.nextManualDetailNumber+1,selectedManualDetailId:id,...markStateDirty(state)}});return id},
-    startRegionPlacement:(detailId)=>set(state=>{const detail=state.manualDetails.find(item=>item.id===detailId);return detail?{regionPlacement:{detailId,sessionId:crypto.randomUUID(),selections:detail.region?.selections.map(selection=>({...selection,triangleIndices:[...selection.triangleIndices]}))??[],history:[],future:[],brush:50,erase:false},manualDetailPlacement:null,selectedManualDetailId:detailId}:state}),
+    startRegionPlacement:(detailId)=>set(state=>{if(state.simpleTargetMode!=="region")return{regionPlacement:null};const detail=state.manualDetails.find(item=>item.id===detailId);return detail?{regionPlacement:{detailId,sessionId:crypto.randomUUID(),selections:detail.region?.selections.map(selection=>({...selection,triangleIndices:[...selection.triangleIndices]}))??[],history:[],future:[],brush:50,erase:false},manualDetailPlacement:null,selectedManualDetailId:detailId}:state}),
     applyRegionTriangles:(meshId,triangleIndices)=>set(state=>{const draft=state.regionPlacement;if(!draft||!triangleIndices.length)return state;const before=draft.selections.map(selection=>({...selection,triangleIndices:[...selection.triangleIndices]})),current=draft.selections.find(selection=>selection.meshId===meshId),values=new Set(current?.triangleIndices??[]);for(const index of triangleIndices){if(draft.erase)values.delete(index);else values.add(index)}const selections=[...draft.selections.filter(selection=>selection.meshId!==meshId),...(values.size?[{meshId,triangleIndices:[...values].sort((a,b)=>a-b)}]:[])];return{regionPlacement:{...draft,selections,history:[...draft.history,before],future:[]}}}),
     setRegionBrush:(brush)=>set(state=>state.regionPlacement?{regionPlacement:{...state.regionPlacement,brush:Math.max(0,Math.min(100,brush))}}:state),
     setRegionErase:(erase)=>set(state=>state.regionPlacement?{regionPlacement:{...state.regionPlacement,erase}}:state),

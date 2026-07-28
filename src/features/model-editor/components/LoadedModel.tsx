@@ -151,8 +151,8 @@ function LoadedModelContent({
   const selectedManualDetailId=useModelEditorStore(state=>state.selectedManualDetailId);
   const selectedManualDetailPinId=useModelEditorStore(state=>state.selectedManualDetailPinId);
   const activePaintingStageId=useModelEditorStore(state=>state.activePaintingStageId);
-  const manualDetailPlacement=useModelEditorStore(state=>state.manualDetailPlacement);
-  const regionPlacement=useModelEditorStore(state=>state.regionPlacement);
+  const manualDetailPlacement=useModelEditorStore(state=>state.simpleTargetMode==="markers"?state.manualDetailPlacement:null);
+  const regionPlacement=useModelEditorStore(state=>state.simpleTargetMode==="region"?state.regionPlacement:null);
   const applyRegionTriangles=useModelEditorStore(state=>state.applyRegionTriangles);
   const addDraftManualDetailPin=useModelEditorStore(state=>state.addDraftManualDetailPin);
   const selectManualDetail=useModelEditorStore(state=>state.selectManualDetail);

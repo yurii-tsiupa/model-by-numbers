@@ -350,7 +350,7 @@ export function ModelEditor({
           {mode==="simple"&&simpleReferenceOpen&&selectedReference&&isDesktopReferenceLayout?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={selectReference} onClose={closeSimpleReference}/>:null}
           {mode === "advanced" ? <div className="absolute right-3 top-3 z-20 flex rounded-full border border-white/10 bg-black/70 p-1 text-xs">{(["viewer","split","reference"] as const).map(viewMode=><button key={viewMode} type="button" disabled={viewMode!=="viewer"&&references.length===0} onClick={()=>{if(viewMode==="viewer")setReferenceViewMode("viewer");else openReferenceMode(viewMode);}} className={`rounded-full px-3 py-1.5 disabled:opacity-40 ${effectiveReferenceViewMode===viewMode?"bg-orange-400 text-black":"text-neutral-300"}`}>{viewMode==="viewer"?t("viewer.model"):viewMode==="split"?t("viewer.split"):t("viewer.reference")}</button>)}</div> : null}
         </div>
-        {mode === "simple" ? <GuideBuilderPanel projectId={project.id} activeReferenceId={selectedReference?.id??null} onSelectReference={selectReference} onShowReference={showSimpleReference} onReferenceDeleted={handleReferenceDeleted}/> : null}
+        {mode === "simple" ? <GuideBuilderPanel projectId={project.id} activeReferenceId={selectedReference?.id??null} isReferenceVisible={simpleReferenceOpen&&Boolean(selectedReference)} onSelectReference={selectReference} onShowReference={showSimpleReference} onHideReference={closeSimpleReference} onReferenceDeleted={handleReferenceDeleted}/> : null}
 
         {mode === "advanced" ? <PropertiesPanel key="advanced-properties" /> : null}
       </div>
