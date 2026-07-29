@@ -127,7 +127,7 @@ function MarkerControls({count,finish}:{count:number;finish:()=>void}){
   const markerGhostClass=`inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-transparent px-2.5 text-xs font-medium text-[var(--text-muted)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text)] disabled:cursor-not-allowed disabled:opacity-40 ${focusClass}`;
   const markerToolClass=`grid size-8 cursor-pointer place-items-center rounded-lg bg-transparent text-[var(--text-muted)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text)] disabled:cursor-not-allowed disabled:opacity-40 ${focusClass}`;
   return <div data-onboarding-target={ONBOARDING_TARGETS.markerToolbar} className="space-y-2 border-t border-[var(--border)] pt-2.5">
-    <ContextualHintSlot id="marker" targetId={ONBOARDING_TARGETS.markerToolbar} titleKey="onboarding.hint.marker.title" descriptionKey="onboarding.hint.marker.description"/>
+    <ContextualHintSlot id="marker" targetId={ONBOARDING_TARGETS.markerToolbar} titleKey="onboarding.hint.marker.title" descriptionKey="onboarding.hint.marker.description" actionHintKeys={["onboarding.hint.marker.action1","onboarding.hint.marker.action2","onboarding.hint.marker.action3","onboarding.hint.marker.action4","onboarding.hint.marker.action5"]} noteKey="onboarding.hint.marker.note"/>
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <h5 className="text-xs font-semibold text-[var(--text)]">{t("editor.workflow.markerPlacementTitle")}</h5>

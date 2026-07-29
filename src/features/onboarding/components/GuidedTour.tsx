@@ -4,19 +4,16 @@ import {createPortal} from "react-dom";
 import {useTranslation} from "@/features/i18n/hooks/useTranslation";
 import {onboardingTargetSelector} from "../constants/onboardingTargets";
 import type {OnboardingTour,TourPlacement} from "../types/onboarding.types";
+import {resolveFloatingPlacement} from "../lib/resolveFloatingPlacement";
 
 const GAP=12,WIDTH=336,ESTIMATED_TOOLTIP_HEIGHT=250;
 const subscribeNever=()=>()=>{};
 const alwaysTrue=()=>true;
 function tooltipPosition(rect:DOMRect,placement:TourPlacement){
   const viewportWidth=window.innerWidth,viewportHeight=window.innerHeight;
-  const height=Math.min(ESTIMATED_TOOLTIP_HEIGHT,Math.max(160,viewportHeight-24));
-  const resolved=placement==="auto"?(rect.right+WIDTH+GAP<viewportWidth?"right":rect.left-WIDTH-GAP>0?"left":rect.bottom+height+GAP<viewportHeight?"bottom":"top"):placement;
-  let left=rect.left+rect.width/2-WIDTH/2,top=rect.bottom+GAP;
-  if(resolved==="top")top=rect.top-height-GAP;
-  if(resolved==="right"){left=rect.right+GAP;top=rect.top}
-  if(resolved==="left"){left=rect.left-WIDTH-GAP;top=rect.top}
-  return{left:Math.max(12,Math.min(viewportWidth-WIDTH-12,left)),top:Math.max(12,Math.min(viewportHeight-height-12,top))};
+  const width=Math.min(WIDTH,viewportWidth-24),height=Math.min(ESTIMATED_TOOLTIP_HEIGHT,Math.max(160,viewportHeight-24));
+  const verticalPreference=placement==="top"||placement==="bottom"?placement:rect.bottom+height+GAP<viewportHeight?"bottom":"top";
+  return resolveFloatingPlacement(rect,{width,height,gap:GAP,order:["right","left",verticalPreference,verticalPreference==="top"?"bottom":"top"]});
 }
 
 export function GuidedTour({tour,onClose,onComplete,onSkip}:{tour:OnboardingTour;onClose:()=>void;onComplete:()=>void;onSkip:()=>void}){
@@ -61,7 +58,11 @@ export function GuidedTour({tour,onClose,onComplete,onSkip}:{tour:OnboardingTour
     return()=>window.removeEventListener("keydown",keydown);
   },[canContinue,index,onClose,onComplete,rect,steps.length]);
   if(typeof document==="undefined"||!step||!rect)return null;
-  const position=tooltipPosition(rect,step.placement??"auto"),contentMaxHeight=Math.max(96,window.innerHeight-position.top-108),padding=6;
+  const resolved=tooltipPosition(rect,step.placement??"auto"),{placement,...position}=resolved,tooltipWidth=Math.min(WIDTH,window.innerWidth-24),contentMaxHeight=Math.max(96,window.innerHeight-position.top-108),padding=6;
+  const arrowStyle=placement==="right"||placement==="left"
+    ?{top:Math.max(18,Math.min(100,rect.top+rect.height/2-position.top-6))}
+    :{left:Math.max(18,Math.min(tooltipWidth-30,rect.left+rect.width/2-position.left-6))};
+  const arrowClass=placement==="right"?"-left-1.5 border-b border-l":placement==="left"?"-right-1.5 border-r border-t":placement==="bottom"?"-top-1.5 border-l border-t":"-bottom-1.5 border-b border-r";
   return createPortal(<div className="pointer-events-none fixed inset-0 z-[90]" aria-live="polite">
     <div aria-hidden="true" className="pointer-events-auto fixed bg-[var(--overlay)]" style={{left:0,top:0,right:0,height:Math.max(0,rect.top-padding)}}/>
     <div aria-hidden="true" className="pointer-events-auto fixed bg-[var(--overlay)]" style={{left:0,top:rect.top-padding,width:Math.max(0,rect.left-padding),height:rect.height+padding*2}}/>
@@ -69,10 +70,13 @@ export function GuidedTour({tour,onClose,onComplete,onSkip}:{tour:OnboardingTour
     <div aria-hidden="true" className="pointer-events-auto fixed bg-[var(--overlay)]" style={{left:0,top:rect.bottom+padding,right:0,bottom:0}}/>
     <div aria-hidden="true" className="pointer-events-none fixed rounded-xl border-2 border-[var(--accent)] shadow-[0_0_0_4px_color-mix(in_srgb,var(--accent)_18%,transparent)]" style={{left:rect.left-padding,top:rect.top-padding,width:rect.width+padding*2,height:rect.height+padding*2}}/>
     <div ref={tooltipRef} tabIndex={-1} role="dialog" aria-modal="false" aria-labelledby={`tour-title-${step.id}`} className="pointer-events-auto fixed z-[91] w-[min(336px,calc(100vw-24px))] text-[var(--text)] outline-none" style={position}>
+      <span aria-hidden="true" className={`pointer-events-none absolute z-[92] size-3 rotate-45 border-[var(--border-strong)] bg-[var(--card)] ${arrowClass}`} style={arrowStyle}/>
       <div className="min-h-32 overflow-y-auto rounded-xl border border-[var(--border-strong)] bg-[var(--card)] p-4 shadow-xl" style={{maxHeight:contentMaxHeight}}>
         <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--accent)]">{t("onboarding.progress",{current:index+1,total:steps.length})}</p>
         <h2 id={`tour-title-${step.id}`} className="mt-1 text-sm font-semibold">{t(step.titleKey)}</h2>
         <p className="mt-1.5 text-xs leading-5 text-[var(--text-secondary)]">{t(step.descriptionKey)}</p>
+        {step.actionHintKeys?.length?<ol className="mt-2.5 list-decimal space-y-1 pl-4 text-[11px] leading-4 text-[var(--text-secondary)]">{step.actionHintKeys.map(key=><li key={key}>{t(key)}</li>)}</ol>:null}
+        {step.noteKey?<p className="mt-2 rounded-lg bg-[var(--surface)] px-2.5 py-2 text-[10px] leading-4 text-[var(--text-muted)]">{t(step.noteKey)}</p>:null}
         {!canContinue&&step.blockedMessageKey?<p role="status" className="mt-2 text-[11px] font-medium leading-4 text-[var(--accent)]">{t(step.blockedMessageKey)}</p>:null}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-2 shadow-lg">

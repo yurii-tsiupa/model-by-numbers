@@ -7,6 +7,8 @@ export type TourStep={
   targetId:OnboardingTarget;
   titleKey:TranslationKey;
   descriptionKey:TranslationKey;
+  actionHintKeys?:readonly TranslationKey[];
+  noteKey?:TranslationKey;
   placement?:TourPlacement;
   waitForTarget?:boolean;
   isEnabled?:()=>boolean;

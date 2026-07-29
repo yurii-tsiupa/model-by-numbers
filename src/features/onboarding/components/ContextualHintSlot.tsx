@@ -5,7 +5,7 @@ import type {ContextualHintId} from "../types/onboarding.types";
 import {useOnboarding} from "../hooks/useOnboarding";
 import {ContextualHint} from "./ContextualHint";
 
-export function ContextualHintSlot({id,targetId,titleKey,descriptionKey}:{id:ContextualHintId;targetId:OnboardingTarget;titleKey:TranslationKey;descriptionKey:TranslationKey}){
+export function ContextualHintSlot({id,targetId,titleKey,descriptionKey,actionHintKeys,noteKey}:{id:ContextualHintId;targetId:OnboardingTarget;titleKey:TranslationKey;descriptionKey:TranslationKey;actionHintKeys?:readonly TranslationKey[];noteKey?:TranslationKey}){
   const onboarding=useOnboarding();
-  return onboarding.shouldShowHint(id)?<ContextualHint targetId={targetId} titleKey={titleKey} descriptionKey={descriptionKey} onDismiss={()=>onboarding.dismissHint(id)}/>:null;
+  return onboarding.shouldShowHint(id)?<ContextualHint targetId={targetId} titleKey={titleKey} descriptionKey={descriptionKey} actionHintKeys={actionHintKeys} noteKey={noteKey} onDismiss={()=>onboarding.dismissHint(id)}/>:null;
 }
