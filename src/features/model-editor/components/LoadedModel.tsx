@@ -23,19 +23,6 @@ import {
 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
-function brushTriangles(mesh:Mesh,faceIndex:number,point:Vector3,radius:number){
-  const geometry=mesh.geometry,position=geometry.getAttribute("position"),index=geometry.index,triangleCount=Math.floor((index?.count??position.count)/3),normalMatrix=new Matrix3().getNormalMatrix(mesh.matrixWorld);
-  const vertices=(triangle:number)=>[0,1,2].map(offset=>index?index.getX(triangle*3+offset):triangle*3+offset);
-  const triangleNormal=(triangle:number)=>{const ids=vertices(triangle),a=new Vector3().fromBufferAttribute(position,ids[0]),b=new Vector3().fromBufferAttribute(position,ids[1]),c=new Vector3().fromBufferAttribute(position,ids[2]);return b.sub(a).cross(c.sub(a)).normalize().applyMatrix3(normalMatrix).normalize()};
-  const originNormal=triangleNormal(faceIndex),selected:number[]=[];
-  for(let triangle=0;triangle<triangleCount;triangle++){
-    const ids=vertices(triangle),centroid=new Vector3();
-    for(const id of ids)centroid.add(new Vector3().fromBufferAttribute(position,id));
-    centroid.multiplyScalar(1/3).applyMatrix4(mesh.matrixWorld);
-    if(centroid.distanceToSquared(point)<=radius*radius&&originNormal.dot(triangleNormal(triangle))>.2)selected.push(triangle);
-  }
-  return selected.length?selected:[faceIndex];
-}
 function regionBrushRadius(modelDiagonal:number,value:number){const normalized=Math.max(0,Math.min(1,value/100));return modelDiagonal*(.003+(.08-.003)*normalized**2)}
 
 import { extractModelParts } from "../lib/extractModelParts";
@@ -57,6 +44,20 @@ import {useTranslation} from "@/features/i18n/hooks/useTranslation";
 import {MAX_EXPLODED_OFFSET} from "../lib/exploded/exploded.constants";
 import {useRuntimeModelScene} from "../hooks/useRuntimeModelScene";
 import type {ModelFormat} from "@/features/model-import/types/ModelFormat";
+import type {DetailRegion} from "@/features/models/types/ManualDetail";
+import {getBrushTriangleIndices,registerRegionGeometry,smoothRegionSelections} from "../lib/regionBrushGeometry";
+
+type RegionStroke={
+  sessionId:string;
+  erase:boolean;
+  previousPoint:Vector3;
+  selections:DetailRegion["selections"];
+  touchedMeshIds:Set<string>;
+};
+
+function cloneRegionSelections(selections:DetailRegion["selections"]){
+  return selections.map(selection=>({...selection,triangleIndices:[...selection.triangleIndices]}));
+}
 
 type LoadedModelProps = {
   modelUrl: string;
@@ -100,6 +101,8 @@ function LoadedModelContent({
   const isTransformDraggingRef = useRef(false);
   const [transformError, setTransformError] = useState(false);
   const [brushHover,setBrushHover]=useState<{sessionId:string;position:Vector3;normal:Vector3;erase:boolean}|null>(null);
+  const [strokeSelections,setStrokeSelections]=useState<DetailRegion["selections"]|null>(null);
+  const regionStrokeRef=useRef<RegionStroke|null>(null);
 
   const parts = useModelEditorStore(
     (state) => state.parts,
@@ -152,7 +155,7 @@ function LoadedModelContent({
   const activePaintingStageId=useModelEditorStore(state=>state.activePaintingStageId);
   const manualDetailPlacement=useModelEditorStore(state=>state.simpleTargetMode==="markers"?state.manualDetailPlacement:null);
   const regionPlacement=useModelEditorStore(state=>state.simpleTargetMode==="region"?state.regionPlacement:null);
-  const applyRegionTriangles=useModelEditorStore(state=>state.applyRegionTriangles);
+  const commitRegionSelections=useModelEditorStore(state=>state.commitRegionSelections);
   const addDraftManualDetailPin=useModelEditorStore(state=>state.addDraftManualDetailPin);
   const selectManualDetail=useModelEditorStore(state=>state.selectManualDetail);
 
@@ -168,6 +171,22 @@ function LoadedModelContent({
   const activePaintingStage = useMemo(() => parts.flatMap((part) => part.paintingWorkflow.stages).find((stage) => stage.id === activePaintingStageId), [activePaintingStageId, parts]);
   const highlightedPaintingPartIds = useMemo(() => activePaintingStage?.targetReferences?.filter((reference) => reference.type === "part").map((reference) => reference.id) ?? [], [activePaintingStage]);
   const highlightedPaintingManualDetailIds=useMemo(()=>new Set(activePaintingStage?.targetReferences?.filter(reference=>reference.type!=="part").map(reference=>reference.id)??[]),[activePaintingStage]);
+
+  useEffect(()=>{
+    const cleanups:Array<()=>void>=[];
+    model.traverse(object=>{
+      if(!(object instanceof Mesh))return;
+      cleanups.push(registerRegionGeometry(object.uuid,object.geometry));
+      const part=parts.find(candidate=>candidate.meshUuid===object.uuid);
+      if(part)cleanups.push(registerRegionGeometry(part.id,object.geometry));
+    });
+    return()=>cleanups.forEach(cleanup=>cleanup());
+  },[model,parts]);
+  useEffect(()=>{
+    if(regionPlacement)return;
+    regionStrokeRef.current=null;
+    if(controlsRef.current)controlsRef.current.enabled=true;
+  },[controlsRef,regionPlacement]);
 
   const presentationParts = useMemo(
     () =>
@@ -315,6 +334,16 @@ function LoadedModelContent({
   ) {
     event.stopPropagation();
 
+    if(regionPlacement&&event.object instanceof Mesh&&event.faceIndex!==undefined&&event.faceIndex!==null){
+      const selections=cloneRegionSelections(regionPlacement.selections);
+      regionStrokeRef.current={sessionId:regionPlacement.sessionId,erase:regionPlacement.erase,previousPoint:event.point.clone(),selections,touchedMeshIds:new Set()};
+      applyRegionStrokeSample(event.object,event.faceIndex,event.point);
+      setStrokeSelections(cloneRegionSelections(regionStrokeRef.current.selections));
+      if(controlsRef.current)controlsRef.current.enabled=false;
+      (event.target as Element|null)?.setPointerCapture?.(event.pointerId);
+      return;
+    }
+
     if (manualDetailPlacement) return;
 
     const clickedMesh = event.object;
@@ -348,12 +377,37 @@ function LoadedModelContent({
     const surfaceNormal = event.face?.normal.clone().applyMatrix3(new Matrix3().getNormalMatrix(event.object.matrixWorld)).normalize();
     addDraftManualDetailPin({position:{x:event.point.x,y:event.point.y,z:event.point.z},normal:surfaceNormal?{x:surfaceNormal.x,y:surfaceNormal.y,z:surfaceNormal.z}:null,camera:{position:{x:camera.position.x,y:camera.position.y,z:camera.position.z},target:{x:controls.target.x,y:controls.target.y,z:controls.target.z},...(camera instanceof PerspectiveCamera?{zoom:camera.zoom}:{})}});
   }
-  function handleRegionPlacement(event:ThreeEvent<PointerEvent>){
-    if(!regionPlacement||!(event.object instanceof Mesh)||event.faceIndex===undefined||event.faceIndex===null)return;
-    event.stopPropagation();
+  function applyRegionStrokeSample(mesh:Mesh,faceIndex:number,point:Vector3){
+    const stroke=regionStrokeRef.current;
+    if(!stroke||!regionPlacement||stroke.sessionId!==regionPlacement.sessionId)return;
+    const meshId=parts.find(candidate=>candidate.meshUuid===mesh.uuid)?.id??mesh.uuid;
+    const indices=getBrushTriangleIndices(mesh,faceIndex,point,regionBrushRadius(modelDiagonal,regionPlacement.brush));
+    const current=stroke.selections.find(selection=>selection.meshId===meshId);
+    const values=new Set(current?.triangleIndices??[]);
+    for(const index of indices){if(stroke.erase)values.delete(index);else values.add(index)}
+    stroke.selections=[...stroke.selections.filter(selection=>selection.meshId!==meshId),...(values.size?[{meshId,triangleIndices:[...values].sort((a,b)=>a-b)}]:[])];
+    stroke.touchedMeshIds.add(meshId);
+  }
+  function extendRegionStroke(event:ThreeEvent<PointerEvent>){
+    const stroke=regionStrokeRef.current;
+    if(!stroke||!regionPlacement||!(event.object instanceof Mesh)||event.faceIndex===undefined||event.faceIndex===null)return;
     const radius=regionBrushRadius(modelDiagonal,regionPlacement.brush);
-    const part=parts.find(candidate=>candidate.meshUuid===event.object.uuid);
-    applyRegionTriangles(part?.id??event.object.uuid,brushTriangles(event.object,event.faceIndex,event.point,radius));
+    const distance=stroke.previousPoint.distanceTo(event.point),steps=Math.min(32,Math.max(1,Math.ceil(distance/Math.max(radius*.4,modelDiagonal*.0005))));
+    const start=stroke.previousPoint.clone();
+    for(let step=1;step<=steps;step++)applyRegionStrokeSample(event.object,event.faceIndex,start.clone().lerp(event.point,step/steps));
+    stroke.previousPoint.copy(event.point);
+    setStrokeSelections(cloneRegionSelections(stroke.selections));
+  }
+  function finishRegionStroke(event:ThreeEvent<PointerEvent>){
+    if(regionStrokeRef.current)extendRegionStroke(event);
+    const stroke=regionStrokeRef.current;
+    if(stroke){
+      commitRegionSelections(smoothRegionSelections(stroke.selections,"automatic",stroke.touchedMeshIds));
+      regionStrokeRef.current=null;
+      setStrokeSelections(null);
+    }
+    (event.target as Element|null)?.releasePointerCapture?.(event.pointerId);
+    if(controlsRef.current)controlsRef.current.enabled=true;
   }
   function handleRegionHover(event:ThreeEvent<PointerEvent>){
     if(!regionPlacement||!(event.object instanceof Mesh)||!event.face)return;
@@ -361,9 +415,9 @@ function LoadedModelContent({
     const radius=regionBrushRadius(modelDiagonal,regionPlacement.brush);
     const normal=event.face.normal.clone().applyMatrix3(new Matrix3().getNormalMatrix(event.object.matrixWorld)).normalize();
     setBrushHover({sessionId:regionPlacement.sessionId,position:event.point.clone().addScaledVector(normal,radius*.012),normal,erase:regionPlacement.erase});
-    if(event.buttons===1){if(controlsRef.current)controlsRef.current.enabled=false;handleRegionPlacement(event)}
+    if(event.buttons===1&&regionStrokeRef.current)extendRegionStroke(event);
   }
-  const regionOverlays=useMemo(()=>{const rows:Array<{id:string;color:string;geometry:BufferGeometry}>=[],draftId=regionPlacement?.detailId;for(const detail of manualDetails){const selections=detail.id===draftId?regionPlacement?.selections:detail.region?.selections;if(detail.targetMode!=="region"||!selections?.length)continue;const color=palette.find(item=>item.id===detail.colorId)?.hex??"#F97316";for(const selection of selections){const meshUuid=parts.find(part=>part.id===selection.meshId)?.meshUuid??selection.meshId,mesh=model.getObjectByProperty("uuid",meshUuid);if(!(mesh instanceof Mesh))continue;const source=mesh.geometry,position=source.getAttribute("position"),index=source.index,values:number[]=[];for(const triangle of selection.triangleIndices)for(let offset=0;offset<3;offset++){const vertex=index?index.getX(triangle*3+offset):triangle*3+offset;if(vertex>=position.count)continue;const point=new Vector3().fromBufferAttribute(position,vertex).applyMatrix4(mesh.matrixWorld);values.push(point.x,point.y,point.z)}if(values.length){const geometry=new BufferGeometry();geometry.setAttribute("position",new Float32BufferAttribute(values,3));geometry.computeVertexNormals();rows.push({id:`${detail.id}:${selection.meshId}`,color,geometry})}}}return rows},[manualDetails,model,palette,parts,regionPlacement]);
+  const regionOverlays=useMemo(()=>{const rows:Array<{id:string;color:string;geometry:BufferGeometry}>=[],draftId=regionPlacement?.detailId;for(const detail of manualDetails){const selections=detail.id===draftId?(strokeSelections??regionPlacement?.selections):detail.region?.selections;if(detail.targetMode!=="region"||!selections?.length)continue;const color=palette.find(item=>item.id===detail.colorId)?.hex??"#F97316";for(const selection of selections){const meshUuid=parts.find(part=>part.id===selection.meshId)?.meshUuid??selection.meshId,mesh=model.getObjectByProperty("uuid",meshUuid);if(!(mesh instanceof Mesh))continue;const source=mesh.geometry,position=source.getAttribute("position"),index=source.index,values:number[]=[];for(const triangle of selection.triangleIndices)for(let offset=0;offset<3;offset++){const vertex=index?index.getX(triangle*3+offset):triangle*3+offset;if(vertex>=position.count)continue;const point=new Vector3().fromBufferAttribute(position,vertex).applyMatrix4(mesh.matrixWorld);values.push(point.x,point.y,point.z)}if(values.length){const geometry=new BufferGeometry();geometry.setAttribute("position",new Float32BufferAttribute(values,3));geometry.computeVertexNormals();rows.push({id:`${detail.id}:${selection.meshId}`,color,geometry})}}}return rows},[manualDetails,model,palette,parts,regionPlacement,strokeSelections]);
   useEffect(()=>()=>{for(const overlay of regionOverlays)overlay.geometry.dispose()},[regionOverlays]);
   const draftDetailNumber=manualDetailPlacement?.proposedMarkerNumber??1;
   const renderedPins=hideManualDetailPins?[]:[...manualDetails.flatMap(detail=>detail.targetMode==="region"?[]:detail.pins.map((pin,index)=>({pin,detailId:detail.id,detailName:detail.name,detailNumber:detail.markerNumber??detail.number,locationIndex:index+1,colorId:detail.colorId,isDraft:false}))),...(manualDetailPlacement?.pins.map((pin,index)=>({pin,detailId:manualDetailPlacement.detailId??"draft",detailName:manualDetailPlacement.name,detailNumber:draftDetailNumber,locationIndex:index+1,colorId:null,isDraft:true}))??[])];
@@ -375,7 +429,8 @@ function LoadedModelContent({
         onPointerDown={handlePointerDown}
         onClick={handleMarkerPlacement}
         onPointerMove={handleRegionHover}
-        onPointerUp={(event:ThreeEvent<PointerEvent>)=>{if(controlsRef.current)controlsRef.current.enabled=true;handleRegionPlacement(event)}}
+        onPointerUp={finishRegionStroke}
+        onPointerCancel={finishRegionStroke}
         onPointerOut={()=>setBrushHover(null)}
       />
       {regionOverlays.map(overlay=><mesh key={overlay.id} geometry={overlay.geometry} renderOrder={8}><meshStandardMaterial color={overlay.color} emissive={overlay.color} emissiveIntensity={.18} transparent opacity={.78} depthWrite={false} side={DoubleSide} polygonOffset polygonOffsetFactor={-2}/></mesh>)}

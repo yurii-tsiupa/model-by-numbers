@@ -1,12 +1,13 @@
 "use client";
 
-import {Brush,Check,Eraser,MapPin,Paintbrush,Pencil,Plus,Redo2,Trash2,Undo2,X} from "lucide-react";
-import {useEffect,useRef,useState,type ComponentType,type CSSProperties} from "react";
+import {Brush,Check,Eraser,MapPin,Paintbrush,Pencil,Plus,Redo2,Sparkles,Trash2,Undo2,X} from "lucide-react";
+import {useEffect,useMemo,useRef,useState,type ComponentType,type CSSProperties} from "react";
 
 import {useTranslation} from "@/features/i18n/hooks/useTranslation";
 import {useModelEditorStore} from "../../store/modelEditorStore";
 import type {PaintingTargetReference} from "../../types/PaintingWorkflow";
 import {SimpleDetailColorSelect} from "./SimpleDetailColorSelect";
+import {regionSelectionsEqual,smoothRegionSelections} from "../../lib/regionBrushGeometry";
 
 const focusClass="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]";
 const primaryButtonClass=`inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-3 text-xs font-semibold text-[var(--accent-foreground)] shadow-sm transition hover:brightness-110 active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-40 ${focusClass}`;
@@ -150,9 +151,12 @@ function RegionControls(){
   const undo=useModelEditorStore(state=>state.undoRegion);
   const redo=useModelEditorStore(state=>state.redoRegion);
   const clear=useModelEditorStore(state=>state.clearRegion);
+  const commit=useModelEditorStore(state=>state.commitRegionSelections);
   const finish=useModelEditorStore(state=>state.finishRegionPlacement);
   const cancel=useModelEditorStore(state=>state.cancelRegionPlacement);
   const count=draft?.selections.reduce((sum,selection)=>sum+selection.triangleIndices.length,0)??0;
+  const smoothed=useMemo(()=>smoothRegionSelections(draft?.selections??[],"manual"),[draft?.selections]);
+  const canSmooth=Boolean(draft&&count&&!regionSelectionsEqual(draft.selections,smoothed));
   if(!draft)return null;
   return <div className="sticky bottom-2 z-10 space-y-2.5 rounded-xl border border-[var(--accent-2)] bg-[var(--card)]/95 p-2.5 shadow-lg backdrop-blur">
     <p className="px-0.5 text-xs font-semibold text-[var(--accent-2)]">{t("editor.region.placing")} · {t("editor.region.selectedCount",{count})}</p>
@@ -170,6 +174,7 @@ function RegionControls(){
       <div className="flex gap-1">
         <IconButton icon={Undo2} label={t("common.undo")} disabled={!draft.history.length} onClick={undo}/>
         <IconButton icon={Redo2} label={t("common.redo")} disabled={!draft.future.length} onClick={redo}/>
+        <IconButton icon={Sparkles} label={t("editor.region.smoothEdges")} disabled={!canSmooth} onClick={()=>commit(smoothed)}/>
         <IconButton icon={Trash2} label={t("common.clear")} disabled={!count} destructive onClick={clear}/>
       </div>
       <div className="ml-auto flex gap-1">
