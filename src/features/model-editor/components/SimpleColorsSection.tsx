@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronDown, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect,useRef,useState } from "react";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { PAINT_COLORS } from "../constants/paintColors";
 import { normalizeHexColor } from "../lib/normalizeHexColor";
@@ -18,6 +18,7 @@ export function SimpleColorsSection() {
   const [showColorForm, setShowColorForm] = useState(false);
   const [colorName, setColorName] = useState("");
   const [colorHex, setColorHex] = useState("#F97316");
+  const addColorAreaRef=useRef<HTMLDivElement>(null);
   const {parts,activePartId,showPartSelector}=useSimplePartSelection();
   const manualDetails = useModelEditorStore((state) => state.manualDetails);
   const palette = useModelEditorStore((state) => state.palette);
@@ -43,6 +44,22 @@ export function SimpleColorsSection() {
     : selectedManualDetail
       ? `manualDetail:${selectedManualDetail.id}`
       : "";
+
+  useEffect(()=>{
+    if(!showColorForm)return;
+    function handlePointerDown(event:PointerEvent){
+      if(event.target instanceof Node&&!addColorAreaRef.current?.contains(event.target))setShowColorForm(false);
+    }
+    function handleKeyDown(event:KeyboardEvent){
+      if(event.key==="Escape")setShowColorForm(false);
+    }
+    document.addEventListener("pointerdown",handlePointerDown);
+    document.addEventListener("keydown",handleKeyDown);
+    return()=>{
+      document.removeEventListener("pointerdown",handlePointerDown);
+      document.removeEventListener("keydown",handleKeyDown);
+    };
+  },[showColorForm]);
 
   function selectTarget(value: string) {
     const separator = value.indexOf(":");
@@ -106,7 +123,9 @@ export function SimpleColorsSection() {
     {palette.length === 0 ? <p className="mt-5 text-sm text-[var(--text-secondary)]">{t("editor.colors.empty")}</p> : <div className="mt-4 grid gap-2">
       {palette.map((color) => <button key={color.id} type="button" disabled={!target} aria-pressed={selectedColorId === color.id} onClick={() => target && assignColor(target,color.hex)} className="simple-palette-color-card flex min-h-[52px] min-w-0 items-center gap-3 rounded-lg bg-[var(--card)] px-3 py-2 text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] disabled:cursor-not-allowed disabled:opacity-40"><span className="size-8 shrink-0 rounded-lg border border-black/15" style={{ backgroundColor: color.hex }} /><span className="min-w-0"><span className="block truncate font-semibold text-[var(--text)]">{color.name}</span><span className="simple-palette-muted mt-0.5 block font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase">{color.hex}</span></span></button>)}
     </div>}
-    <button type="button" onClick={() => setShowColorForm((value) => !value)} className="simple-palette-add-color mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]"><Plus className="size-4 text-current" />{t("editor.colors.add")}</button>
-    {showColorForm ? <div className="mt-3 space-y-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] p-3"><label className="block text-xs">{t("editor.colors.name")}<input value={colorName} onChange={(event) => setColorName(event.target.value)} className="mt-1 h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 text-sm" /></label><label className="block text-xs">{t("editor.colors.value")}<div className="mt-1 flex gap-2"><input type="color" value={colorHex} onChange={(event) => setColorHex(event.target.value)} className="h-9 w-12 rounded-lg border border-[var(--border)] bg-[var(--card)] p-1" /><input value={colorHex} onChange={(event) => setColorHex(event.target.value)} className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 font-[family-name:var(--font-jetbrains-mono)] text-xs" /></div></label><button type="button" disabled={!normalizeHexColor(colorHex)} onClick={createColor} className="min-h-9 w-full rounded-lg bg-[var(--accent)] px-3 text-sm text-[var(--accent-foreground)] disabled:opacity-40">{t("editor.colors.add")}</button></div> : null}
+    <div ref={addColorAreaRef}>
+      <button type="button" onClick={() => setShowColorForm((value) => !value)} className="simple-palette-add-color mt-3 flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]"><Plus className="size-4 text-current" />{t("editor.colors.add")}</button>
+      {showColorForm ? <div className="mt-3 space-y-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] p-3"><label className="block text-xs">{t("editor.colors.name")}<input value={colorName} onChange={(event) => setColorName(event.target.value)} className="mt-1 h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 text-sm" /></label><label className="block text-xs">{t("editor.colors.value")}<div className="mt-1 flex gap-2"><input type="color" value={colorHex} onChange={(event) => setColorHex(event.target.value)} className="h-9 w-12 rounded-lg border border-[var(--border)] bg-[var(--card)] p-1" /><input value={colorHex} onChange={(event) => setColorHex(event.target.value)} className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 font-[family-name:var(--font-jetbrains-mono)] text-xs" /></div></label><button type="button" disabled={!normalizeHexColor(colorHex)} onClick={createColor} className="min-h-9 w-full cursor-pointer rounded-lg bg-[var(--accent)] px-3 text-sm text-[var(--accent-foreground)] disabled:cursor-not-allowed disabled:opacity-40">{t("editor.colors.add")}</button></div> : null}
+    </div>
   </section>;
 }
