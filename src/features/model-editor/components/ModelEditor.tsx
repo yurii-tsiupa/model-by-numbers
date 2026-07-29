@@ -43,6 +43,8 @@ import {configureStepPreviewSource,getOrGenerateStepPreview} from "../step-previ
 import {getLegacyTargetModeCounts,inferSimpleTargetMode} from "../lib/simpleTargetMode";
 import {getStepPreviewCacheKey} from "../step-previews/getStepPreviewCacheKey";
 import {suppressManualDetailPins} from "../store/viewerOverlayStore";
+import {OnboardingProvider} from "@/features/onboarding/components/OnboardingProvider";
+import {ONBOARDING_TARGETS} from "@/features/onboarding/constants/onboardingTargets";
 
 type ModelEditorProps = {
   project: Project;
@@ -158,6 +160,8 @@ export function ModelEditor({
   const isDirty = useModelEditorStore(
     (state) => state.isDirty,
   );
+  const manualDetailPlacement=useModelEditorStore(state=>state.manualDetailPlacement);
+  const regionPlacement=useModelEditorStore(state=>state.regionPlacement);
 
   const saveStatus = useModelEditorStore(
     (state) => state.saveStatus,
@@ -324,12 +328,14 @@ export function ModelEditor({
   const canAssemble=assemblySteps.some(step=>step.title.trim()&&step.partIds.some(id=>parts.some(part=>part.id===id)));
   const defaultSettings:GuideSettings={...PAINTING_GUIDE_SETTINGS,includeExplodedView:canExplode,includeAssemblyInstructions:canAssemble,includeAssemblyStepImages:canAssemble};
 
-  return (
+  const onboardingEligible=mode==="simple"&&parts.length>0&&!isDirty&&!manualDetailPlacement&&!regionPlacement&&generationStatus!=="capturing"&&!showGuideSettings;
+  return <OnboardingProvider userId={userId} simpleMode={mode==="simple"} eligible={onboardingEligible}>
     <main data-editor-ui className="flex h-dvh w-full min-w-0 flex-col overflow-hidden bg-[var(--bg)] text-[var(--text)]">
       <EditorHeader
         project={project}
         isGuideReady={isGuideReady}
         isGeneratingGuide={generationStatus === "capturing"}
+        showOnboardingHelp={mode==="simple"}
         onGenerateGuide={() => {
           setShowGuideSettings(true);
         }}
@@ -344,7 +350,7 @@ export function ModelEditor({
         {mode === "advanced" ? <EditorSidebar key="advanced-sidebar" guideSettings={lastGuideSettings??defaultSettings} project={project} isUpdatingBaseColor={isUpdatingBaseColor} onUpdateBaseColor={updateProjectBaseColor} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onFocusAssemblyStep={focusAssemblyStep} onExitAssemblyFocus={exitAssemblyFocus} onCaptureAssemblyImage={captureAssemblyImage} onDeleteAssemblyImage={deleteAssemblyImage} onDeleteAssemblyStep={deleteAssemblyStepWithImage} /> : null}
 
         {mode === "simple" ? <SimplePalettePanel /> : null}
-        <div key="viewer-area" className={`relative flex min-w-0 flex-1 flex-col lg:flex-row ${mode==="simple"?"order-1 min-h-[45dvh] lg:order-2 lg:min-h-0":"min-h-0"}`}>
+        <div key="viewer-area" data-onboarding-target={mode==="simple"?ONBOARDING_TARGETS.modelViewer:undefined} className={`relative flex min-w-0 flex-1 flex-col lg:flex-row ${mode==="simple"?"order-1 min-h-[45dvh] lg:order-2 lg:min-h-0":"min-h-0"}`}>
           <div className={`${mode === "advanced" && effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-[18rem] min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} simplified={mode === "simple"} hideManualDetailPins={showGuideSettings} /></div>
           {mode === "advanced"&&selectedReference&&effectiveReferenceViewMode!=="viewer"?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={setSelectedReferenceId} onClose={()=>setReferenceViewMode("viewer")}/>:null}
           {mode==="simple"&&simpleReferenceOpen&&selectedReference&&isDesktopReferenceLayout?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={selectReference} onClose={closeSimpleReference}/>:null}
@@ -365,5 +371,5 @@ export function ModelEditor({
       />
       {showGuideSettings?<GuideSettingsModal initial={lastGuideSettings??defaultSettings} canExplode={canExplode} canAssemble={canAssemble} onClose={()=>setShowGuideSettings(false)} onConfirm={settings=>{setShowGuideSettings(false);setLastGuideSettings(settings);void generateGuidePreview(settings);}}/>:null}
     </main>
-  );
+  </OnboardingProvider>;
 }

@@ -11,6 +11,8 @@ import type {ManualDetail} from "@/features/models/types/ManualDetail";
 import {SimplePaintingStepEditor} from "./SimplePaintingStepEditor";
 import {getLegacyTargetModeCounts,type SimpleTargetMode} from "../../lib/simpleTargetMode";
 import {useSimplePartSelection} from "../../hooks/useSimplePartSelection";
+import {ONBOARDING_TARGETS} from "@/features/onboarding/constants/onboardingTargets";
+import {ContextualHintSlot} from "@/features/onboarding/components/ContextualHintSlot";
 
 type Props={projectId:string;activeReferenceId:string|null;onSelectReference:(id:string)=>void;onShowReference:(id:string)=>void;onReferenceDeleted:(id:string)=>void};
 export function SimplePaintingSteps(props:Props){
@@ -45,9 +47,9 @@ export function SimplePaintingSteps(props:Props){
    }else if(destructive&&!window.confirm(t(mode==="markers"?"editor.simpleTarget.confirmKeepMarkers":"editor.simpleTarget.confirmKeepRegions")))return;
    applySimpleTargetMode(mode);setChangingMode(false);snapshotRef.current=null;finishClose();
  }
- return <section className="simple-painting-steps pt-4">
+ return <section data-onboarding-target={!simpleTargetMode||changingMode?ONBOARDING_TARGETS.targetingMethod:undefined} className="simple-painting-steps pt-4">
   {!simpleTargetMode||changingMode?<SimpleTargetModeSetup currentMode={simpleTargetMode} mixed={mixed} counts={counts} changing={changingMode} onCancel={()=>setChangingMode(false)} onContinue={chooseMode}/>:<>
-   <div className="flex items-center gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] p-2.5">
+   <div data-onboarding-target={ONBOARDING_TARGETS.targetingMethod} className="flex items-center gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] p-2.5">
     <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">{simpleTargetMode==="markers"?<MapPin className="size-3.5"/>:<Paintbrush className="size-3.5"/>}</span>
     <span className="min-w-0 flex-1"><span className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">{t("editor.simpleTarget.settingLabel")}</span><span className="mt-0.5 block truncate text-xs font-semibold text-[var(--text)]">{t(simpleTargetMode==="markers"?"editor.simpleTarget.projectMarkers":"editor.simpleTarget.projectRegions")}</span></span>
     <button type="button" onClick={()=>{if(confirmDiscard())setChangingMode(true)}} className="inline-flex min-h-7 cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--border-strong)] bg-transparent px-2.5 text-[10px] font-semibold text-[var(--text-muted)] transition-colors duration-150 hover:border-[var(--accent)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"><RotateCcw className="size-3"/>{t("common.change")}</button>
@@ -61,12 +63,12 @@ export function SimplePaintingSteps(props:Props){
      {showDropAfter?<span aria-hidden="true" className="pointer-events-none absolute -bottom-2 left-11 right-0 z-10 h-0.5 rounded-full bg-[var(--accent)] shadow-[0_0_0_1px_var(--card)]"/>:null}
      {index<visibleStages.length-1?<span aria-hidden="true" className={`simple-step-connector absolute bottom-[-1rem] left-[15px] top-7 w-px ${visibleStages[index+1]?.id===draftStage?.id?"is-transitioning":""}`}/>:null}
      <button type="button" onClick={()=>{if(!isDraft)edit(stage.id)}} aria-label={title} aria-pressed={expanded} className={`simple-step-number relative z-[1] grid size-7 cursor-pointer place-items-center self-start rounded-full text-xs font-semibold ${expanded?"is-editing":"is-complete"}`}>{index+1}</button>
-     <article ref={element=>{if(element)stepElementsRef.current.set(stage.id,element);else stepElementsRef.current.delete(stage.id)}} style={{transform:translate?`translateY(${translate}px)`:undefined}} className={`simple-step-card min-w-0 rounded-xl p-3 transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none ${expanded?"is-selected":""} ${dragging?"opacity-30":""}`}>
+     <article data-onboarding-target={expanded?ONBOARDING_TARGETS.stepEditor:undefined} ref={element=>{if(element)stepElementsRef.current.set(stage.id,element);else stepElementsRef.current.delete(stage.id)}} style={{transform:translate?`translateY(${translate}px)`:undefined}} className={`simple-step-card min-w-0 rounded-xl p-3 transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none ${expanded?"is-selected":""} ${dragging?"opacity-30":""}`}>
       <button type="button" onClick={()=>edit(stage.id)} className="flex w-full cursor-pointer items-start gap-3 text-left">
        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-[var(--text)]">{title}</span><span className="mt-0.5 block truncate text-[10px] text-[var(--text-muted)]">{getPaintingStageTypeLabel(stage.type,t)}{targetSummary?` · ${targetSummary}`:""}</span></span>
        <span aria-hidden="true" className="size-6 shrink-0 rounded-md border border-[var(--border)]" style={{backgroundColor:color?.hex??"var(--text-muted)"}}/>
       </button>
-      {expanded?<SimplePaintingStepEditor key={stage.id} stage={stage} projectId={projectId} activeReferenceId={props.activeReferenceId} onSelectReference={props.onSelectReference} onShowReference={props.onShowReference} onReferenceDeleted={props.onReferenceDeleted} onClose={cancelEditor} onSave={save}/>:<div className="mt-2 flex items-center gap-1">
+      {expanded?<><SimplePaintingStepEditor key={stage.id} stage={stage} projectId={projectId} activeReferenceId={props.activeReferenceId} onSelectReference={props.onSelectReference} onShowReference={props.onShowReference} onReferenceDeleted={props.onReferenceDeleted} onClose={cancelEditor} onSave={save}/><ContextualHintSlot id="stepEditor" targetId={ONBOARDING_TARGETS.stepEditor} titleKey="onboarding.hint.step.title" descriptionKey="onboarding.hint.step.description"/></>:<div className="mt-2 flex items-center gap-1">
        <button type="button" draggable onDragStart={event=>startDrag(event,stage.id)} onDragEnd={finishDrag} aria-label={t("editor.steps.actions.drag",{title})} title={t("editor.steps.actions.drag",{title})} className={`simple-step-action grid size-8 place-items-center ${dragging?"cursor-grabbing":"cursor-grab"}`}><GripVertical className="size-4"/></button>
        <button type="button" onClick={()=>edit(stage.id)} aria-label={t("painting.actions.edit")} title={t("painting.actions.edit")} className="simple-step-action grid size-8 cursor-pointer place-items-center"><Pencil className="size-3.5"/></button>
        <button type="button" onClick={()=>copy(stage)} aria-label={t("editor.steps.actions.duplicate")} title={t("editor.steps.actions.duplicate")} className="simple-step-action grid size-8 cursor-pointer place-items-center"><Copy className="size-3.5"/></button>
@@ -76,7 +78,7 @@ export function SimplePaintingSteps(props:Props){
       </div>}
      </article>
     </li>})}</ol>:<div className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-5 text-center"><span className="mx-auto grid size-10 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]"><Paintbrush className="size-5"/></span><h3 className="mt-3 text-sm font-semibold text-[var(--text)]">{t("editor.steps.empty")}</h3><p className="mx-auto mt-1 max-w-[17rem] text-xs leading-5 text-[var(--text-muted)]">{t("editor.steps.emptyHelp")}</p></div>}
-   <button type="button" disabled={!part||editingId!==null||draftStage!==null} onClick={create} className="simple-add-step mt-3 flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"><Plus className="size-4"/>{t("editor.workflow.addStep")}</button>
+   <button type="button" data-onboarding-target={ONBOARDING_TARGETS.addStep} disabled={!part||editingId!==null||draftStage!==null} onClick={create} className="simple-add-step mt-3 flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"><Plus className="size-4"/>{t("editor.workflow.addStep")}</button>
   </>}
   <ConfirmationModal isOpen={Boolean(deleting)} title={t("editor.steps.delete.title",{title:deleting?getPaintingStageLabel(deleting,t):""})} description={t("editor.steps.delete.description")} confirmLabel={t("editor.steps.actions.delete")} variant="danger" onClose={()=>setDeleting(null)} onConfirm={confirmDelete}/>
  </section>

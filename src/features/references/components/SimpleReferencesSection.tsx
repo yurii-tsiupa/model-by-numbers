@@ -11,6 +11,7 @@ import {createReferenceImages,type ReferenceValidationError} from "../lib/create
 import {useDeleteReference,useReferenceImages,useSaveReferences} from "../hooks/useReferenceImages";
 import type {ReferenceImage} from "../types/ReferenceImage";
 import {ReferenceImageView} from "./ReferenceImageView";
+import {ONBOARDING_TARGETS} from "@/features/onboarding/constants/onboardingTargets";
 
 const errorKey=(error:ReferenceValidationError):TranslationKey=>`references.${error.code}`;
 
@@ -57,7 +58,7 @@ export function SimpleReferencesSection({projectId,activeReferenceId,isVisible,o
     }
   }
 
-  return <section className="simple-references border-b border-[var(--border)] pb-4">
+  return <section data-onboarding-target={ONBOARDING_TARGETS.references} className="simple-references border-b border-[var(--border)] pb-4">
     <button type="button" aria-expanded={expanded} onClick={toggleExpanded} className="flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-lg text-left transition hover:bg-[var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">
       <Images className="size-4 text-[var(--accent)]"/>
       <span className="min-w-0 flex-1 text-sm font-semibold text-[var(--text)]">{t("simple.references.title")}</span>

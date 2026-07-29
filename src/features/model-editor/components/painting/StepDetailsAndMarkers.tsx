@@ -8,6 +8,8 @@ import {useModelEditorStore} from "../../store/modelEditorStore";
 import type {PaintingTargetReference} from "../../types/PaintingWorkflow";
 import {SimpleDetailColorSelect} from "./SimpleDetailColorSelect";
 import {regionSelectionsEqual,smoothRegionSelections} from "../../lib/regionBrushGeometry";
+import {ONBOARDING_TARGETS} from "@/features/onboarding/constants/onboardingTargets";
+import {ContextualHintSlot} from "@/features/onboarding/components/ContextualHintSlot";
 
 const focusClass="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]";
 const primaryButtonClass=`inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-3 text-xs font-semibold text-[var(--accent-foreground)] shadow-sm transition hover:brightness-110 active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-40 ${focusClass}`;
@@ -90,7 +92,7 @@ export function StepDetailsAndMarkers({value,onChange}:{value:PaintingTargetRefe
   function cancel(){if(pendingId&&!attachedIds.has(pendingId))remove(pendingId);reset()}
 
   const editorOpen=isNew||Boolean(editorId);
-  return <section>
+  return <section data-onboarding-target={ONBOARDING_TARGETS.detailEditor}>
     <div className="flex items-center gap-3">
       <h4 className="simple-editor-heading text-[10px] font-semibold uppercase tracking-wider">{t("editor.workflow.detail")}</h4>
       <span aria-hidden="true" className="h-px flex-1 bg-[var(--border)]"/>
@@ -124,7 +126,8 @@ function MarkerControls({count,finish}:{count:number;finish:()=>void}){
   const cancel=useModelEditorStore(state=>state.cancelManualDetailPlacement);
   const markerGhostClass=`inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-transparent px-2.5 text-xs font-medium text-[var(--text-muted)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text)] disabled:cursor-not-allowed disabled:opacity-40 ${focusClass}`;
   const markerToolClass=`grid size-8 cursor-pointer place-items-center rounded-lg bg-transparent text-[var(--text-muted)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text)] disabled:cursor-not-allowed disabled:opacity-40 ${focusClass}`;
-  return <div className="space-y-2 border-t border-[var(--border)] pt-2.5">
+  return <div data-onboarding-target={ONBOARDING_TARGETS.markerToolbar} className="space-y-2 border-t border-[var(--border)] pt-2.5">
+    <ContextualHintSlot id="marker" targetId={ONBOARDING_TARGETS.markerToolbar} titleKey="onboarding.hint.marker.title" descriptionKey="onboarding.hint.marker.description"/>
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <h5 className="text-xs font-semibold text-[var(--text)]">{t("editor.workflow.markerPlacementTitle")}</h5>
@@ -160,7 +163,8 @@ function RegionControls(){
   const smoothed=useMemo(()=>smoothRegionSelections(draft?.selections??[],"manual"),[draft?.selections]);
   const canSmooth=Boolean(draft&&count&&!regionSelectionsEqual(draft.selections,smoothed));
   if(!draft)return null;
-  return <div className="sticky bottom-2 z-10 space-y-2.5 rounded-xl border border-[var(--accent-2)] bg-[var(--card)]/95 p-2.5 shadow-lg backdrop-blur">
+  return <div data-onboarding-target={ONBOARDING_TARGETS.regionToolbar} className="sticky bottom-2 z-10 space-y-2.5 rounded-xl border border-[var(--accent-2)] bg-[var(--card)]/95 p-2.5 shadow-lg backdrop-blur">
+    <ContextualHintSlot id="region" targetId={ONBOARDING_TARGETS.regionToolbar} titleKey="onboarding.hint.region.title" descriptionKey="onboarding.hint.region.description"/>
     <p className="px-0.5 text-xs font-semibold text-[var(--accent-2)]">{t("editor.region.placing")} · {t("editor.region.selectedCount",{count})}</p>
     <label className="flex min-w-0 items-center gap-2 rounded-lg bg-[var(--surface)] px-2 py-2 text-xs">
       <span className="flex shrink-0 items-center gap-1.5 font-medium text-[var(--text-secondary)]"><Brush className="size-3.5 text-[var(--accent-2)]"/>{t("editor.region.brushSize")}</span>

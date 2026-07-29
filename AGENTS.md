@@ -47,6 +47,25 @@
 - Do not introduce route refreshes, form submissions, mutation loops, persistence loops, or Viewer flicker for local UI interactions.
 - Preserve camera position and Viewer state during palette, step, detail, marker, and region updates.
 
+## Onboarding and contextual help
+
+- Build onboarding tours as reusable, configuration-driven functionality.
+- Do not implement page-specific tours as one large hardcoded component.
+- Use stable semantic onboarding target IDs instead of fragile CSS selectors or DOM positions.
+- All onboarding titles, descriptions, controls, aria-labels, tooltips, progress text and hints must use the existing i18n system.
+- English and Ukrainian are required.
+- Support Light and Dark themes using existing semantic theme tokens.
+- Light Theme onboarding surfaces must be white, not gray.
+- Tours must be skippable, restartable and versioned.
+- Persist completed tours and dismissed contextual hints.
+- A completed tour must not reopen automatically unless its version changes.
+- Contextual hints must appear only when the relevant workflow is active.
+- Keep onboarding copy short, practical and action-oriented.
+- Do not block normal application usage with a long mandatory tutorial.
+- Tours must not change or submit user data.
+- Respect reduced-motion preferences.
+- Verify keyboard navigation, focus handling, Escape behavior, responsive positioning and screen-reader support.
+
 ## Validation
 
 After code changes:
