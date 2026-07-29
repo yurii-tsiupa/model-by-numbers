@@ -80,7 +80,7 @@ export function SimpleColorsSection() {
       <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[var(--text-secondary)]" />
     </div> : null}
 
-    {hasSingleTarget ? <div className="mt-5">
+    <div className="mt-5">
       <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">{t("properties.quick")}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {QUICK_COLORS.map((color) => {
@@ -92,15 +92,16 @@ export function SimpleColorsSection() {
             aria-label={t("properties.useColor", { name })}
             aria-pressed={selected}
             title={name}
-            onClick={() => assignColor(target, color.value)}
-            className="simple-palette-quick-color relative size-7 shrink-0 rounded-lg bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] active:scale-95"
+            disabled={!hasSingleTarget}
+            onClick={() => target && assignColor(target, color.value)}
+            className="simple-palette-quick-color relative size-7 shrink-0 cursor-pointer rounded-lg bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
           >
             <span aria-hidden="true" className="block size-full rounded-[5px] border border-black/15" style={{ backgroundColor: color.value }} />
             {selected ? <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center"><Check className="size-3.5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]" /></span> : null}
           </button>;
         })}
       </div>
-    </div> : null}
+    </div>
 
     {palette.length === 0 ? <p className="mt-5 text-sm text-[var(--text-secondary)]">{t("editor.colors.empty")}</p> : <div className="mt-4 grid gap-2">
       {palette.map((color) => <button key={color.id} type="button" disabled={!target} aria-pressed={selectedColorId === color.id} onClick={() => target && assignColor(target,color.hex)} className="simple-palette-color-card flex min-h-[52px] min-w-0 items-center gap-3 rounded-lg bg-[var(--card)] px-3 py-2 text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] disabled:cursor-not-allowed disabled:opacity-40"><span className="size-8 shrink-0 rounded-lg border border-black/15" style={{ backgroundColor: color.hex }} /><span className="min-w-0"><span className="block truncate font-semibold text-[var(--text)]">{color.name}</span><span className="simple-palette-muted mt-0.5 block font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase">{color.hex}</span></span></button>)}
