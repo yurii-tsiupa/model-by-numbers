@@ -3,15 +3,11 @@
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { useEffect,useRef,useState } from "react";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
-import { PAINT_COLORS } from "../constants/paintColors";
+import { SIMPLE_QUICK_COLORS } from "../lib/simpleQuickColors";
+import {resolveSavedPartColorAssignments} from "../step-previews/resolveStepPreviewComposition";
 import { normalizeHexColor } from "../lib/normalizeHexColor";
 import { useModelEditorStore } from "../store/modelEditorStore";
 import {useSimplePartSelection} from "../hooks/useSimplePartSelection";
-
-const QUICK_COLOR_IDS = new Set([
-  "white", "black", "gray", "red", "blue", "yellow", "green", "brown",
-]);
-const QUICK_COLORS = PAINT_COLORS.filter((color) => QUICK_COLOR_IDS.has(color.id));
 
 export function SimpleColorsSection() {
   const { t } = useTranslation();
@@ -23,22 +19,31 @@ export function SimpleColorsSection() {
   const manualDetails = useModelEditorStore((state) => state.manualDetails);
   const palette = useModelEditorStore((state) => state.palette);
   const selectedPartIds = useModelEditorStore((state) => state.selectedPartIds);
+  const simpleTargetMode=useModelEditorStore(state=>state.simpleTargetMode);
   const selectedManualDetailId = useModelEditorStore((state) => state.selectedManualDetailId);
   const selectPart = useModelEditorStore((state) => state.selectPart);
   const selectManualDetail = useModelEditorStore((state) => state.selectManualDetail);
   const addPaletteColor = useModelEditorStore((state) => state.addPaletteColor);
   const assignColor = useModelEditorStore((state) => state.createAndAssignPaletteColorToTarget);
+  const assignPartDraft=useModelEditorStore(state=>state.assignSimplePartColorDraft);
+  const setPartDraft=useModelEditorStore(state=>state.setSimplePartColorDraft);
+  const clearPartAssignments=useModelEditorStore(state=>state.clearSimplePartColorAssignments);
+  const partDraft=useModelEditorStore(state=>state.simplePartColorDraft);
+  const partAssignments=useModelEditorStore(state=>state.simplePartColorAssignments);
+  const stepDraftAssignments=useModelEditorStore(state=>state.simplePartColorStepDraftAssignments);
+  const stepOrder=useModelEditorStore(state=>state.simplePaintingStepOrder);
   const selectedManualDetail = manualDetails.find((detail) => detail.id === selectedManualDetailId) ?? null;
-  const selectedPart = selectedManualDetail?null:parts.find((part) => part.id === activePartId) ?? null;
+  const selectedPart = selectedManualDetail||simpleTargetMode!=="parts"?null:parts.find((part) => part.id === activePartId) ?? null;
   const target = selectedManualDetail
     ? { type: "manualDetail" as const, id: selectedManualDetail.id }
     : selectedPart
       ? { type: "part" as const, id: selectedPart.id }
       : null;
   const targetName = selectedManualDetail?.name ?? selectedPart?.name ?? null;
-  const selectedColorId = selectedManualDetail?.colorId ?? selectedPart?.paletteColorId ?? null;
+  const savedPartAssignments=resolveSavedPartColorAssignments(parts,undefined,partDraft?.stageId,stepOrder);
+  const selectedColorId = simpleTargetMode==="parts"&&selectedPart?(Object.hasOwn(stepDraftAssignments,selectedPart.id)?stepDraftAssignments[selectedPart.id]:Object.hasOwn(partAssignments,selectedPart.id)?partAssignments[selectedPart.id]:savedPartAssignments.get(selectedPart.id)??null):selectedManualDetail?.colorId ?? selectedPart?.paletteColorId ?? null;
   const selectedColor = palette.find((color) => color.id === selectedColorId) ?? null;
-  const hasSingleTarget = target !== null && selectedPartIds.length <= 1;
+  const hasSingleTarget = target !== null && (simpleTargetMode==="parts"||selectedPartIds.length <= 1);
   const selectionValue = selectedPart
     ? `part:${selectedPart.id}`
     : selectedManualDetail
@@ -65,7 +70,15 @@ export function SimpleColorsSection() {
     const separator = value.indexOf(":");
     const type = value.slice(0, separator);
     const id = value.slice(separator + 1);
-    if (type === "part") selectPart(id);
+    if (type === "part") {
+      if(partDraft?.stageId!=="pending-parts-step"&&partDraft?.partId&&partDraft.partId!==id)clearPartAssignments([partDraft.partId]);
+      selectPart(id);
+      if(simpleTargetMode==="parts")setPartDraft({
+        stageId:partDraft?.stageId??"pending-parts-step",
+        partId:id,
+        paletteColorId:Object.hasOwn(stepDraftAssignments,id)?stepDraftAssignments[id]:Object.hasOwn(partAssignments,id)?partAssignments[id]:savedPartAssignments.get(id)??null,
+      });
+    }
     if (type === "manualDetail") selectManualDetail(id);
   }
 
@@ -73,7 +86,8 @@ export function SimpleColorsSection() {
     const hex = normalizeHexColor(colorHex);
     if (!hex) return;
     addPaletteColor({ name: colorName, hex });
-    if (target) assignColor(target, hex);
+    if(selectedPart&&simpleTargetMode==="parts")assignPartDraft(selectedPart.id,hex);
+    else if (target) assignColor(target, hex);
     setColorName("");
     setShowColorForm(false);
   }
@@ -81,18 +95,18 @@ export function SimpleColorsSection() {
   return <section className="simple-palette">
     <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">{t("editor.colors.title")}</h3>
     <p className="simple-palette-muted mt-1 text-xs leading-5">
-      {targetName ? t("editor.colors.assignTo", { name: targetName }) : t("editor.colors.selectDetail")}
+      {targetName ? t("editor.colors.assignTo", { name: targetName }) : t(simpleTargetMode==="parts"?"editor.parts.chooseBeforeColor":"editor.colors.selectDetail")}
     </p>
-    {showPartSelector ? <div className="relative mt-2">
+    {showPartSelector&&simpleTargetMode==="parts" ? <div className="relative mt-2">
       <select
         aria-label={t("editor.accessibility.detailSelect")}
         value={selectionValue}
         onChange={(event) => selectTarget(event.target.value)}
         className="h-10 w-full cursor-pointer appearance-none rounded-lg border border-[var(--border)] bg-[var(--card)] py-0 pl-3 pr-10 text-sm text-[var(--text)] outline-none transition-colors duration-200 hover:border-[color-mix(in_srgb,var(--border),var(--text)_22%)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent),transparent_75%)] disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <option value="" disabled>{t("editor.colors.selectDetail")}</option>
+        <option value="" disabled>{t(simpleTargetMode==="parts"?"editor.parts.selectPart":"editor.colors.selectDetail")}</option>
         {parts.map((part) => <option key={part.id} value={`part:${part.id}`}>{part.name}</option>)}
-        {manualDetails.map((detail) => <option key={detail.id} value={`manualDetail:${detail.id}`}>{detail.name}</option>)}
+        {simpleTargetMode!=="parts"?manualDetails.map((detail) => <option key={detail.id} value={`manualDetail:${detail.id}`}>{detail.name}</option>):null}
       </select>
       <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[var(--text-secondary)]" />
     </div> : null}
@@ -100,7 +114,7 @@ export function SimpleColorsSection() {
     <div className="mt-5">
       <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">{t("properties.quick")}</p>
       <div className="mt-3 flex flex-wrap gap-2">
-        {QUICK_COLORS.map((color) => {
+        {SIMPLE_QUICK_COLORS.map((color) => {
           const name = t(`color.${color.id}`);
           const selected = normalizeHexColor(selectedColor?.hex ?? "") === normalizeHexColor(color.value);
           return <button
@@ -110,7 +124,7 @@ export function SimpleColorsSection() {
             aria-pressed={selected}
             title={name}
             disabled={!hasSingleTarget}
-            onClick={() => target && assignColor(target, color.value)}
+            onClick={() => selectedPart&&simpleTargetMode==="parts"?assignPartDraft(selectedPart.id,color.value):target&&assignColor(target, color.value)}
             className="simple-palette-quick-color relative size-7 shrink-0 cursor-pointer rounded-lg bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
           >
             <span aria-hidden="true" className="block size-full rounded-[5px] border border-black/15" style={{ backgroundColor: color.value }} />
@@ -121,7 +135,7 @@ export function SimpleColorsSection() {
     </div>
 
     {palette.length === 0 ? <p className="mt-5 text-sm text-[var(--text-secondary)]">{t("editor.colors.empty")}</p> : <div className="mt-4 grid gap-2">
-      {palette.map((color) => <button key={color.id} type="button" disabled={!target} aria-pressed={selectedColorId === color.id} onClick={() => target && assignColor(target,color.hex)} className="simple-palette-color-card flex min-h-[52px] min-w-0 items-center gap-3 rounded-lg bg-[var(--card)] px-3 py-2 text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] disabled:cursor-not-allowed disabled:opacity-40"><span className="size-8 shrink-0 rounded-lg border border-black/15" style={{ backgroundColor: color.hex }} /><span className="min-w-0"><span className="block truncate font-semibold text-[var(--text)]">{color.name}</span><span className="simple-palette-muted mt-0.5 block font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase">{color.hex}</span></span></button>)}
+      {palette.map((color) => <button key={color.id} type="button" disabled={!target} aria-pressed={selectedColorId === color.id} onClick={() => selectedPart&&simpleTargetMode==="parts"?assignPartDraft(selectedPart.id,color.hex):target&&assignColor(target,color.hex)} className="simple-palette-color-card flex min-h-[52px] min-w-0 cursor-pointer items-center gap-3 rounded-lg bg-[var(--card)] px-3 py-2 text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] disabled:cursor-not-allowed disabled:opacity-40"><span className="size-8 shrink-0 rounded-lg border border-black/15" style={{ backgroundColor: color.hex }} /><span className="min-w-0"><span className="block truncate font-semibold text-[var(--text)]">{color.name}</span><span className="simple-palette-muted mt-0.5 block font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase">{color.hex}</span></span></button>)}
     </div>}
     <div ref={addColorAreaRef}>
       <button type="button" onClick={() => setShowColorForm((value) => !value)} className="simple-palette-add-color mt-3 flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]"><Plus className="size-4 text-current" />{t("editor.colors.add")}</button>

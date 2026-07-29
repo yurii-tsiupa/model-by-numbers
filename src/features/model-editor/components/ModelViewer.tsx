@@ -92,6 +92,7 @@ type SceneProps = {
   forceFullyExploded:boolean;
   onControlsStart:()=>void;
   previewCapture?:{stepId:string;displayMode:StepPreviewDisplayMode}|null;
+  simpleMode:boolean;
 };
 
 function Scene({
@@ -111,6 +112,7 @@ function Scene({
   forceFullyExploded,
   onControlsStart,
   previewCapture,
+  simpleMode,
 }: SceneProps) {
   return (
     <>
@@ -156,6 +158,7 @@ function Scene({
           forceFullyExploded={forceFullyExploded}
           controlsRef={controlsRef}
           previewCapture={previewCapture}
+          simpleMode={simpleMode}
         />
 
         <Environment preset="studio" />
@@ -733,6 +736,7 @@ export const ModelViewer = forwardRef<
               forceFullyExploded={forceFullyExploded}
               onControlsStart={cancelFocusAnimation}
               previewCapture={previewCapture}
+              simpleMode={simplified}
             />
           </Canvas>
         </ViewerErrorBoundary>

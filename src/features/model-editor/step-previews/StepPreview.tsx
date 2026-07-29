@@ -99,7 +99,8 @@ function PreviewImage({projectId,step,shot,label,title,unavailable=false,onRepla
   const parts=useModelEditorStore(state=>state.parts);
   const details=useModelEditorStore(state=>state.manualDetails);
   const palette=useModelEditorStore(state=>state.palette);
-  const key=useMemo(()=>getStepPreviewCacheKey(projectId,step,parts,details,palette,shot),[details,palette,parts,projectId,shot,step]);
+  const simplePaintingStepOrder=useModelEditorStore(state=>state.simplePaintingStepOrder);
+  const key=useMemo(()=>getStepPreviewCacheKey(projectId,step,parts,details,palette,shot,simplePaintingStepOrder),[details,palette,parts,projectId,shot,simplePaintingStepOrder,step]);
   const[result,setResult]=useState<StepPreviewResult|null>(null);
   const[error,setError]=useState<StepPreviewErrorCode|null>(null);
   const[loading,setLoading]=useState(false);

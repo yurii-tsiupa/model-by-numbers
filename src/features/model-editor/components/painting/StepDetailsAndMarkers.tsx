@@ -42,7 +42,7 @@ export function StepDetailsAndMarkers({value,onChange}:{value:PaintingTargetRefe
   const attached=details.filter(detail=>attachedIds.has(detail.id));
   const editableDetailId=value.find(reference=>reference.type==="manualDetail")?.id??null;
   const editing=editorId?details.find(detail=>detail.id===editorId)??null:null;
-  const mode=simpleTargetMode??"markers";
+  const mode=simpleTargetMode==="region"?"region":"markers";
   const targetAction=mode==="markers"
     ?{label:t("editor.workflow.addMarkers"),Icon:MapPin}
     :{label:t("editor.workflow.selectPaintArea"),Icon:Paintbrush};

@@ -1,1 +1,1 @@
-export type SimpleTargetMode="markers"|"region";
+export type SimpleTargetMode="markers"|"region"|"parts";

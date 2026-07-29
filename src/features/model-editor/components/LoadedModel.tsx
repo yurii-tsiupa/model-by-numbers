@@ -47,7 +47,7 @@ import type {ModelFormat} from "@/features/model-import/types/ModelFormat";
 import type {DetailRegion} from "@/features/models/types/ManualDetail";
 import {getBrushTriangleIndices,getConnectedAreaTriangleIndices,registerRegionGeometry,smoothRegionSelections} from "../lib/regionBrushGeometry";
 import type {StepPreviewDisplayMode} from "../types/PaintingWorkflow";
-import {resolveStepPreviewComposition} from "../step-previews/resolveStepPreviewComposition";
+import {resolveSavedPartColorAssignments,resolveSavedPartColors,resolveStepPreviewComposition} from "../step-previews/resolveStepPreviewComposition";
 
 type RegionStroke={
   sessionId:string;
@@ -77,6 +77,7 @@ type LoadedModelProps = {
     model: Object3D,
   ) => void;
   previewCapture?:{stepId:string;displayMode:StepPreviewDisplayMode}|null;
+  simpleMode:boolean;
 };
 
 export function LoadedModel(props: LoadedModelProps) {
@@ -98,6 +99,7 @@ function LoadedModelContent({
   controlsRef,
   onModelReady,
   previewCapture,
+  simpleMode,
 }: LoadedModelProps & { sourceScene: Object3D }) {
   const {t}=useTranslation();
   const hasInitializedPartsRef = useRef(false);
@@ -163,6 +165,11 @@ function LoadedModelContent({
   const commitRegionSelections=useModelEditorStore(state=>state.commitRegionSelections);
   const addDraftManualDetailPin=useModelEditorStore(state=>state.addDraftManualDetailPin);
   const selectManualDetail=useModelEditorStore(state=>state.selectManualDetail);
+  const simpleTargetMode=useModelEditorStore(state=>state.simpleTargetMode);
+  const simplePartColorDraft=useModelEditorStore(state=>state.simplePartColorDraft);
+  const simplePartColorAssignments=useModelEditorStore(state=>state.simplePartColorAssignments);
+  const simplePartColorStepDraftAssignments=useModelEditorStore(state=>state.simplePartColorStepDraftAssignments);
+  const simplePaintingStepOrder=useModelEditorStore(state=>state.simplePaintingStepOrder);
 
   const model = useMemo(() => {
     const normalizedModel = normalizeModel(sourceScene);
@@ -177,7 +184,8 @@ function LoadedModelContent({
   const highlightedPaintingPartIds = useMemo(() => activePaintingStage?.targetReferences?.filter((reference) => reference.type === "part").map((reference) => reference.id) ?? [], [activePaintingStage]);
   const highlightedPaintingManualDetailIds=useMemo(()=>new Set(activePaintingStage?.targetReferences?.filter(reference=>reference.type!=="part").map(reference=>reference.id)??[]),[activePaintingStage]);
   const previewStep=previewCapture?parts.flatMap(part=>part.paintingWorkflow.stages).find(stage=>stage.id===previewCapture.stepId):undefined;
-  const previewComposition=useMemo(()=>previewStep&&previewCapture?resolveStepPreviewComposition({step:previewStep,parts,manualDetails,palette,baseColor,displayMode:previewCapture.displayMode}):null,[baseColor,manualDetails,palette,parts,previewCapture,previewStep]);
+  const previewComposition=useMemo(()=>previewStep&&previewCapture?resolveStepPreviewComposition({step:previewStep,parts,manualDetails,palette,baseColor,displayMode:previewCapture.displayMode,stepOrder:simplePaintingStepOrder}):null,[baseColor,manualDetails,palette,parts,previewCapture,previewStep,simplePaintingStepOrder]);
+  const simplePartColors=useMemo(()=>{if(!simpleMode||simpleTargetMode!=="parts"||previewComposition)return null;const values=resolveSavedPartColors(parts,palette,undefined,simplePartColorDraft?.stageId,simplePaintingStepOrder);for(const assignments of [simplePartColorAssignments,simplePartColorStepDraftAssignments])for(const[partId,colorId]of Object.entries(assignments)){const color=colorId?palette.find(item=>item.id===colorId):null;if(color)values.set(partId,color.hex);else values.delete(partId)}return values},[palette,parts,previewComposition,simpleMode,simplePaintingStepOrder,simplePartColorAssignments,simplePartColorDraft?.stageId,simplePartColorStepDraftAssignments,simpleTargetMode]);
 
   useEffect(()=>{
     const cleanups:Array<()=>void>=[];
@@ -217,17 +225,17 @@ function LoadedModelContent({
 
   const presentationParts = useMemo(
     () =>
-      previewComposition
-        ? parts.map(part=>({...part,visible:true,paletteColorId:previewComposition.partColors.has(part.id)?`preview:${part.id}`:null}))
+      previewComposition||simplePartColors
+        ? parts.map(part=>({...part,visible:true,paletteColorId:(previewComposition?.partColors??simplePartColors)?.has(part.id)?`preview:${part.id}`:null}))
         : showAllPartsForCapture
         ? parts.map((part) => ({
             ...part,
             visible: part.includeInGuide,
           }))
         : parts,
-    [parts, previewComposition, showAllPartsForCapture],
+    [parts, previewComposition,simplePartColors, showAllPartsForCapture],
   );
-  const presentationPalette=useMemo(()=>previewComposition?[...palette,...[...previewComposition.partColors].map(([id,hex],index)=>({id:`preview:${id}`,number:palette.length+index+1,name:"",hex}))]:palette,[palette,previewComposition]);
+  const presentationPalette=useMemo(()=>{const values=previewComposition?.partColors??simplePartColors;return values?[...palette,...[...values].map(([id,hex],index)=>({id:`preview:${id}`,number:palette.length+index+1,name:"",hex}))]:palette},[palette,previewComposition,simplePartColors]);
   const partStructure=parts.map(part=>`${part.id}:${part.meshUuid}`).join("|");
   const explodedLayout=useMemo(() => {
     if (parts.length <= 1) {
@@ -334,8 +342,8 @@ function LoadedModelContent({
       palette:presentationPalette,
       viewerMode,
       baseColor,
-      selectedPartId:previewCapture?null:selectedPartId,
-      selectedPartIds:previewCapture?[]:selectedPartIds,
+      selectedPartId:previewCapture||simpleMode&&simpleTargetMode!=="parts"?null:selectedPartId,
+      selectedPartIds:previewCapture||simpleMode&&simpleTargetMode!=="parts"?[]:selectedPartIds,
       highlightedPaletteColorId:previewCapture?null:highlightedPaletteColorId,
       highlightedPaintingPartIds:previewCapture?[]:highlightedPaintingPartIds,
       hideUnmappedMeshes: importSchemaVersion === 1,
@@ -351,6 +359,8 @@ function LoadedModelContent({
     highlightedPaletteColorId,
     highlightedPaintingPartIds,
     previewCapture,
+    simpleMode,
+    simpleTargetMode,
     importSchemaVersion,
   ]);
 
@@ -384,6 +394,7 @@ function LoadedModelContent({
     }
 
     if (manualDetailPlacement) return;
+    if(simpleMode&&simpleTargetMode!=="parts")return;
 
     const clickedMesh = event.object;
 
@@ -403,6 +414,13 @@ function LoadedModelContent({
     if (selectionMode === "assignPalette") {
       toggleSelectedPart(clickedPart.id);
     } else {
+      if(simpleMode&&simpleTargetMode==="parts"){
+        const state=useModelEditorStore.getState(),draft=state.simplePartColorDraft;
+        if(draft?.stageId!=="pending-parts-step"&&draft?.partId&&draft.partId!==clickedPart.id)state.clearSimplePartColorAssignments([draft.partId]);
+        const saved=resolveSavedPartColorAssignments(state.parts,undefined,draft?.stageId,state.simplePaintingStepOrder);
+        const colorId=Object.hasOwn(state.simplePartColorStepDraftAssignments,clickedPart.id)?state.simplePartColorStepDraftAssignments[clickedPart.id]:Object.hasOwn(state.simplePartColorAssignments,clickedPart.id)?state.simplePartColorAssignments[clickedPart.id]:saved.get(clickedPart.id)??null;
+        state.setSimplePartColorDraft({stageId:draft?.stageId??"pending-parts-step",partId:clickedPart.id,paletteColorId:colorId});
+      }
       selectPart(clickedPart.id);
     }
   }

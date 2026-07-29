@@ -1,6 +1,7 @@
 import {ONBOARDING_TARGETS} from "../constants/onboardingTargets";
 import type {OnboardingTour} from "../types/onboarding.types";
 import {useModelEditorStore} from "@/features/model-editor/store/modelEditorStore";
+import {canUseSimplePartColoring} from "@/features/model-editor/lib/canUseSimplePartColoring";
 
 export const SIMPLE_MODE_TOUR:OnboardingTour={
   id:"simple-mode-editor",
@@ -9,7 +10,7 @@ export const SIMPLE_MODE_TOUR:OnboardingTour={
     {id:"palette",targetId:ONBOARDING_TARGETS.projectPalette,titleKey:"onboarding.tour.palette.title",descriptionKey:"onboarding.tour.palette.description",placement:"right",waitForTarget:true},
     {id:"viewer",targetId:ONBOARDING_TARGETS.modelViewer,titleKey:"onboarding.tour.viewer.title",descriptionKey:"onboarding.tour.viewer.description",placement:"bottom",waitForTarget:true},
     {id:"references",targetId:ONBOARDING_TARGETS.references,titleKey:"onboarding.tour.references.title",descriptionKey:"onboarding.tour.references.description",placement:"left",waitForTarget:true},
-    {id:"targeting",targetId:ONBOARDING_TARGETS.targetingMethod,titleKey:"onboarding.tour.targeting.title",descriptionKey:"onboarding.tour.targeting.description",placement:"left",waitForTarget:true,canContinue:()=>Boolean(useModelEditorStore.getState().simpleTargetMode),subscribeToContinue:listener=>useModelEditorStore.subscribe(()=>listener()),blockedMessageKey:"onboarding.tour.targeting.required",nextLabelKey:"onboarding.continue"},
+    {id:"targeting",targetId:ONBOARDING_TARGETS.targetingMethod,titleKey:"onboarding.tour.targeting.title",descriptionKey:"onboarding.tour.targeting.description",placement:"left",waitForTarget:true,canContinue:()=>{const state=useModelEditorStore.getState();return Boolean(state.simpleTargetMode&&(state.simpleTargetMode!=="parts"||canUseSimplePartColoring(state.parts)))},subscribeToContinue:listener=>useModelEditorStore.subscribe(()=>listener()),blockedMessageKey:"onboarding.tour.targeting.required",nextLabelKey:"onboarding.continue"},
     {id:"steps",targetId:ONBOARDING_TARGETS.paintingSteps,titleKey:"onboarding.tour.steps.title",descriptionKey:"onboarding.tour.steps.description",actionHintKeys:["onboarding.tour.steps.action1","onboarding.tour.steps.action2","onboarding.tour.steps.action3","onboarding.tour.steps.action4","onboarding.tour.steps.action5","onboarding.tour.steps.action6"],noteKey:"onboarding.tour.steps.note",placement:"left",waitForTarget:true},
     {id:"add-step",targetId:ONBOARDING_TARGETS.addStep,titleKey:"onboarding.tour.addStep.title",descriptionKey:"onboarding.tour.addStep.description",placement:"left",waitForTarget:true},
     {id:"guide",targetId:ONBOARDING_TARGETS.guideAction,titleKey:"onboarding.tour.guide.title",descriptionKey:"onboarding.tour.guide.description",placement:"bottom",waitForTarget:true},

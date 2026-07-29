@@ -91,6 +91,7 @@ async function renderWithRetry(request: StepPreviewRequest): Promise<{ blob: Blo
         palette: request.palette,
         baseColor: complete.baseColor,
         shot:request.shot,
+        stepOrder:useModelEditorStore.getState().simplePaintingStepOrder,
       });
     } catch (error) {
       lastError = error;

@@ -80,6 +80,8 @@ export function useProjectAutosave({
       }));
     const serializedAssemblySteps = editorState.assemblySteps.map((step) => ({ ...step, partIds: [...step.partIds] }));
     const serializedPaintingOrder=[...editorState.paintingOrder];
+    const serializedSimplePaintingStepOrder=[...editorState.simplePaintingStepOrder];
+    const serializedSimplePartColorAssignments={...editorState.simplePartColorAssignments};
     const serializedManualDetails=editorState.manualDetails.map(detail=>({...detail,pins:detail.pins.map(pin=>({...pin,position:{...pin.position},normal:pin.normal?{...pin.normal}:null,camera:{...pin.camera,position:{...pin.camera.position},target:{...pin.camera.target}}}))}));
 
     isSavingRef.current = true;
@@ -93,6 +95,8 @@ export function useProjectAutosave({
         palette: serializedPalette,
         assemblySteps: serializedAssemblySteps,
         paintingOrder:serializedPaintingOrder,
+        simplePaintingStepOrder:serializedSimplePaintingStepOrder,
+        simplePartColorAssignments:serializedSimplePartColorAssignments,
         manualDetails:serializedManualDetails,
         nextManualDetailNumber:editorState.nextManualDetailNumber,
         simpleTargetMode:editorState.simpleTargetMode,
@@ -115,6 +119,8 @@ export function useProjectAutosave({
             palette: serializedPalette,
             assemblySteps: serializedAssemblySteps,
             paintingOrder:serializedPaintingOrder,
+            simplePaintingStepOrder:serializedSimplePaintingStepOrder,
+            simplePartColorAssignments:serializedSimplePartColorAssignments,
             manualDetails:serializedManualDetails,
             nextManualDetailNumber:editorState.nextManualDetailNumber,
             simpleTargetMode:editorState.simpleTargetMode,

@@ -61,6 +61,8 @@ export function ModelEditor({
   const { mode, setMode } = useEditorMode();
   const initializedProjectIdRef = useRef<string | null>(null);
   const hydratePaintingOrder=useModelEditorStore(state=>state.hydratePaintingOrder);
+  const hydrateSimplePaintingStepOrder=useModelEditorStore(state=>state.hydrateSimplePaintingStepOrder);
+  const hydrateSimplePartColorAssignments=useModelEditorStore(state=>state.hydrateSimplePartColorAssignments);
   const viewerRef = useRef<ModelViewerHandle | null>(null);
   const isGeneratingRef = useRef(false);
   const restoreManualDetailPinsRef=useRef<(()=>void)|null>(null);
@@ -202,7 +204,7 @@ export function ModelEditor({
   const saveStatus = useModelEditorStore(
     (state) => state.saveStatus,
   );
-  const previewCaptureUsesRegions=previewCapture?previewCapture.step.targetReferences?.some(reference=>reference.type==="manualDetail"&&editorManualDetails.find(detail=>detail.id===reference.id)?.targetMode==="region")??simpleTargetMode==="region":false;
+  const previewCaptureUsesRegions=previewCapture?simpleTargetMode==="parts"||(previewCapture.step.targetReferences?.some(reference=>reference.type==="manualDetail"&&editorManualDetails.find(detail=>detail.id===reference.id)?.targetMode==="region")??simpleTargetMode==="region"):false;
 
   const readiness = useMemo(
     () =>
@@ -329,6 +331,8 @@ export function ModelEditor({
 
     resetEditor();
     hydratePaintingOrder(project.paintingOrder);
+    hydrateSimplePaintingStepOrder(project.simplePaintingStepOrder);
+    hydrateSimplePartColorAssignments(project.simplePartColorAssignments);
     setPalette(project.palette);
     setAssemblySteps(project.assemblySteps);
     setManualDetails(project.manualDetails,project.nextManualDetailNumber);
@@ -346,7 +350,11 @@ export function ModelEditor({
     setAssemblySteps,
     setManualDetails,
     hydratePaintingOrder,
+    hydrateSimplePaintingStepOrder,
+    hydrateSimplePartColorAssignments,
     project.paintingOrder,
+    project.simplePaintingStepOrder,
+    project.simplePartColorAssignments,
     project.assemblySteps,
     project.manualDetails,
     project.nextManualDetailNumber,

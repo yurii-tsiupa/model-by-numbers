@@ -10,9 +10,37 @@ export type StepPreviewComposition={
   markerDetails:ManualDetail[];
 };
 
-export function resolveStepPreviewComposition({step,parts,manualDetails,palette,baseColor,displayMode}:{step:PaintingStage;parts:ModelPart[];manualDetails:ManualDetail[];palette:readonly Pick<PaletteColor,"id"|"hex">[];baseColor:string;displayMode:StepPreviewDisplayMode}):StepPreviewComposition{
-  const owner=parts.find(part=>part.paintingWorkflow.stages.some(candidate=>candidate.id===step.id));
-  const ordered=owner?.paintingWorkflow.stages??[step];
+function orderedStages(parts:ModelPart[],stepOrder:readonly string[]=[]):PaintingStage[]{
+  const stages=parts.flatMap(part=>part.paintingWorkflow.stages.slice().sort((a,b)=>a.order-b.order));
+  if(!stepOrder.length)return stages;
+  const byId=new Map(stages.map(stage=>[stage.id,stage]));
+  return[...stepOrder.map(id=>byId.get(id)).filter((stage):stage is PaintingStage=>Boolean(stage)),...stages.filter(stage=>!stepOrder.includes(stage.id))];
+}
+
+export function resolveSavedPartColors(parts:ModelPart[],palette:readonly Pick<PaletteColor,"id"|"hex">[],throughStepId?:string,excludedStepId?:string,stepOrder:readonly string[]=[]):Map<string,string>{
+  const colors=new Map(palette.map(color=>[color.id,color.hex])),result=new Map<string,string>();
+  const stages=orderedStages(parts,stepOrder);
+  for(const stage of stages){
+    if(stage.id===excludedStepId)continue;
+    const hex=stage.paletteColorId?colors.get(stage.paletteColorId):undefined;
+    if(hex)for(const reference of stage.targetReferences??[])if(reference.type==="part")result.set(reference.id,hex);
+    if(throughStepId&&stage.id===throughStepId)break;
+  }
+  return result;
+}
+
+export function resolveSavedPartColorAssignments(parts:ModelPart[],throughStepId?:string,excludedStepId?:string,stepOrder:readonly string[]=[]):Map<string,string>{
+  const result=new Map<string,string>();
+  for(const stage of orderedStages(parts,stepOrder)){
+    if(stage.id===excludedStepId)continue;
+    if(stage.paletteColorId)for(const reference of stage.targetReferences??[])if(reference.type==="part")result.set(reference.id,stage.paletteColorId);
+    if(throughStepId&&stage.id===throughStepId)break;
+  }
+  return result;
+}
+
+export function resolveStepPreviewComposition({step,parts,manualDetails,palette,baseColor,displayMode,stepOrder=[]}:{step:PaintingStage;parts:ModelPart[];manualDetails:ManualDetail[];palette:readonly Pick<PaletteColor,"id"|"hex">[];baseColor:string;displayMode:StepPreviewDisplayMode;stepOrder?:readonly string[]}):StepPreviewComposition{
+  const ordered=orderedStages(parts,stepOrder).map(candidate=>candidate.id===step.id?step:candidate);
   const currentIndex=ordered.findIndex(candidate=>candidate.id===step.id);
   const included=displayMode==="through-current-step"&&currentIndex>=0?ordered.slice(0,currentIndex+1):[step];
   const colors=new Map(palette.map(color=>[color.id,color.hex]));

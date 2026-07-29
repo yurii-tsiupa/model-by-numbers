@@ -35,7 +35,11 @@ export type SelectionMode =
 type ModelEditorState = {
   parts: ModelPart[];
   paintingOrder:string[];
+  simplePaintingStepOrder:string[];
   simpleTargetMode:SimpleTargetMode|null;
+  simplePartColorDraft:{stageId:string;partId:string|null;paletteColorId:string|null}|null;
+  simplePartColorAssignments:Record<string,string|null>;
+  simplePartColorStepDraftAssignments:Record<string,string|null>;
   assemblySteps: AssemblyStep[];
   focusedAssemblyStepId: string | null;
   assemblyFocusSnapshot: {
@@ -146,6 +150,8 @@ type ModelEditorState = {
 
   setParts: (parts: ModelPart[]) => void;
   hydratePaintingOrder:(partIds:string[])=>void;
+  hydrateSimplePaintingStepOrder:(stepIds:string[])=>void;
+  hydrateSimplePartColorAssignments:(assignments:Record<string,string|null>)=>void;
   setPaintingOrder:(partIds:string[])=>void;
   movePaintingOrderPart:(partId:string,direction:"up"|"down")=>void;
   movePaintingOrderPartToIndex:(partId:string,targetIndex:number)=>void;
@@ -179,6 +185,10 @@ type ModelEditorState = {
   focusAssemblyStep: (stepId: string) => void;
   exitAssemblyStepFocus: () => void;
   selectPart: (partId: string | null) => void;
+  setSimplePartColorDraft:(draft:{stageId:string;partId:string|null;paletteColorId:string|null}|null)=>void;
+  assignSimplePartColorDraft:(partId:string,hex:string,stageId?:string)=>void;
+  clearSimplePartColorAssignments:(partIds?:string[])=>void;
+  commitSimplePartColorAssignment:(partId:string,paletteColorId:string)=>void;
 
   togglePartVisibility: (
     partId: string,
@@ -283,7 +293,11 @@ export const useModelEditorStore =
     activePaintingStageId: null,
     paintingTargetFocusRevision: 0,
     paintingOrder:[],
+    simplePaintingStepOrder:[],
     simpleTargetMode:null,
+    simplePartColorDraft:null,
+    simplePartColorAssignments:{},
+    simplePartColorStepDraftAssignments:{},
     assemblySteps: [],
     focusedAssemblyStepId: null,
     assemblyFocusSnapshot: null,
@@ -364,7 +378,7 @@ export const useModelEditorStore =
     saveError: null,
 
     setPartPaintingWorkflow:(partId,workflow)=>set((state)=>{const part=state.parts.find(p=>p.id===partId);if(!part||JSON.stringify(part.paintingWorkflow)===JSON.stringify(workflow))return state;return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:workflow}:p),...markStateDirty(state)}}),
-    addPaintingStage:(partId,input)=>set((state)=>{const part=state.parts.find(p=>p.id===partId);const customName=input.customName?.trim()||null,notes=input.notes.trim();if(!part||!customName||(customName?.length??0)>100||notes.length>500||(input.paletteColorId&&!state.palette.some(c=>c.id===input.paletteColorId))||(input.recommendedCoats!==null&&(!Number.isInteger(input.recommendedCoats)||input.recommendedCoats<1||input.recommendedCoats>10)))return state;const now=new Date().toISOString();const stage={...input,customName,notes,id:crypto.randomUUID(),order:part.paintingWorkflow.stages.length+1,createdAt:now,updatedAt:now},parts=state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:[...p.paintingWorkflow.stages,stage]}}:p);return{parts,manualDetails:state.simpleTargetMode==="markers"?normalizeSimpleMarkerNumbers(state.manualDetails,parts):state.manualDetails,activePaintingStageId:stage.id,...markStateDirty(state)}}),
+    addPaintingStage:(partId,input)=>set((state)=>{const part=state.parts.find(p=>p.id===partId);const customName=input.customName?.trim()||null,notes=input.notes.trim();if(!part||!customName||(customName?.length??0)>100||notes.length>500||(input.paletteColorId&&!state.palette.some(c=>c.id===input.paletteColorId))||(input.recommendedCoats!==null&&(!Number.isInteger(input.recommendedCoats)||input.recommendedCoats<1||input.recommendedCoats>10)))return state;const now=new Date().toISOString();const stage={...input,customName,notes,id:crypto.randomUUID(),order:part.paintingWorkflow.stages.length+1,createdAt:now,updatedAt:now},parts=state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:[...p.paintingWorkflow.stages,stage]}}:p);return{parts,simplePaintingStepOrder:state.simpleTargetMode!==null?[...state.simplePaintingStepOrder.filter(id=>state.parts.some(candidate=>candidate.paintingWorkflow.stages.some(item=>item.id===id))),stage.id]:state.simplePaintingStepOrder,manualDetails:state.simpleTargetMode==="markers"?normalizeSimpleMarkerNumbers(state.manualDetails,parts):state.manualDetails,activePaintingStageId:stage.id,...markStateDirty(state)}}),
     updatePaintingStage:(partId,stageId,changes)=>set((state)=>{const part=state.parts.find(p=>p.id===partId),stage=part?.paintingWorkflow.stages.find(s=>s.id===stageId);if(!part||!stage)return state;const type=changes.type??stage.type,customName=(changes.customName===undefined?stage.customName:changes.customName)?.trim()||null;const next={...stage,...changes,type,customName,notes:(changes.notes??stage.notes).trim()};if(!customName||(customName?.length??0)>100||next.notes.length>500||(next.paletteColorId&&!state.palette.some(c=>c.id===next.paletteColorId))||(next.recommendedCoats!==null&&(!Number.isInteger(next.recommendedCoats)||next.recommendedCoats<1||next.recommendedCoats>10)))return state;if(JSON.stringify({...next,updatedAt:stage.updatedAt})===JSON.stringify(stage))return state;next.updatedAt=new Date().toISOString();const parts=state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:p.paintingWorkflow.stages.map(s=>s.id===stageId?next:s)}}:p);return{parts,manualDetails:state.simpleTargetMode==="markers"?normalizeSimpleMarkerNumbers(state.manualDetails,parts):state.manualDetails,...markStateDirty(state)}}),
     deletePaintingStage:(partId,stageId)=>set((state)=>{const part=state.parts.find(p=>p.id===partId),index=part?.paintingWorkflow.stages.findIndex(s=>s.id===stageId)??-1;if(!part||index<0)return state;const stages=part.paintingWorkflow.stages.filter(s=>s.id!==stageId).map((s,i)=>({...s,order:i+1})),nextActive=state.activePaintingStageId===stageId?(stages[index]?.id??stages[index-1]?.id??null):state.activePaintingStageId,parts=state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages}}:p);return{parts,manualDetails:state.simpleTargetMode==="markers"?normalizeSimpleMarkerNumbers(state.manualDetails,parts):state.manualDetails,activePaintingStageId:nextActive,...markStateDirty(state)}}),
     deleteSimplePaintingStage:(partId,stageId)=>set(state=>{
@@ -384,6 +398,7 @@ export const useModelEditorStore =
       const nextActive=state.activePaintingStageId===stageId?(stages[index]?.id??stages[index-1]?.id??null):state.activePaintingStageId;
       return{
         parts,
+        simplePaintingStepOrder:state.simplePaintingStepOrder.filter(id=>id!==stageId),
         manualDetails,
         activePaintingStageId:nextActive,
         selectedManualDetailId:selectedDetailRemoved?null:state.selectedManualDetailId,
@@ -395,6 +410,15 @@ export const useModelEditorStore =
       };
     }),
     reorderSimplePaintingStage:(partId,stageId,targetIndex)=>set(state=>{
+      if(state.simpleTargetMode!==null){
+        const existing=state.parts.flatMap(candidate=>candidate.paintingWorkflow.stages.map(stage=>stage.id));
+        const valid=new Set(existing);
+        const order=[...state.simplePaintingStepOrder.filter(id=>valid.has(id)),...existing.filter(id=>!state.simplePaintingStepOrder.includes(id))];
+        const sourceIndex=order.indexOf(stageId),destination=Math.max(0,Math.min(order.length-1,targetIndex));
+        if(sourceIndex<0||sourceIndex===destination)return state;
+        const[moved]=order.splice(sourceIndex,1);order.splice(destination,0,moved);
+        return{simplePaintingStepOrder:order,...markStateDirty(state)};
+      }
       const part=state.parts.find(candidate=>candidate.id===partId);
       if(!part||state.simpleTargetMode===null)return state;
       const stages=[...part.paintingWorkflow.stages];
@@ -407,7 +431,7 @@ export const useModelEditorStore =
       return{parts:state.parts.map(candidate=>candidate.id===partId?{...candidate,paintingWorkflow:{...candidate.paintingWorkflow,stages:normalized}}:candidate),...markStateDirty(state)};
     }),
     movePaintingStage:(partId,stageId,direction)=>set((state)=>{const part=state.parts.find(p=>p.id===partId);if(!part)return state;const stages=[...part.paintingWorkflow.stages],i=stages.findIndex(s=>s.id===stageId),j=direction==="up"?i-1:i+1;if(i<0||j<0||j>=stages.length)return state;[stages[i],stages[j]]=[stages[j],stages[i]];const normalized=stages.map((s,index)=>({...s,order:index+1})),parts=state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:normalized}}:p);return{parts,manualDetails:state.simpleTargetMode==="markers"?normalizeSimpleMarkerNumbers(state.manualDetails,parts):state.manualDetails,...markStateDirty(state)}}),
-    duplicatePaintingStage:(partId,stageId)=>set((state)=>{const part=state.parts.find(p=>p.id===partId),index=part?.paintingWorkflow.stages.findIndex(s=>s.id===stageId)??-1;if(!part||index<0)return state;const source=part.paintingWorkflow.stages[index],now=new Date().toISOString(),duplicate={...source,id:crypto.randomUUID(),targetReferences:source.targetReferences?.map(reference=>({...reference})),previewShots:source.previewShots?.map(shot=>({...shot,id:crypto.randomUUID()})),createdAt:now,updatedAt:now},stages=[...part.paintingWorkflow.stages.slice(0,index+1),duplicate,...part.paintingWorkflow.stages.slice(index+1)].map((stage,i)=>({...stage,order:i+1}));return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages}}:p),activePaintingStageId:duplicate.id,...markStateDirty(state)}}),
+    duplicatePaintingStage:(partId,stageId)=>set((state)=>{const part=state.parts.find(p=>p.id===partId),index=part?.paintingWorkflow.stages.findIndex(s=>s.id===stageId)??-1;if(!part||index<0)return state;const source=part.paintingWorkflow.stages[index],now=new Date().toISOString(),duplicate={...source,id:crypto.randomUUID(),targetReferences:source.targetReferences?.map(reference=>({...reference})),previewShots:source.previewShots?.map(shot=>({...shot,id:crypto.randomUUID()})),createdAt:now,updatedAt:now},stages=[...part.paintingWorkflow.stages.slice(0,index+1),duplicate,...part.paintingWorkflow.stages.slice(index+1)].map((stage,i)=>({...stage,order:i+1}));const order=state.simplePaintingStepOrder.filter(id=>state.parts.some(candidate=>candidate.paintingWorkflow.stages.some(item=>item.id===id))),sourceOrder=order.indexOf(stageId);if(state.simpleTargetMode!==null)order.splice(sourceOrder<0?order.length:sourceOrder+1,0,duplicate.id);return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages}}:p),simplePaintingStepOrder:state.simpleTargetMode!==null?order:state.simplePaintingStepOrder,activePaintingStageId:duplicate.id,...markStateDirty(state)}}),
     addPaintingStagePreviewShot:(partId,stageId,manualDetailId,pinId)=>set(state=>{const part=state.parts.find(p=>p.id===partId),stage=part?.paintingWorkflow.stages.find(s=>s.id===stageId),detail=state.manualDetails.find(d=>d.id===manualDetailId);if(!part||!stage||!detail?.pins.some(pin=>pin.id===pinId)||!stage.targetReferences?.some(reference=>reference.type==="manualDetail"&&reference.id===manualDetailId)||stage.previewShots?.some(shot=>shot.type==="manualDetailLocation"&&shot.manualDetailId===manualDetailId&&shot.pinId===pinId))return state;const shot={id:crypto.randomUUID(),type:"manualDetailLocation" as const,manualDetailId,pinId},now=new Date().toISOString();return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:p.paintingWorkflow.stages.map(s=>s.id===stageId?{...s,previewShots:[...(s.previewShots??[]),shot],updatedAt:now}:s)}}:p),...markStateDirty(state)}}),
     addPaintingStageRegionPreviewShot:(partId,stageId,manualDetailId,camera)=>set(state=>{const part=state.parts.find(p=>p.id===partId),stage=part?.paintingWorkflow.stages.find(s=>s.id===stageId),detail=state.manualDetails.find(d=>d.id===manualDetailId);if(!part||!stage||detail?.targetMode!=="region"||!detail.region?.selections.length||!stage.targetReferences?.some(reference=>reference.type==="manualDetail"&&reference.id===manualDetailId))return state;const shot={id:crypto.randomUUID(),type:"manualDetailRegion" as const,manualDetailId,camera},now=new Date().toISOString();return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:p.paintingWorkflow.stages.map(s=>s.id===stageId?{...s,previewShots:[...(s.previewShots??[]),shot],updatedAt:now}:s)}}:p),...markStateDirty(state)}}),
     addPaintingStageManualCapture:(partId,stageId,camera,displayMode)=>set(state=>{const part=state.parts.find(p=>p.id===partId),stage=part?.paintingWorkflow.stages.find(s=>s.id===stageId);if(!part||!stage)return state;const shot={id:crypto.randomUUID(),type:"manualStepCapture" as const,manualDetailId:"" as const,camera,displayMode},now=new Date().toISOString();return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:p.paintingWorkflow.stages.map(s=>s.id===stageId?{...s,previewShots:[...(s.previewShots??[]),shot],updatedAt:now}:s)}}:p),...markStateDirty(state)}}),
@@ -431,10 +455,13 @@ export const useModelEditorStore =
         const focusedStep = assemblySteps.find((step) => step.id === state.focusedAssemblyStepId);
         const manualDetails=state.simpleTargetMode==="markers"?normalizeSimpleMarkerNumbers(state.manualDetails,parts):state.manualDetails;
         const markerNumbersChanged=manualDetails.some((detail,index)=>detail.markerNumber!==state.manualDetails[index]?.markerNumber);
+        const existingStepIds=parts.flatMap(part=>part.paintingWorkflow.stages.map(stage=>stage.id));
+        const existingStepIdSet=new Set(existingStepIds);
         return {
         parts,
         manualDetails,
         paintingOrder:normalizePaintingOrder({paintingOrder:state.paintingOrder,parts}),
+        simplePaintingStepOrder:[...state.simplePaintingStepOrder.filter(id=>existingStepIdSet.has(id)),...existingStepIds.filter(id=>!state.simplePaintingStepOrder.includes(id))],
         assemblySteps,
         ...(focusedStep && focusedStep.partIds.length > 0 ? {} : { focusedAssemblyStepId: null, assemblyFocusSnapshot: null }),
         selectedPartId: null,
@@ -457,13 +484,16 @@ export const useModelEditorStore =
     hydrateSimpleTargetMode:(simpleTargetMode,persist)=>set(state=>({simpleTargetMode,...(persist?markStateDirty(state):{})})),
     applySimpleTargetMode:(simpleTargetMode)=>set(state=>{
       if(state.simpleTargetMode===simpleTargetMode)return simpleTargetMode==="markers"
-        ?{manualDetailPlacement:state.manualDetailPlacement,regionPlacement:null}
-        :{manualDetailPlacement:null,regionPlacement:state.regionPlacement};
+        ?{manualDetailPlacement:state.manualDetailPlacement,regionPlacement:null,selectedPartId:null,selectedPartIds:[]}
+        :simpleTargetMode==="region"?{manualDetailPlacement:null,regionPlacement:state.regionPlacement,selectedPartId:null,selectedPartIds:[]}:{manualDetailPlacement:null,regionPlacement:null,simplePartColorDraft:null};
       if(state.simpleTargetMode!==null){
         const hadPrimer=state.parts.some(part=>part.paintingWorkflow.stages.some(stage=>stage.type==="primer")),now=new Date().toISOString();
         const primer:PaintingStage={id:crypto.randomUUID(),order:1,type:"primer",customName:null,paletteColorId:null,recommendedCoats:null,notes:"",targetReferences:[],overviewPreviewEnabled:true,previewShots:[],createdAt:now,updatedAt:now};
         return{
           simpleTargetMode,
+          simplePartColorDraft:null,
+          simplePartColorAssignments:{},
+          simplePartColorStepDraftAssignments:{},
           parts:state.parts.map((part,index)=>({...part,paintingWorkflow:{...part.paintingWorkflow,stages:index===0&&hadPrimer?[primer]:[]}})),
           manualDetails:[],
           nextManualDetailNumber:1,
@@ -475,6 +505,8 @@ export const useModelEditorStore =
           activePaintingStageId:null,
           paintingTargetFocusRevision:state.paintingTargetFocusRevision+1,
           selectedPartIds:[],
+          selectedPartId:null,
+          simplePaintingStepOrder:hadPrimer?[primer.id]:[],
           highlightedPaletteColorId:null,
           ...markStateDirty(state),
         };
@@ -483,11 +515,15 @@ export const useModelEditorStore =
       const now=Date.now();
       return{
         simpleTargetMode,
-        manualDetails:state.manualDetails.map(detail=>incompatibleIds.has(detail.id)?{...detail,targetMode:simpleTargetMode,pins:[],region:{selections:[]},updatedAt:now}:{...detail,targetMode:simpleTargetMode}),
+        simplePartColorDraft:null,
+        simplePartColorAssignments:{},
+        simplePartColorStepDraftAssignments:{},
+        manualDetails:simpleTargetMode==="parts"?[]:state.manualDetails.map(detail=>incompatibleIds.has(detail.id)?{...detail,targetMode:simpleTargetMode,pins:[],region:{selections:[]},updatedAt:now}:{...detail,targetMode:simpleTargetMode}),
         parts:state.parts.map(part=>({...part,paintingWorkflow:{...part.paintingWorkflow,stages:part.paintingWorkflow.stages.map(stage=>({...stage,previewShots:stage.previewShots?.filter(shot=>!incompatibleIds.has(shot.manualDetailId)),updatedAt:stage.previewShots?.some(shot=>incompatibleIds.has(shot.manualDetailId))?new Date().toISOString():stage.updatedAt}))}})),
         manualDetailPlacement:null,
         regionPlacement:null,
         selectedManualDetailPinId:null,
+        ...(simpleTargetMode==="parts"?{}:{selectedPartId:null,selectedPartIds:[]}),
         ...markStateDirty(state),
       };
     }),
@@ -593,6 +629,32 @@ export const useModelEditorStore =
         ...markStateDirty(state),
       }));
     },
+    setSimplePartColorDraft:(draft)=>set(state=>({simplePartColorDraft:draft,simplePartColorStepDraftAssignments:draft?.stageId!=="pending-parts-step"&&draft?.partId&&draft.paletteColorId?{...state.simplePartColorStepDraftAssignments,[draft.partId]:draft.paletteColorId}:state.simplePartColorStepDraftAssignments})),
+    assignSimplePartColorDraft:(partId,hex,stageId)=>set((state)=>{
+      if(state.simpleTargetMode!=="parts"||!state.parts.some(part=>part.id===partId))return state;
+      const ensured=ensurePaletteColor(state.palette,hex);
+      if(!ensured)return state;
+      const activeStageId=stageId??state.simplePartColorDraft?.stageId??"pending-parts-step";
+      const prepared=activeStageId==="pending-parts-step";
+      const assignmentChanged=prepared&&state.simplePartColorAssignments[partId]!==ensured.color.id;
+      return{
+        palette:ensured.palette,
+        simplePartColorDraft:{
+          stageId:activeStageId,
+          partId,
+          paletteColorId:ensured.color.id,
+        },
+        ...(prepared?{simplePartColorAssignments:{...state.simplePartColorAssignments,[partId]:ensured.color.id}}:{simplePartColorStepDraftAssignments:{...state.simplePartColorStepDraftAssignments,[partId]:ensured.color.id}}),
+        ...(ensured.created||assignmentChanged?markStateDirty(state):{}),
+      };
+    }),
+    clearSimplePartColorAssignments:(partIds)=>set(state=>{
+      if(!partIds)return{simplePartColorStepDraftAssignments:{}};
+      const next={...state.simplePartColorStepDraftAssignments};
+      for(const partId of partIds)delete next[partId];
+      return{simplePartColorStepDraftAssignments:next};
+    }),
+    commitSimplePartColorAssignment:(partId,paletteColorId)=>set(state=>state.simplePartColorAssignments[partId]===paletteColorId?state:{simplePartColorAssignments:{...state.simplePartColorAssignments,[partId]:paletteColorId},...markStateDirty(state)}),
 
     setAssemblySteps: (assemblySteps) => set({ assemblySteps: assemblySteps.map((step) => ({ ...step, partIds: [...step.partIds] })) }),
     addAssemblyStep: (input) => set((state) => {
@@ -681,6 +743,8 @@ export const useModelEditorStore =
       });
     },
     hydratePaintingOrder:(paintingOrder)=>set({paintingOrder:[...paintingOrder]}),
+    hydrateSimplePaintingStepOrder:(simplePaintingStepOrder)=>set(state=>{const existing=state.parts.flatMap(part=>part.paintingWorkflow.stages.map(stage=>stage.id)),valid=new Set(existing);return{simplePaintingStepOrder:[...simplePaintingStepOrder.filter(id=>valid.has(id)),...existing.filter(id=>!simplePaintingStepOrder.includes(id))]}}),
+    hydrateSimplePartColorAssignments:(simplePartColorAssignments)=>set({simplePartColorAssignments:{...simplePartColorAssignments},simplePartColorStepDraftAssignments:{}}),
     setPaintingOrder:(partIds)=>set((state)=>{const paintingOrder=normalizePaintingOrder({paintingOrder:partIds,parts:state.parts});if(paintingOrder.length===state.paintingOrder.length&&paintingOrder.every((id,i)=>id===state.paintingOrder[i]))return state;return{paintingOrder,...markStateDirty(state)}}),
     movePaintingOrderPart:(partId,direction)=>{const state=useModelEditorStore.getState(),index=state.paintingOrder.indexOf(partId);state.movePaintingOrderPartToIndex(partId,direction==="up"?index-1:index+1)},
     movePaintingOrderPartToIndex:(partId,targetIndex)=>set((state)=>{const current=normalizePaintingOrder({paintingOrder:state.paintingOrder,parts:state.parts}),index=current.indexOf(partId);if(index<0||targetIndex<0||targetIndex>=current.length||index===targetIndex)return state;const next=[...current];next.splice(index,1);next.splice(targetIndex,0,partId);return{paintingOrder:next,...markStateDirty(state)}}),
@@ -1097,7 +1161,11 @@ export const useModelEditorStore =
         activePaintingStageId: null,
         paintingTargetFocusRevision: 0,
         paintingOrder:[],
+        simplePaintingStepOrder:[],
         simpleTargetMode:null,
+        simplePartColorDraft:null,
+        simplePartColorAssignments:{},
+        simplePartColorStepDraftAssignments:{},
         assemblySteps: [],
         focusedAssemblyStepId: null,
         assemblyFocusSnapshot: null,

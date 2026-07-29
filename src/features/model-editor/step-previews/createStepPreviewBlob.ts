@@ -68,6 +68,7 @@ export async function createStepPreviewBlob({
   palette,
   baseColor,
   shot,
+  stepOrder=[],
 }: {
   model: Object3D;
   step: PaintingStage;
@@ -76,9 +77,10 @@ export async function createStepPreviewBlob({
   palette: PaletteColor[];
   baseColor: string;
   shot?:PaintingStepPreviewShot;
+  stepOrder?:readonly string[];
 }): Promise<{ blob: Blob; framing: StepPreviewFraming }> {
   const resolved = resolvePaintingTargetReferences(step.targetReferences, parts, manualDetails);
-  const sharedComposition=!shot||shot.type==="manualStepCapture"?resolveStepPreviewComposition({step,parts,manualDetails,palette,baseColor,displayMode:shot?.type==="manualStepCapture"?shot.displayMode:"current-step"}):null;
+  const sharedComposition=!shot||shot.type==="manualStepCapture"?resolveStepPreviewComposition({step,parts,manualDetails,palette,baseColor,displayMode:shot?.type==="manualStepCapture"?shot.displayMode:"current-step",stepOrder}):null;
   const wholeModel = step.type === "primer" && (step.targetReferences?.length ?? 0) === 0;
   const resolvedParts = shot?.type==="manualDetailRegion"?[]:wholeModel ? parts : resolved.parts;
   const regionSelections=new Map<string,{color:string;triangles:number[]}>();

@@ -49,6 +49,8 @@ export type Project = {
   palette: PaletteColor[];
   assemblySteps: AssemblyStep[];
   paintingOrder: string[];
+  simplePaintingStepOrder:string[];
+  simplePartColorAssignments:Record<string,string|null>;
   simpleTargetMode:SimpleTargetMode|null;
   importSchemaVersion?: 1;
 

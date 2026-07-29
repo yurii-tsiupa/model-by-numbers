@@ -192,7 +192,9 @@ function mapProjectDocument(
         }))
       : [],
     paintingOrder: Array.isArray(data.paintingOrder) ? [...new Set(data.paintingOrder.filter((id:unknown):id is string=>typeof id==="string"))] : [],
-    simpleTargetMode:data.simpleTargetMode==="markers"||data.simpleTargetMode==="region"?data.simpleTargetMode:null,
+    simplePaintingStepOrder:Array.isArray(data.simplePaintingStepOrder)?[...new Set(data.simplePaintingStepOrder.filter((id:unknown):id is string=>typeof id==="string"))]:[],
+    simplePartColorAssignments:data.simplePartColorAssignments&&typeof data.simplePartColorAssignments==="object"?Object.fromEntries(Object.entries(data.simplePartColorAssignments).filter(([partId,colorId])=>Boolean(partId)&&(typeof colorId==="string"||colorId===null))) as Record<string,string|null>:{},
+    simpleTargetMode:data.simpleTargetMode==="markers"||data.simpleTargetMode==="region"||data.simpleTargetMode==="parts"?data.simpleTargetMode:null,
     importSchemaVersion: data.importSchemaVersion === 1 ? 1 : undefined,
 
     createdAt:
@@ -331,6 +333,8 @@ export async function createProject({
     palette: initialPalette,
     assemblySteps: [],
     paintingOrder: paintingOrder ?? initialParts.map((part)=>part.id),
+    simplePaintingStepOrder:[],
+    simplePartColorAssignments:{},
     simpleTargetMode:null,
 
     createdAt: serverTimestamp(),
@@ -356,6 +360,8 @@ export async function saveProjectEditorState({
   palette,
   assemblySteps,
   paintingOrder,
+  simplePaintingStepOrder,
+  simplePartColorAssignments,
   manualDetails,
   nextManualDetailNumber,
   simpleTargetMode,
@@ -366,9 +372,11 @@ export async function saveProjectEditorState({
   palette: PaletteColor[];
   assemblySteps: AssemblyStep[];
   paintingOrder:string[];
+  simplePaintingStepOrder:string[];
+  simplePartColorAssignments:Record<string,string|null>;
   manualDetails:ManualDetail[];
   nextManualDetailNumber:number;
-  simpleTargetMode:"markers"|"region"|null;
+  simpleTargetMode:"markers"|"region"|"parts"|null;
 }): Promise<void> {
   if (!projectId || !userId) {
     throw new Error(
@@ -403,6 +411,8 @@ export async function saveProjectEditorState({
     palette,
     assemblySteps,
     paintingOrder,
+    simplePaintingStepOrder,
+    simplePartColorAssignments,
     manualDetails,
     nextManualDetailNumber,
     simpleTargetMode,
