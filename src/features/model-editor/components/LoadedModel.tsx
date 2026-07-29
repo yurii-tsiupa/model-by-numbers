@@ -45,11 +45,10 @@ import {MAX_EXPLODED_OFFSET} from "../lib/exploded/exploded.constants";
 import {useRuntimeModelScene} from "../hooks/useRuntimeModelScene";
 import type {ModelFormat} from "@/features/model-import/types/ModelFormat";
 import type {DetailRegion} from "@/features/models/types/ManualDetail";
-import {getBrushTriangleIndices,registerRegionGeometry,smoothRegionSelections} from "../lib/regionBrushGeometry";
+import {getBrushTriangleIndices,getConnectedAreaTriangleIndices,registerRegionGeometry,smoothRegionSelections} from "../lib/regionBrushGeometry";
 
 type RegionStroke={
   sessionId:string;
-  erase:boolean;
   previousPoint:Vector3;
   selections:DetailRegion["selections"];
   touchedMeshIds:Set<string>;
@@ -102,6 +101,8 @@ function LoadedModelContent({
   const [transformError, setTransformError] = useState(false);
   const [brushHover,setBrushHover]=useState<{sessionId:string;position:Vector3;normal:Vector3;erase:boolean}|null>(null);
   const [strokeSelections,setStrokeSelections]=useState<DetailRegion["selections"]|null>(null);
+  const [altErase,setAltErase]=useState(false);
+  const altEraseRef=useRef(false);
   const regionStrokeRef=useRef<RegionStroke|null>(null);
 
   const parts = useModelEditorStore(
@@ -187,6 +188,26 @@ function LoadedModelContent({
     regionStrokeRef.current=null;
     if(controlsRef.current)controlsRef.current.enabled=true;
   },[controlsRef,regionPlacement]);
+  useEffect(()=>{
+    const isTyping=(target:EventTarget|null)=>target instanceof HTMLElement&&(target.matches("input, textarea, select")||target.isContentEditable);
+    function handleKeyDown(event:KeyboardEvent){
+      if(event.key!=="Alt"||isTyping(event.target)||!useModelEditorStore.getState().regionPlacement)return;
+      event.preventDefault();
+      altEraseRef.current=true;
+      setAltErase(true);
+    }
+    function handleKeyUp(event:KeyboardEvent){
+      if(event.key!=="Alt")return;
+      if(altEraseRef.current)event.preventDefault();
+      altEraseRef.current=false;
+      setAltErase(false);
+    }
+    function handleBlur(){altEraseRef.current=false;setAltErase(false)}
+    window.addEventListener("keydown",handleKeyDown);
+    window.addEventListener("keyup",handleKeyUp);
+    window.addEventListener("blur",handleBlur);
+    return()=>{window.removeEventListener("keydown",handleKeyDown);window.removeEventListener("keyup",handleKeyUp);window.removeEventListener("blur",handleBlur)};
+  },[]);
 
   const presentationParts = useMemo(
     () =>
@@ -334,9 +355,17 @@ function LoadedModelContent({
   ) {
     event.stopPropagation();
 
-    if(regionPlacement&&event.object instanceof Mesh&&event.faceIndex!==undefined&&event.faceIndex!==null){
+    if(regionPlacement&&event.button===0&&event.object instanceof Mesh&&event.faceIndex!==undefined&&event.faceIndex!==null){
+      if(regionPlacement.fill){
+        const meshId=parts.find(candidate=>candidate.meshUuid===event.object.uuid)?.id??event.object.uuid;
+        const current=regionPlacement.selections.find(selection=>selection.meshId===meshId);
+        const values=new Set(current?.triangleIndices??[]);
+        for(const triangle of getConnectedAreaTriangleIndices(event.object,event.faceIndex))values.add(triangle);
+        commitRegionSelections([...regionPlacement.selections.filter(selection=>selection.meshId!==meshId),{meshId,triangleIndices:[...values].sort((a,b)=>a-b)}]);
+        return;
+      }
       const selections=cloneRegionSelections(regionPlacement.selections);
-      regionStrokeRef.current={sessionId:regionPlacement.sessionId,erase:regionPlacement.erase,previousPoint:event.point.clone(),selections,touchedMeshIds:new Set()};
+      regionStrokeRef.current={sessionId:regionPlacement.sessionId,previousPoint:event.point.clone(),selections,touchedMeshIds:new Set()};
       applyRegionStrokeSample(event.object,event.faceIndex,event.point);
       setStrokeSelections(cloneRegionSelections(regionStrokeRef.current.selections));
       if(controlsRef.current)controlsRef.current.enabled=false;
@@ -384,7 +413,7 @@ function LoadedModelContent({
     const indices=getBrushTriangleIndices(mesh,faceIndex,point,regionBrushRadius(modelDiagonal,regionPlacement.brush));
     const current=stroke.selections.find(selection=>selection.meshId===meshId);
     const values=new Set(current?.triangleIndices??[]);
-    for(const index of indices){if(stroke.erase)values.delete(index);else values.add(index)}
+    for(const index of indices){if(regionPlacement.erase||altEraseRef.current)values.delete(index);else values.add(index)}
     stroke.selections=[...stroke.selections.filter(selection=>selection.meshId!==meshId),...(values.size?[{meshId,triangleIndices:[...values].sort((a,b)=>a-b)}]:[])];
     stroke.touchedMeshIds.add(meshId);
   }
@@ -402,7 +431,7 @@ function LoadedModelContent({
     if(regionStrokeRef.current)extendRegionStroke(event);
     const stroke=regionStrokeRef.current;
     if(stroke){
-      commitRegionSelections(smoothRegionSelections(stroke.selections,"automatic",stroke.touchedMeshIds));
+      commitRegionSelections(regionPlacement?.smoothing==="light"?smoothRegionSelections(stroke.selections,"automatic",stroke.touchedMeshIds):stroke.selections);
       regionStrokeRef.current=null;
       setStrokeSelections(null);
     }
@@ -414,7 +443,7 @@ function LoadedModelContent({
     event.stopPropagation();
     const radius=regionBrushRadius(modelDiagonal,regionPlacement.brush);
     const normal=event.face.normal.clone().applyMatrix3(new Matrix3().getNormalMatrix(event.object.matrixWorld)).normalize();
-    setBrushHover({sessionId:regionPlacement.sessionId,position:event.point.clone().addScaledVector(normal,radius*.012),normal,erase:regionPlacement.erase});
+    setBrushHover({sessionId:regionPlacement.sessionId,position:event.point.clone().addScaledVector(normal,radius*.012),normal,erase:regionPlacement.erase||altErase});
     if(event.buttons===1&&regionStrokeRef.current)extendRegionStroke(event);
   }
   const regionOverlays=useMemo(()=>{const rows:Array<{id:string;color:string;geometry:BufferGeometry}>=[],draftId=regionPlacement?.detailId;for(const detail of manualDetails){const selections=detail.id===draftId?(strokeSelections??regionPlacement?.selections):detail.region?.selections;if(detail.targetMode!=="region"||!selections?.length)continue;const color=palette.find(item=>item.id===detail.colorId)?.hex??"#F97316";for(const selection of selections){const meshUuid=parts.find(part=>part.id===selection.meshId)?.meshUuid??selection.meshId,mesh=model.getObjectByProperty("uuid",meshUuid);if(!(mesh instanceof Mesh))continue;const source=mesh.geometry,position=source.getAttribute("position"),index=source.index,values:number[]=[];for(const triangle of selection.triangleIndices)for(let offset=0;offset<3;offset++){const vertex=index?index.getX(triangle*3+offset):triangle*3+offset;if(vertex>=position.count)continue;const point=new Vector3().fromBufferAttribute(position,vertex).applyMatrix4(mesh.matrixWorld);values.push(point.x,point.y,point.z)}if(values.length){const geometry=new BufferGeometry();geometry.setAttribute("position",new Float32BufferAttribute(values,3));geometry.computeVertexNormals();rows.push({id:`${detail.id}:${selection.meshId}`,color,geometry})}}}return rows},[manualDetails,model,palette,parts,regionPlacement,strokeSelections]);
@@ -434,7 +463,7 @@ function LoadedModelContent({
         onPointerOut={()=>setBrushHover(null)}
       />
       {regionOverlays.map(overlay=><mesh key={overlay.id} geometry={overlay.geometry} renderOrder={8}><meshStandardMaterial color={overlay.color} emissive={overlay.color} emissiveIntensity={.18} transparent opacity={.78} depthWrite={false} side={DoubleSide} polygonOffset polygonOffsetFactor={-2}/></mesh>)}
-      {brushHover&&brushQuaternion&&brushHover.sessionId===regionPlacement?.sessionId?<mesh position={brushHover.position} quaternion={brushQuaternion} renderOrder={12}><ringGeometry args={[regionBrushRadius(modelDiagonal,regionPlacement.brush)*.82,regionBrushRadius(modelDiagonal,regionPlacement.brush),48]}/><meshBasicMaterial color={brushHover.erase?"#ef4444":"#38bdf8"} transparent opacity={.82} depthTest={false} side={DoubleSide}/></mesh>:null}
+      {brushHover&&brushQuaternion&&brushHover.sessionId===regionPlacement?.sessionId?<mesh position={brushHover.position} quaternion={brushQuaternion} renderOrder={12} raycast={()=>null}><ringGeometry args={[regionBrushRadius(modelDiagonal,regionPlacement.brush)*.82,regionBrushRadius(modelDiagonal,regionPlacement.brush),48]}/><meshBasicMaterial color={brushHover.erase?"#dc6464":"#14b8a6"} transparent opacity={.82} depthTest={false} side={DoubleSide}/></mesh>:null}
 
       {!showAllPartsForCapture?renderedPins.map(({pin,detailId,detailName,detailNumber,locationIndex,colorId,isDraft})=>{const targetHighlighted=highlightedPaintingManualDetailIds.has(detailId),detailSelected=selectedManualDetailId===detailId,pinSelected=selectedManualDetailPinId===pin.id,hasActiveTargets=Boolean(activePaintingStage?.targetReferences?.length),assignedColor=colorId?palette.find(color=>color.id===colorId)?.hex:undefined;return <Html key={pin.id} position={[pin.position.x,pin.position.y,pin.position.z]} center sprite><button type="button" aria-label={t("editor.manualDetails.accessibility.selectLocation",{number:detailNumber,name:detailName,location:locationIndex})} aria-pressed={pinSelected||detailSelected||targetHighlighted} onClick={event=>{event.stopPropagation();if(!isDraft)selectManualDetail(detailId,pin.id)}} style={!pinSelected&&!detailSelected&&!targetHighlighted&&assignedColor?{borderColor:assignedColor}:undefined} className={`grid min-w-7 place-items-center rounded-full border-2 px-1 text-xs font-bold shadow-lg ${targetHighlighted||pinSelected?"h-9 border-[var(--accent-foreground)] bg-[var(--accent)] text-[var(--accent-foreground)]":detailSelected||isDraft?"h-7 border-[var(--accent)] bg-[var(--card)] text-[var(--text)]":`h-7 border-[var(--border)] bg-[var(--card)] text-[var(--text)] ${hasActiveTargets?"opacity-50":""}`}`}>{detailNumber}</button></Html>}) : null}
 

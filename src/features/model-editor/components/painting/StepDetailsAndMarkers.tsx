@@ -1,6 +1,6 @@
 "use client";
 
-import {Brush,Check,Eraser,MapPin,Paintbrush,Pencil,Plus,Redo2,Sparkles,Trash2,Undo2,X} from "lucide-react";
+import {Brush,Check,Eraser,MapPin,PaintBucket,Paintbrush,Pencil,Plus,Redo2,Sparkles,Trash2,Undo2,X} from "lucide-react";
 import {useEffect,useMemo,useRef,useState,type ComponentType,type CSSProperties} from "react";
 
 import {useTranslation} from "@/features/i18n/hooks/useTranslation";
@@ -148,6 +148,8 @@ function RegionControls(){
   const draft=useModelEditorStore(state=>state.regionPlacement);
   const setBrush=useModelEditorStore(state=>state.setRegionBrush);
   const setErase=useModelEditorStore(state=>state.setRegionErase);
+  const setFill=useModelEditorStore(state=>state.setRegionFill);
+  const setSmoothing=useModelEditorStore(state=>state.setRegionSmoothing);
   const undo=useModelEditorStore(state=>state.undoRegion);
   const redo=useModelEditorStore(state=>state.redoRegion);
   const clear=useModelEditorStore(state=>state.clearRegion);
@@ -165,10 +167,18 @@ function RegionControls(){
       <input type="range" min="0" max="100" step="1" value={draft.brush} onChange={event=>setBrush(Number(event.target.value))} aria-label={t("editor.region.brushSize")} style={{"--region-brush-progress":`${draft.brush}%`} as CSSProperties} className="region-brush-slider min-w-16 flex-1 cursor-pointer disabled:cursor-not-allowed"/>
       <span className="w-10 shrink-0 text-right text-[10px] tabular-nums text-[var(--text-secondary)]">{(.3+(8-.3)*(draft.brush/100)**2).toFixed(1)}%</span>
     </label>
+    <label className="flex items-center justify-between gap-3 rounded-lg bg-[var(--surface)] px-2 py-2 text-xs font-medium text-[var(--text-secondary)]">
+      {t("editor.region.automaticSmoothing")}
+      <select value={draft.smoothing} onChange={event=>setSmoothing(event.target.value as "off"|"light")} className="simple-editor-control h-8 cursor-pointer px-2 text-xs text-[var(--text)]">
+        <option value="off">{t("editor.region.smoothing.off")}</option>
+        <option value="light">{t("editor.region.smoothing.light")}</option>
+      </select>
+    </label>
     <div className="flex flex-wrap items-center gap-1.5">
       <div className="flex gap-1">
-        <IconButton icon={Brush} label={t("editor.region.paint")} active={!draft.erase} onClick={()=>setErase(false)}/>
-        <IconButton icon={Eraser} label={t("editor.region.erase")} active={draft.erase} onClick={()=>setErase(true)}/>
+        <IconButton icon={Brush} label={t("editor.region.paint")} active={!draft.erase&&!draft.fill} onClick={()=>setErase(false)}/>
+        <IconButton icon={Eraser} label={t("editor.region.eraseShortcut")} active={draft.erase} onClick={()=>setErase(true)}/>
+        <IconButton icon={PaintBucket} label={t("editor.region.fillConnected")} active={draft.fill} onClick={()=>setFill(true)}/>
       </div>
       <span aria-hidden="true" className="mx-0.5 h-6 w-px bg-[var(--border)]"/>
       <div className="flex gap-1">
