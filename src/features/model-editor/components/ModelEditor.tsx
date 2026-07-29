@@ -45,6 +45,7 @@ import {getStepPreviewCacheKey} from "../step-previews/getStepPreviewCacheKey";
 import {suppressManualDetailPins} from "../store/viewerOverlayStore";
 import {OnboardingProvider} from "@/features/onboarding/components/OnboardingProvider";
 import {ONBOARDING_TARGETS} from "@/features/onboarding/constants/onboardingTargets";
+import {ManualStepPreviewCaptureContext,type ManualStepPreviewCaptureRequest} from "../step-previews/ManualStepPreviewCaptureContext";
 
 type ModelEditorProps = {
   project: Project;
@@ -63,6 +64,39 @@ export function ModelEditor({
   const viewerRef = useRef<ModelViewerHandle | null>(null);
   const isGeneratingRef = useRef(false);
   const restoreManualDetailPinsRef=useRef<(()=>void)|null>(null);
+  const normalPreviewCameraRef=useRef<ReturnType<ModelViewerHandle["getCurrentPreviewCamera"]>>(null);
+  const[captureSession,setCaptureSession]=useState<{phase:"active"|"closing";request:ManualStepPreviewCaptureRequest}|null>(null);
+  const previewCapture=captureSession?.request??null;
+  const previewCaptureCloseTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
+  const addManualPreview=useModelEditorStore(state=>state.addPaintingStageManualCapture);
+  const openPreviewCapture=useCallback((partId:string,step:ManualStepPreviewCaptureRequest["step"])=>{
+    const camera=viewerRef.current?.getCurrentPreviewCamera()??null;
+    if(!camera)return;
+    if(previewCaptureCloseTimerRef.current)clearTimeout(previewCaptureCloseTimerRef.current);
+    normalPreviewCameraRef.current=camera;
+    setCaptureSession({phase:"active",request:{partId,step,displayMode:"current-step"}});
+  },[]);
+  const closePreviewCapture=useCallback(()=>{
+    if(!captureSession||captureSession.phase==="closing")return;
+    const reducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setCaptureSession(current=>current?{...current,phase:"closing"}:current);
+    const camera=normalPreviewCameraRef.current;
+    if(camera)viewerRef.current?.setPreviewCamera(camera,reducedMotion?0:240);
+    previewCaptureCloseTimerRef.current=setTimeout(()=>{
+      normalPreviewCameraRef.current=null;
+      setCaptureSession(null);
+      previewCaptureCloseTimerRef.current=null;
+    },reducedMotion?0:250);
+  },[captureSession]);
+  const captureManualPreview=useCallback(()=>{
+    if(!previewCapture||captureSession?.phase!=="active")return;
+    const camera=viewerRef.current?.getCurrentPreviewCamera()??null;
+    if(!camera)return;
+    addManualPreview(previewCapture.partId,previewCapture.step.id,camera,previewCapture.displayMode);
+    closePreviewCapture();
+  },[addManualPreview,captureSession?.phase,closePreviewCapture,previewCapture]);
+  useEffect(()=>{if(!previewCapture)return;const onKeyDown=(event:KeyboardEvent)=>{if(event.key==="Escape"){event.preventDefault();closePreviewCapture()}};window.addEventListener("keydown",onKeyDown);return()=>window.removeEventListener("keydown",onKeyDown)},[closePreviewCapture,previewCapture]);
+  useEffect(()=>()=>{if(previewCaptureCloseTimerRef.current)clearTimeout(previewCaptureCloseTimerRef.current)},[]);
   const autoThumbnailAttemptedRef = useRef(false);
   const [thumbnailError, setThumbnailError] = useState<string | null>(null);
   const [showGuideSettings,setShowGuideSettings]=useState(false);
@@ -162,10 +196,13 @@ export function ModelEditor({
   );
   const manualDetailPlacement=useModelEditorStore(state=>state.manualDetailPlacement);
   const regionPlacement=useModelEditorStore(state=>state.regionPlacement);
+  const simpleTargetMode=useModelEditorStore(state=>state.simpleTargetMode);
+  const editorManualDetails=useModelEditorStore(state=>state.manualDetails);
 
   const saveStatus = useModelEditorStore(
     (state) => state.saveStatus,
   );
+  const previewCaptureUsesRegions=previewCapture?previewCapture.step.targetReferences?.some(reference=>reference.type==="manualDetail"&&editorManualDetails.find(detail=>detail.id===reference.id)?.targetMode==="region")??simpleTargetMode==="region":false;
 
   const readiness = useMemo(
     () =>
@@ -235,7 +272,7 @@ export function ModelEditor({
     }
 
     const paintingSteps=([] as Array<keyof GuideImages>);if(settings.includeOriginalView)paintingSteps.push("original");if(settings.includeBaseView)paintingSteps.push("base");if(settings.includePaintedView)paintingSteps.push("painted");if(settings.includeNumbersView)paintingSteps.push("numbers");
-    const targetedPaintingStages=editorState.parts.flatMap(part=>part.paintingWorkflow.stages).filter(stage=>Boolean(stage.targetReferences?.length));
+    const targetedPaintingStages=editorState.parts.flatMap(part=>part.paintingWorkflow.stages).filter(stage=>Boolean(stage.targetReferences?.length)||stage.previewShots?.some(shot=>shot.type==="manualStepCapture"));
     const totalSteps=paintingSteps.length+(settings.includeExplodedView?1:0)+(settings.includeAssemblyInstructions&&settings.includeAssemblyStepImages?1:0)+(targetedPaintingStages.length?1:0);
     isGeneratingRef.current = true;
     startCapture(project.id,totalSteps);
@@ -330,8 +367,9 @@ export function ModelEditor({
 
   const onboardingEligible=mode==="simple"&&parts.length>0&&!isDirty&&!manualDetailPlacement&&!regionPlacement&&generationStatus!=="capturing"&&!showGuideSettings;
   return <OnboardingProvider userId={userId} simpleMode={mode==="simple"} eligible={onboardingEligible}>
+    <ManualStepPreviewCaptureContext.Provider value={{request:previewCapture,open:openPreviewCapture,setDisplayMode:displayMode=>setCaptureSession(current=>current?{...current,request:{...current.request,displayMode}}:current)}}>
     <main data-editor-ui className="flex h-dvh w-full min-w-0 flex-col overflow-hidden bg-[var(--bg)] text-[var(--text)]">
-      <EditorHeader
+      <div inert={Boolean(previewCapture)||undefined}><EditorHeader
         project={project}
         isGuideReady={isGuideReady}
         isGeneratingGuide={generationStatus === "capturing"}
@@ -342,21 +380,28 @@ export function ModelEditor({
         onSave={() => {
           void saveNow();
         }}
-      />
+      /></div>
 
-      <EditorModeSwitch mode={mode} onChange={setMode} />
+      <div inert={Boolean(previewCapture)||undefined}><EditorModeSwitch mode={mode} onChange={setMode} /></div>
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         {mode === "advanced" ? <EditorSidebar key="advanced-sidebar" guideSettings={lastGuideSettings??defaultSettings} project={project} isUpdatingBaseColor={isUpdatingBaseColor} onUpdateBaseColor={updateProjectBaseColor} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onFocusAssemblyStep={focusAssemblyStep} onExitAssemblyFocus={exitAssemblyFocus} onCaptureAssemblyImage={captureAssemblyImage} onDeleteAssemblyImage={deleteAssemblyImage} onDeleteAssemblyStep={deleteAssemblyStepWithImage} /> : null}
 
-        {mode === "simple" ? <SimplePalettePanel /> : null}
+        {mode === "simple" ? <SimplePalettePanel captureHidden={Boolean(previewCapture)} /> : null}
         <div key="viewer-area" data-onboarding-target={mode==="simple"?ONBOARDING_TARGETS.modelViewer:undefined} className={`relative flex min-w-0 flex-1 flex-col lg:flex-row ${mode==="simple"?"order-1 min-h-[45dvh] lg:order-2 lg:min-h-0":"min-h-0"}`}>
-          <div className={`${mode === "advanced" && effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-[18rem] min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} simplified={mode === "simple"} hideManualDetailPins={showGuideSettings} /></div>
+          <div className={`${mode === "advanced" && effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-[18rem] min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} simplified={mode === "simple"} hideManualDetailPins={showGuideSettings} previewCapture={previewCapture?{stepId:previewCapture.step.id,displayMode:previewCapture.displayMode}:null}/></div>
+          {previewCapture?<div role="dialog" aria-modal="true" aria-label={t("editor.steps.manualCapture.title")} className={`absolute inset-x-3 top-3 z-40 mx-auto flex max-w-3xl flex-wrap items-end gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 text-[var(--text)] shadow-xl transition duration-250 ease-out starting:scale-[.99] starting:opacity-0 motion-reduce:transition-none ${captureSession?.phase==="closing"?"pointer-events-none scale-[.99] opacity-0":"scale-100 opacity-100"}`}>
+            <div className="min-w-48 flex-1"><p className="text-sm font-semibold">{t("editor.steps.manualCapture.title")}</p><p className="text-xs text-[var(--text-secondary)]">{t("editor.steps.manualCapture.cameraHelp")}</p></div>
+            {previewCaptureUsesRegions?<label className="text-xs font-medium">{t("editor.steps.manualCapture.display")}<select value={previewCapture.displayMode} onChange={event=>setCaptureSession(current=>current?{...current,request:{...current.request,displayMode:event.target.value as ManualStepPreviewCaptureRequest["displayMode"]}}:current)} className="ml-2 h-9 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--card)] px-2"><option value="current-step">{t("editor.steps.manualCapture.current")}</option><option value="through-current-step">{t("editor.steps.manualCapture.through")}</option></select></label>:null}
+            <button type="button" onClick={()=>viewerRef.current?.fitView()} className="h-9 cursor-pointer rounded-lg border border-[var(--border)] px-3 text-xs font-medium hover:bg-[var(--surface-hover)]">{t("editor.steps.manualCapture.reset")}</button>
+            <button type="button" onClick={closePreviewCapture} className="h-9 cursor-pointer rounded-lg border border-[var(--border)] px-3 text-xs font-medium hover:bg-[var(--surface-hover)]">{t("common.cancel")}</button>
+            <button type="button" onClick={captureManualPreview} className="h-9 cursor-pointer rounded-lg bg-[var(--accent)] px-4 text-xs font-semibold text-[var(--accent-foreground)] hover:brightness-110">{t("editor.steps.manualCapture.capture")}</button>
+          </div>:null}
           {mode === "advanced"&&selectedReference&&effectiveReferenceViewMode!=="viewer"?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={setSelectedReferenceId} onClose={()=>setReferenceViewMode("viewer")}/>:null}
           {mode==="simple"&&simpleReferenceOpen&&selectedReference&&isDesktopReferenceLayout?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={selectReference} onClose={closeSimpleReference}/>:null}
           {mode === "advanced" ? <div className="absolute right-3 top-3 z-20 flex rounded-full border border-white/10 bg-black/70 p-1 text-xs">{(["viewer","split","reference"] as const).map(viewMode=><button key={viewMode} type="button" disabled={viewMode!=="viewer"&&references.length===0} onClick={()=>{if(viewMode==="viewer")setReferenceViewMode("viewer");else openReferenceMode(viewMode);}} className={`rounded-full px-3 py-1.5 disabled:opacity-40 ${effectiveReferenceViewMode===viewMode?"bg-orange-400 text-black":"text-neutral-300"}`}>{viewMode==="viewer"?t("viewer.model"):viewMode==="split"?t("viewer.split"):t("viewer.reference")}</button>)}</div> : null}
         </div>
-        {mode === "simple" ? <GuideBuilderPanel projectId={project.id} activeReferenceId={selectedReference?.id??null} isReferenceVisible={simpleReferenceOpen&&Boolean(selectedReference)} onSelectReference={selectReference} onShowReference={showSimpleReference} onHideReference={closeSimpleReference} onReferenceDeleted={handleReferenceDeleted}/> : null}
+        {mode === "simple" ? <GuideBuilderPanel captureHidden={Boolean(previewCapture)} projectId={project.id} activeReferenceId={selectedReference?.id??null} isReferenceVisible={simpleReferenceOpen&&Boolean(selectedReference)} onSelectReference={selectReference} onShowReference={showSimpleReference} onHideReference={closeSimpleReference} onReferenceDeleted={handleReferenceDeleted}/> : null}
 
         {mode === "advanced" ? <PropertiesPanel key="advanced-properties" /> : null}
       </div>
@@ -371,5 +416,6 @@ export function ModelEditor({
       />
       {showGuideSettings?<GuideSettingsModal initial={lastGuideSettings??defaultSettings} canExplode={canExplode} canAssemble={canAssemble} onClose={()=>setShowGuideSettings(false)} onConfirm={settings=>{setShowGuideSettings(false);setLastGuideSettings(settings);void generateGuidePreview(settings);}}/>:null}
     </main>
+    </ManualStepPreviewCaptureContext.Provider>
   </OnboardingProvider>;
 }

@@ -44,7 +44,7 @@ import {getVisibleModelBounds} from "../lib/getVisibleModelBounds";
 import {getManualDetailFocusBounds} from "../lib/manualDetails/manualDetailFocus";
 import { ViewerModeSwitcher } from "./ViewerModeSwitcher";
 import type { ViewerMode } from "../types/ViewerMode";
-import type {PaintingPreviewCamera} from "../types/PaintingWorkflow";
+import type {PaintingPreviewCamera,StepPreviewDisplayMode} from "../types/PaintingWorkflow";
 import { waitForAnimationFrames } from "../lib/waitForAnimationFrames";
 import {ExplodedViewToolbar} from "./ExplodedViewToolbar";
 import type { ExplodedLabelsMode } from "../types/ExplodedLabelsMode";
@@ -56,6 +56,7 @@ type ModelViewerProps = {
   userId: string;
   simplified?: boolean;
   hideManualDetailPins?:boolean;
+  previewCapture?:{stepId:string;displayMode:StepPreviewDisplayMode}|null;
 };
 
 export type ModelViewerHandle = {
@@ -63,6 +64,7 @@ export type ModelViewerHandle = {
   fitView: () => void;
   captureAssemblyStep: (options: {partIds:string[];labelsMode:ExplodedLabelsMode}) => Promise<Blob>;
   getCurrentPreviewCamera:()=>PaintingPreviewCamera|null;
+  setPreviewCamera:(camera:PaintingPreviewCamera,duration?:number)=>void;
 };
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
@@ -89,6 +91,7 @@ type SceneProps = {
   forceAssembled:boolean;
   forceFullyExploded:boolean;
   onControlsStart:()=>void;
+  previewCapture?:{stepId:string;displayMode:StepPreviewDisplayMode}|null;
 };
 
 function Scene({
@@ -107,6 +110,7 @@ function Scene({
   forceAssembled,
   forceFullyExploded,
   onControlsStart,
+  previewCapture,
 }: SceneProps) {
   return (
     <>
@@ -151,6 +155,7 @@ function Scene({
           forceAssembled={forceAssembled}
           forceFullyExploded={forceFullyExploded}
           controlsRef={controlsRef}
+          previewCapture={previewCapture}
         />
 
         <Environment preset="studio" />
@@ -164,7 +169,7 @@ function Scene({
         />
       </Suspense>
 
-      {isGridVisible ? (
+      {isGridVisible&&!previewCapture ? (
         <Grid
           position={[0, -0.02, 0]}
           args={[20, 20]}
@@ -202,7 +207,7 @@ export const ModelViewer = forwardRef<
   ModelViewerHandle,
   ModelViewerProps
 >(function ModelViewer(
-  { project, userId, simplified = false,hideManualDetailPins=false },
+  { project, userId, simplified = false,hideManualDetailPins=false,previewCapture=null },
   ref,
 ) {
   const {t}=useTranslation();
@@ -478,6 +483,16 @@ export const ModelViewer = forwardRef<
         const distance=camera.position.distanceTo(controls.target);
         return{position:{x:camera.position.x,y:camera.position.y,z:camera.position.z},target:{x:controls.target.x,y:controls.target.y,z:controls.target.z},up:{x:camera.up.x,y:camera.up.y,z:camera.up.z},zoom:camera.zoom,targetRadius:distance*Math.tan(MathUtils.degToRad(camera.fov/2))/Math.max(camera.zoom,.01)};
       },
+      setPreviewCamera:(value,duration=0)=>{
+        const controls=controlsRef.current,camera=controls?.object;
+        if(!controls||!(camera instanceof PerspectiveCamera))return;
+        cancelFocusAnimation();
+        const destinationPosition=new Vector3(value.position.x,value.position.y,value.position.z),destinationTarget=new Vector3(value.target.x,value.target.y,value.target.z),destinationUp=new Vector3(value.up.x,value.up.y,value.up.z);
+        if(duration<=0){camera.position.copy(destinationPosition);camera.up.copy(destinationUp);camera.zoom=value.zoom;controls.target.copy(destinationTarget);camera.updateProjectionMatrix();controls.update();return}
+        const startPosition=camera.position.clone(),startTarget=controls.target.clone(),startUp=camera.up.clone(),startZoom=camera.zoom,startTime=performance.now(),generation=focusAnimationGenerationRef.current;
+        const animate=(time:number)=>{if(generation!==focusAnimationGenerationRef.current)return;const progress=MathUtils.clamp((time-startTime)/duration,0,1),eased=1-Math.pow(1-progress,3);camera.position.lerpVectors(startPosition,destinationPosition,eased);camera.up.lerpVectors(startUp,destinationUp,eased).normalize();camera.zoom=MathUtils.lerp(startZoom,value.zoom,eased);controls.target.lerpVectors(startTarget,destinationTarget,eased);camera.updateProjectionMatrix();controls.update();if(progress<1)focusAnimationFrameRef.current=requestAnimationFrame(animate);else focusAnimationFrameRef.current=null};
+        focusAnimationFrameRef.current=requestAnimationFrame(animate);
+      },
       fitView: handleFitModel,
       captureAssemblyStep: async ({partIds,labelsMode}) => {
         cancelFocusAnimation();
@@ -715,16 +730,17 @@ export const ModelViewer = forwardRef<
               showAllPartsForCapture={showAllPartsForCapture}
               hideManualDetailPins={hideManualDetailPins||areManualDetailPinsSuppressed}
               forceAssembled={forceAssembled}
-            forceFullyExploded={forceFullyExploded}
-            onControlsStart={cancelFocusAnimation}
+              forceFullyExploded={forceFullyExploded}
+              onControlsStart={cancelFocusAnimation}
+              previewCapture={previewCapture}
             />
           </Canvas>
         </ViewerErrorBoundary>
       ) : null}
 
-      <div className="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center px-4">
+      {!previewCapture?<div className="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center px-4">
       {!simplified ? <ViewerModeSwitcher /> : null}
-      </div>
+      </div>:null}
       {manualDetailPlacement&&!simplified?<div role="status" className="absolute left-1/2 top-4 z-30 flex max-w-[calc(100%-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-xl border border-[var(--accent)] bg-[var(--card)] px-3 py-2 text-xs text-[var(--text)]"><span>{t("editor.manualDetails.placement.help")}</span><span>{t("editor.manualDetails.pinCount",{count:manualDetailPlacement.pins.length})}</span><button type="button" disabled={!manualDetailPlacement.pins.length} onClick={undoDraftManualDetailPin} className="rounded-lg border border-[var(--border)] px-2 py-1 disabled:opacity-40">{t("editor.manualDetails.undo")}</button><button type="button" disabled={!manualDetailPlacement.pins.length} onClick={finishManualDetailPlacement} className="rounded-lg bg-[var(--accent)] px-2 py-1 text-[var(--accent-foreground)] disabled:opacity-40">{t("editor.manualDetails.finish")}</button><button type="button" onClick={cancelManualDetailPlacement} className="rounded-lg border border-[var(--border)] px-2 py-1">{t("common.cancel")}</button></div>:null}
       {focusedAssemblyStep ? <div role="status" className="absolute left-1/2 top-20 z-20 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-orange-400/30 bg-black/80 px-4 py-2 shadow-xl backdrop-blur"><div><p className="text-xs font-semibold text-orange-200">{t("assembly.focus.bannerTitle",{number:String(focusedAssemblyStep.order).padStart(2,"0")})}</p><p className="text-[10px] text-neutral-400">{t("assembly.focus.bannerDescription")}</p></div><button type="button" onClick={exitAssemblyStepFocus} className="rounded-lg bg-orange-400 px-3 py-1.5 text-xs font-semibold text-black">{t("assembly.focus.exit")}</button></div>:null}
 
@@ -738,7 +754,7 @@ export const ModelViewer = forwardRef<
 
       {!simplified&&viewerMode==="exploded"&&parts.length>1?<div className="absolute left-0 top-20 z-10"><ExplodedViewToolbar onFit={handleFitModel}/></div>:null}
 
-      <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[calc(100%-2rem)] rounded-2xl border border-white/10 bg-black/45 px-4 py-3 backdrop-blur-xl">
+      {!previewCapture?<div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[calc(100%-2rem)] rounded-2xl border border-white/10 bg-black/45 px-4 py-3 backdrop-blur-xl">
         <p className="truncate text-sm font-medium text-white">
           {project.name}
         </p>
@@ -746,9 +762,9 @@ export const ModelViewer = forwardRef<
         <p className="mt-0.5 truncate text-xs text-neutral-500">
           {project.originalFileName || t("models.modelFile")}
         </p>
-      </div>
+      </div>:null}
 
-      <ViewerToolbar
+      {!previewCapture?<ViewerToolbar
         simplified={simplified}
         isGridVisible={isGridVisible}
         hasParts={parts.length > 0}
@@ -762,7 +778,7 @@ export const ModelViewer = forwardRef<
         onToggleGrid={() =>
           setIsGridVisible((currentValue) => !currentValue)
         }
-      />
+      />:null}
     </section>
   );
 });

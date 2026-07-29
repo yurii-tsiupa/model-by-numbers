@@ -1,4 +1,5 @@
 import {
+  ACESFilmicToneMapping,
   AmbientLight,
   Box3,
   BufferGeometry,
@@ -14,6 +15,7 @@ import {
   Scene,
   Sprite,
   SpriteMaterial,
+  SRGBColorSpace,
   Vector3,
   WebGLRenderer,
   type Material,
@@ -33,6 +35,7 @@ import {
 } from "./constants";
 import { getStepPreviewFraming } from "./getStepPreviewFraming";
 import type { StepPreviewFraming } from "./types";
+import {resolveStepPreviewComposition} from "./resolveStepPreviewComposition";
 
 let sharedRenderer: WebGLRenderer | null = null;
 let sharedCanvas: HTMLCanvasElement | null = null;
@@ -43,7 +46,9 @@ function getRenderer(): { canvas: HTMLCanvasElement; renderer: WebGLRenderer } {
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
   renderer.setPixelRatio(1);
   renderer.setSize(STEP_PREVIEW_WIDTH, STEP_PREVIEW_HEIGHT, false);
-  renderer.outputColorSpace = "srgb";
+  renderer.outputColorSpace = SRGBColorSpace;
+  renderer.toneMapping=ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1;
   sharedCanvas = canvas;
   sharedRenderer = renderer;
   return { canvas, renderer };
@@ -73,14 +78,16 @@ export async function createStepPreviewBlob({
   shot?:PaintingStepPreviewShot;
 }): Promise<{ blob: Blob; framing: StepPreviewFraming }> {
   const resolved = resolvePaintingTargetReferences(step.targetReferences, parts, manualDetails);
+  const sharedComposition=!shot||shot.type==="manualStepCapture"?resolveStepPreviewComposition({step,parts,manualDetails,palette,baseColor,displayMode:shot?.type==="manualStepCapture"?shot.displayMode:"current-step"}):null;
   const wholeModel = step.type === "primer" && (step.targetReferences?.length ?? 0) === 0;
   const resolvedParts = shot?.type==="manualDetailRegion"?[]:wholeModel ? parts : resolved.parts;
   const regionSelections=new Map<string,{color:string;triangles:number[]}>();
-  for(const detail of resolved.manualDetails)if(detail.targetMode==="region"&&(!shot||shot.type!=="manualDetailRegion"||detail.id===shot.manualDetailId))for(const selection of detail.region?.selections??[]){const meshUuid=parts.find(part=>part.id===selection.meshId)?.meshUuid??selection.meshId;regionSelections.set(meshUuid,{color:detail.colorId?palette.find(color=>color.id===detail.colorId)?.hex??baseColor:baseColor,triangles:selection.triangleIndices})}
-  const pinTargets = shot?.type==="manualDetailRegion"?[]:resolved.manualDetails.flatMap(detail => detail.pins.filter(pin=>!shot||(detail.id===shot.manualDetailId&&pin.id===shot.pinId)).map(pin => ({ pin, number: detail.markerNumber??detail.number })));
+  if(sharedComposition)for(const [meshUuid,selection] of sharedComposition.regions)regionSelections.set(meshUuid,selection);
+  else for(const detail of resolved.manualDetails)if(detail.targetMode==="region"&&(!shot||shot.type!=="manualDetailRegion"||detail.id===shot.manualDetailId))for(const selection of detail.region?.selections??[]){const meshUuid=parts.find(part=>part.id===selection.meshId)?.meshUuid??selection.meshId;regionSelections.set(meshUuid,{color:detail.colorId?palette.find(color=>color.id===detail.colorId)?.hex??baseColor:baseColor,triangles:selection.triangleIndices})}
+  const pinTargets = shot?.type==="manualDetailRegion"?[]:(sharedComposition?.markerDetails??resolved.manualDetails).flatMap(detail => detail.pins.filter(pin=>!shot||shot.type==="manualStepCapture"||(detail.id===shot.manualDetailId&&pin.id===shot.pinId)).map(pin => ({ pin, number: detail.markerNumber??detail.number })));
   if(shot?.type==="manualDetailLocation"&&!pinTargets.length)throw new Error("targetsUnavailable");
   if(shot?.type==="manualDetailRegion"&&!resolved.manualDetails.some(detail=>detail.id===shot.manualDetailId&&detail.targetMode==="region"&&detail.region?.selections.length))throw new Error("targetsUnavailable");
-  if (!resolvedParts.length && !pinTargets.length && !regionSelections.size) throw new Error("targetsUnavailable");
+  if (!sharedComposition&&!resolvedParts.length && !pinTargets.length && !regionSelections.size) throw new Error("targetsUnavailable");
 
   const { canvas, renderer } = getRenderer();
   const materials: Material[] = [];
@@ -102,7 +109,6 @@ export async function createStepPreviewBlob({
   model.traverse(value => { if (value instanceof Mesh) sourceMeshes.push(value); });
   clone.traverse(value => { if (value instanceof Mesh) cloneMeshes.push(value); });
   const partByMesh = new Map(parts.map(part => [part.meshUuid, part]));
-  const colors = new Map(palette.map(color => [color.id, color.hex]));
   const targets = new Set(resolvedParts.map(part => part.id));
   const targetBounds = new Box3();
 
@@ -115,10 +121,17 @@ export async function createStepPreviewBlob({
       const copy = source.clone();
       materials.push(copy);
       if ("color" in copy && copy.color instanceof Color) {
-        copy.color.set(part?.paletteColorId ? colors.get(part.paletteColorId) ?? baseColor : baseColor);
-        if (!targeted) copy.color.lerp(new Color(STEP_PREVIEW_THEME.contextColor), 0.38);
+        const composedColor=part?sharedComposition?.partColors.get(part.id):undefined;
+        const displayColor=composedColor??baseColor;
+        copy.color.set(displayColor);
+        if(copy instanceof MeshStandardMaterial){
+          copy.map=null;
+          copy.vertexColors=false;
+          copy.emissive.set(displayColor);
+          copy.emissiveIntensity=.08;
+        }
       }
-      if (copy instanceof MeshStandardMaterial && targeted) {
+      if (copy instanceof MeshStandardMaterial && targeted&&!sharedComposition) {
         copy.emissive.set(STEP_PREVIEW_THEME.targetEmissive);
         copy.emissiveIntensity = 0.1;
       }
@@ -129,7 +142,7 @@ export async function createStepPreviewBlob({
     if(regionSelection){
       const source=mesh.geometry,position=source.getAttribute("position"),indexBuffer=source.index,values:number[]=[];
       for(const triangle of regionSelection.triangles)for(let offset=0;offset<3;offset++){const vertex=indexBuffer?indexBuffer.getX(triangle*3+offset):triangle*3+offset;if(vertex<position.count){values.push(position.getX(vertex),position.getY(vertex),position.getZ(vertex))}}
-      if(values.length){const geometry=new BufferGeometry();geometry.setAttribute("position",new Float32BufferAttribute(values,3));geometry.computeVertexNormals();const material=new MeshStandardMaterial({color:regionSelection.color,emissive:STEP_PREVIEW_THEME.targetEmissive,emissiveIntensity:.1,side:DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});materials.push(material);const overlay=new Mesh(geometry,material);mesh.add(overlay);for(let valueIndex=0;valueIndex<values.length;valueIndex+=3)targetBounds.expandByPoint(new Vector3(values[valueIndex],values[valueIndex+1],values[valueIndex+2]).applyMatrix4(mesh.matrixWorld))}
+      if(values.length){const geometry=new BufferGeometry();geometry.setAttribute("position",new Float32BufferAttribute(values,3));geometry.computeVertexNormals();const material=new MeshStandardMaterial({color:regionSelection.color,emissive:regionSelection.color,emissiveIntensity:.08,side:DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});materials.push(material);const overlay=new Mesh(geometry,material);mesh.add(overlay);for(let valueIndex=0;valueIndex<values.length;valueIndex+=3)targetBounds.expandByPoint(new Vector3(values[valueIndex],values[valueIndex+1],values[valueIndex+2]).applyMatrix4(mesh.matrixWorld))}
     }
     if (targeted&&!regionSelection) targetBounds.expandByObject(mesh, true);
   });
@@ -137,10 +150,11 @@ export async function createStepPreviewBlob({
   for (const { pin } of pinTargets) targetBounds.expandByPoint(new Vector3(pin.position.x, pin.position.y, pin.position.z));
   const modelBounds = new Box3().setFromObject(clone, true);
   const pins = pinTargets.map(target => target.pin);
-  const framing = shot?.type==="manualDetailRegion"?{cameraPosition:shot.camera.position,target:shot.camera.target,up:shot.camera.up,targetRadius:shot.camera.targetRadius}:getStepPreviewFraming(targetBounds, modelBounds, pins.length === 1 && !resolvedParts.length ? pins[0] : undefined);
+  const manualCamera=shot?.type==="manualDetailRegion"||shot?.type==="manualStepCapture"?shot.camera:null;
+  const framing = manualCamera?{cameraPosition:manualCamera.position,target:manualCamera.target,up:manualCamera.up,targetRadius:manualCamera.targetRadius}:getStepPreviewFraming(targetBounds, modelBounds, pins.length === 1 && !resolvedParts.length ? pins[0] : undefined);
   const camera = new PerspectiveCamera(42, STEP_PREVIEW_ASPECT_RATIO, 0.01, 1000);
   camera.position.set(framing.cameraPosition.x, framing.cameraPosition.y, framing.cameraPosition.z);
-  if(shot?.type==="manualDetailRegion")camera.zoom=shot.camera.zoom;
+  if(manualCamera)camera.zoom=manualCamera.zoom;
   camera.up.set(framing.up.x, framing.up.y, framing.up.z);
   camera.lookAt(framing.target.x, framing.target.y, framing.target.z);
   const modelSize = modelBounds.getSize(new Vector3()).length();
@@ -164,7 +178,7 @@ export async function createStepPreviewBlob({
     context.textBaseline = "middle";
     context.fillText(String(number), 128, 136);
     const texture = new CanvasTexture(label);
-    texture.colorSpace = "srgb";
+    texture.colorSpace = SRGBColorSpace;
     const material = new SpriteMaterial({ map: texture, depthTest: false });
     const sprite = new Sprite(material);
     textures.push(texture);

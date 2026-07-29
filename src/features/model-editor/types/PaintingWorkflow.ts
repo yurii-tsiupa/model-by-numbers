@@ -2,9 +2,11 @@ export type PaintingStageType = "primer" | "base-coat" | "secondary-color" | "wa
 export type PaintingTargetReference = { type: "part" | "manualDetail"; id: string };
 export type PaintingDifficulty = "easy" | "medium" | "hard";
 export type PaintingPreviewCamera={position:{x:number;y:number;z:number};target:{x:number;y:number;z:number};up:{x:number;y:number;z:number};zoom:number;targetRadius:number};
+export type StepPreviewDisplayMode="current-step"|"through-current-step";
 export type PaintingStepPreviewShot =
   | {id:string;type:"manualDetailLocation";manualDetailId:string;pinId:string}
-  | {id:string;type:"manualDetailRegion";manualDetailId:string;camera:PaintingPreviewCamera};
+  | {id:string;type:"manualDetailRegion";manualDetailId:string;camera:PaintingPreviewCamera}
+  | {id:string;type:"manualStepCapture";manualDetailId:"";camera:PaintingPreviewCamera;displayMode:StepPreviewDisplayMode};
 export type PaintingStage = { id: string; order: number; type: PaintingStageType; customName: string | null; paletteColorId: string | null; recommendedCoats: number | null; notes: string; targetReferences?: PaintingTargetReference[]; overviewPreviewEnabled?:boolean; previewShots?:PaintingStepPreviewShot[]; createdAt: string; updatedAt: string };
 export type PartPaintingWorkflow = { stages: PaintingStage[]; notes: string; paintBeforeAssembly: boolean; difficulty: PaintingDifficulty | null; estimatedTimeMinutes: number | null };
 export type CreatePaintingStageInput = Omit<PaintingStage, "id" | "order" | "createdAt" | "updatedAt">;

@@ -46,6 +46,8 @@ import {useRuntimeModelScene} from "../hooks/useRuntimeModelScene";
 import type {ModelFormat} from "@/features/model-import/types/ModelFormat";
 import type {DetailRegion} from "@/features/models/types/ManualDetail";
 import {getBrushTriangleIndices,getConnectedAreaTriangleIndices,registerRegionGeometry,smoothRegionSelections} from "../lib/regionBrushGeometry";
+import type {StepPreviewDisplayMode} from "../types/PaintingWorkflow";
+import {resolveStepPreviewComposition} from "../step-previews/resolveStepPreviewComposition";
 
 type RegionStroke={
   sessionId:string;
@@ -74,6 +76,7 @@ type LoadedModelProps = {
   onModelReady?: (
     model: Object3D,
   ) => void;
+  previewCapture?:{stepId:string;displayMode:StepPreviewDisplayMode}|null;
 };
 
 export function LoadedModel(props: LoadedModelProps) {
@@ -94,6 +97,7 @@ function LoadedModelContent({
   forceFullyExploded,
   controlsRef,
   onModelReady,
+  previewCapture,
 }: LoadedModelProps & { sourceScene: Object3D }) {
   const {t}=useTranslation();
   const hasInitializedPartsRef = useRef(false);
@@ -172,6 +176,8 @@ function LoadedModelContent({
   const activePaintingStage = useMemo(() => parts.flatMap((part) => part.paintingWorkflow.stages).find((stage) => stage.id === activePaintingStageId), [activePaintingStageId, parts]);
   const highlightedPaintingPartIds = useMemo(() => activePaintingStage?.targetReferences?.filter((reference) => reference.type === "part").map((reference) => reference.id) ?? [], [activePaintingStage]);
   const highlightedPaintingManualDetailIds=useMemo(()=>new Set(activePaintingStage?.targetReferences?.filter(reference=>reference.type!=="part").map(reference=>reference.id)??[]),[activePaintingStage]);
+  const previewStep=previewCapture?parts.flatMap(part=>part.paintingWorkflow.stages).find(stage=>stage.id===previewCapture.stepId):undefined;
+  const previewComposition=useMemo(()=>previewStep&&previewCapture?resolveStepPreviewComposition({step:previewStep,parts,manualDetails,palette,baseColor,displayMode:previewCapture.displayMode}):null,[baseColor,manualDetails,palette,parts,previewCapture,previewStep]);
 
   useEffect(()=>{
     const cleanups:Array<()=>void>=[];
@@ -211,14 +217,17 @@ function LoadedModelContent({
 
   const presentationParts = useMemo(
     () =>
-      showAllPartsForCapture
+      previewComposition
+        ? parts.map(part=>({...part,visible:true,paletteColorId:previewComposition.partColors.has(part.id)?`preview:${part.id}`:null}))
+        : showAllPartsForCapture
         ? parts.map((part) => ({
             ...part,
             visible: part.includeInGuide,
           }))
         : parts,
-    [parts, showAllPartsForCapture],
+    [parts, previewComposition, showAllPartsForCapture],
   );
+  const presentationPalette=useMemo(()=>previewComposition?[...palette,...[...previewComposition.partColors].map(([id,hex],index)=>({id:`preview:${id}`,number:palette.length+index+1,name:"",hex}))]:palette,[palette,previewComposition]);
   const partStructure=parts.map(part=>`${part.id}:${part.meshUuid}`).join("|");
   const explodedLayout=useMemo(() => {
     if (parts.length <= 1) {
@@ -322,25 +331,26 @@ function LoadedModelContent({
     syncModelParts({
       model,
       parts: presentationParts,
-      palette,
+      palette:presentationPalette,
       viewerMode,
       baseColor,
-      selectedPartId,
-      selectedPartIds,
-      highlightedPaletteColorId,
-      highlightedPaintingPartIds,
+      selectedPartId:previewCapture?null:selectedPartId,
+      selectedPartIds:previewCapture?[]:selectedPartIds,
+      highlightedPaletteColorId:previewCapture?null:highlightedPaletteColorId,
+      highlightedPaintingPartIds:previewCapture?[]:highlightedPaintingPartIds,
       hideUnmappedMeshes: importSchemaVersion === 1,
     });
   }, [
     model,
     presentationParts,
-    palette,
+    presentationPalette,
     viewerMode,
     baseColor,
     selectedPartId,
     selectedPartIds,
     highlightedPaletteColorId,
     highlightedPaintingPartIds,
+    previewCapture,
     importSchemaVersion,
   ]);
 
@@ -447,23 +457,26 @@ function LoadedModelContent({
     if(event.buttons===1&&regionStrokeRef.current)extendRegionStroke(event);
   }
   const regionOverlays=useMemo(()=>{const rows:Array<{id:string;color:string;geometry:BufferGeometry}>=[],draftId=regionPlacement?.detailId;for(const detail of manualDetails){const selections=detail.id===draftId?(strokeSelections??regionPlacement?.selections):detail.region?.selections;if(detail.targetMode!=="region"||!selections?.length)continue;const color=palette.find(item=>item.id===detail.colorId)?.hex??"#F97316";for(const selection of selections){const meshUuid=parts.find(part=>part.id===selection.meshId)?.meshUuid??selection.meshId,mesh=model.getObjectByProperty("uuid",meshUuid);if(!(mesh instanceof Mesh))continue;const source=mesh.geometry,position=source.getAttribute("position"),index=source.index,values:number[]=[];for(const triangle of selection.triangleIndices)for(let offset=0;offset<3;offset++){const vertex=index?index.getX(triangle*3+offset):triangle*3+offset;if(vertex>=position.count)continue;const point=new Vector3().fromBufferAttribute(position,vertex).applyMatrix4(mesh.matrixWorld);values.push(point.x,point.y,point.z)}if(values.length){const geometry=new BufferGeometry();geometry.setAttribute("position",new Float32BufferAttribute(values,3));geometry.computeVertexNormals();rows.push({id:`${detail.id}:${selection.meshId}`,color,geometry})}}}return rows},[manualDetails,model,palette,parts,regionPlacement,strokeSelections]);
+  const captureRegionOverlays=useMemo(()=>{const rows:Array<{id:string;color:string;geometry:BufferGeometry}>=[];for(const[meshUuid,selection]of previewComposition?.regions??[]){const mesh=model.getObjectByProperty("uuid",meshUuid);if(!(mesh instanceof Mesh))continue;const position=mesh.geometry.getAttribute("position"),index=mesh.geometry.index,values:number[]=[];for(const triangle of selection.triangles)for(let offset=0;offset<3;offset++){const vertex=index?index.getX(triangle*3+offset):triangle*3+offset;if(vertex>=position.count)continue;const point=new Vector3().fromBufferAttribute(position,vertex).applyMatrix4(mesh.matrixWorld);values.push(point.x,point.y,point.z)}if(values.length){const geometry=new BufferGeometry();geometry.setAttribute("position",new Float32BufferAttribute(values,3));geometry.computeVertexNormals();rows.push({id:`capture:${meshUuid}`,color:selection.color,geometry})}}return rows},[model,previewComposition]);
   useEffect(()=>()=>{for(const overlay of regionOverlays)overlay.geometry.dispose()},[regionOverlays]);
+  useEffect(()=>()=>{for(const overlay of captureRegionOverlays)overlay.geometry.dispose()},[captureRegionOverlays]);
   const draftDetailNumber=manualDetailPlacement?.proposedMarkerNumber??1;
-  const renderedPins=hideManualDetailPins?[]:[...manualDetails.flatMap(detail=>detail.targetMode==="region"?[]:detail.pins.map((pin,index)=>({pin,detailId:detail.id,detailName:detail.name,detailNumber:detail.markerNumber??detail.number,locationIndex:index+1,colorId:detail.colorId,isDraft:false}))),...(manualDetailPlacement?.pins.map((pin,index)=>({pin,detailId:manualDetailPlacement.detailId??"draft",detailName:manualDetailPlacement.name,detailNumber:draftDetailNumber,locationIndex:index+1,colorId:null,isDraft:true}))??[])];
+  const renderedPins=hideManualDetailPins?[]:[...(previewComposition?.markerDetails??manualDetails).flatMap(detail=>detail.targetMode==="region"?[]:detail.pins.map((pin,index)=>({pin,detailId:detail.id,detailName:detail.name,detailNumber:detail.markerNumber??detail.number,locationIndex:index+1,colorId:detail.colorId,isDraft:false}))),...(!previewCapture?manualDetailPlacement?.pins.map((pin,index)=>({pin,detailId:manualDetailPlacement.detailId??"draft",detailName:manualDetailPlacement.name,detailNumber:draftDetailNumber,locationIndex:index+1,colorId:null,isDraft:true}))??[]:[])];
 
   return (
     <>
       <primitive
         object={model}
-        onPointerDown={handlePointerDown}
-        onClick={handleMarkerPlacement}
-        onPointerMove={handleRegionHover}
-        onPointerUp={finishRegionStroke}
-        onPointerCancel={finishRegionStroke}
-        onPointerOut={()=>setBrushHover(null)}
+        onPointerDown={previewCapture?undefined:handlePointerDown}
+        onClick={previewCapture?undefined:handleMarkerPlacement}
+        onPointerMove={previewCapture?undefined:handleRegionHover}
+        onPointerUp={previewCapture?undefined:finishRegionStroke}
+        onPointerCancel={previewCapture?undefined:finishRegionStroke}
+        onPointerOut={previewCapture?undefined:()=>setBrushHover(null)}
       />
-      {regionOverlays.map(overlay=><mesh key={overlay.id} geometry={overlay.geometry} renderOrder={8}><meshStandardMaterial color={overlay.color} emissive={overlay.color} emissiveIntensity={.18} transparent opacity={.78} depthWrite={false} side={DoubleSide} polygonOffset polygonOffsetFactor={-2}/></mesh>)}
-      {brushHover&&brushQuaternion&&brushHover.sessionId===regionPlacement?.sessionId?<mesh position={brushHover.position} quaternion={brushQuaternion} renderOrder={12} raycast={()=>null}><ringGeometry args={[regionBrushRadius(modelDiagonal,regionPlacement.brush)*.82,regionBrushRadius(modelDiagonal,regionPlacement.brush),48]}/><meshBasicMaterial color={brushHover.erase?"#dc6464":"#14b8a6"} transparent opacity={.82} depthTest={false} side={DoubleSide}/></mesh>:null}
+      {!previewCapture?regionOverlays.map(overlay=><mesh key={overlay.id} geometry={overlay.geometry} renderOrder={8}><meshStandardMaterial color={overlay.color} emissive={overlay.color} emissiveIntensity={.18} transparent opacity={.78} depthWrite={false} side={DoubleSide} polygonOffset polygonOffsetFactor={-2}/></mesh>):null}
+      {previewCapture?captureRegionOverlays.map(overlay=><mesh key={overlay.id} geometry={overlay.geometry} renderOrder={8}><meshStandardMaterial color={overlay.color} emissive={overlay.color} emissiveIntensity={.08} side={DoubleSide} polygonOffset polygonOffsetFactor={-2}/></mesh>):null}
+      {!previewCapture&&brushHover&&brushQuaternion&&brushHover.sessionId===regionPlacement?.sessionId?<mesh position={brushHover.position} quaternion={brushQuaternion} renderOrder={12} raycast={()=>null}><ringGeometry args={[regionBrushRadius(modelDiagonal,regionPlacement.brush)*.82,regionBrushRadius(modelDiagonal,regionPlacement.brush),48]}/><meshBasicMaterial color={brushHover.erase?"#dc6464":"#14b8a6"} transparent opacity={.82} depthTest={false} side={DoubleSide}/></mesh>:null}
 
       {!showAllPartsForCapture?renderedPins.map(({pin,detailId,detailName,detailNumber,locationIndex,colorId,isDraft})=>{const targetHighlighted=highlightedPaintingManualDetailIds.has(detailId),detailSelected=selectedManualDetailId===detailId,pinSelected=selectedManualDetailPinId===pin.id,hasActiveTargets=Boolean(activePaintingStage?.targetReferences?.length),assignedColor=colorId?palette.find(color=>color.id===colorId)?.hex:undefined;return <Html key={pin.id} position={[pin.position.x,pin.position.y,pin.position.z]} center sprite><button type="button" aria-label={t("editor.manualDetails.accessibility.selectLocation",{number:detailNumber,name:detailName,location:locationIndex})} aria-pressed={pinSelected||detailSelected||targetHighlighted} onClick={event=>{event.stopPropagation();if(!isDraft)selectManualDetail(detailId,pin.id)}} style={!pinSelected&&!detailSelected&&!targetHighlighted&&assignedColor?{borderColor:assignedColor}:undefined} className={`grid min-w-7 place-items-center rounded-full border-2 px-1 text-xs font-bold shadow-lg ${targetHighlighted||pinSelected?"h-9 border-[var(--accent-foreground)] bg-[var(--accent)] text-[var(--accent-foreground)]":detailSelected||isDraft?"h-7 border-[var(--accent)] bg-[var(--card)] text-[var(--text)]":`h-7 border-[var(--border)] bg-[var(--card)] text-[var(--text)] ${hasActiveTargets?"opacity-50":""}`}`}>{detailNumber}</button></Html>}) : null}
 
