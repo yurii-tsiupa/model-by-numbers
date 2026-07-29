@@ -6,6 +6,7 @@ import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { PAINT_COLORS } from "../constants/paintColors";
 import { normalizeHexColor } from "../lib/normalizeHexColor";
 import { useModelEditorStore } from "../store/modelEditorStore";
+import {useSimplePartSelection} from "../hooks/useSimplePartSelection";
 
 const QUICK_COLOR_IDS = new Set([
   "white", "black", "gray", "red", "blue", "yellow", "green", "brown",
@@ -17,25 +18,24 @@ export function SimpleColorsSection() {
   const [showColorForm, setShowColorForm] = useState(false);
   const [colorName, setColorName] = useState("");
   const [colorHex, setColorHex] = useState("#F97316");
-  const parts = useModelEditorStore((state) => state.parts);
+  const {parts,activePartId,showPartSelector}=useSimplePartSelection();
   const manualDetails = useModelEditorStore((state) => state.manualDetails);
   const palette = useModelEditorStore((state) => state.palette);
-  const selectedPartId = useModelEditorStore((state) => state.selectedPartId);
   const selectedPartIds = useModelEditorStore((state) => state.selectedPartIds);
   const selectedManualDetailId = useModelEditorStore((state) => state.selectedManualDetailId);
   const selectPart = useModelEditorStore((state) => state.selectPart);
   const selectManualDetail = useModelEditorStore((state) => state.selectManualDetail);
   const addPaletteColor = useModelEditorStore((state) => state.addPaletteColor);
   const assignColor = useModelEditorStore((state) => state.createAndAssignPaletteColorToTarget);
-  const selectedPart = parts.find((part) => part.id === selectedPartId) ?? null;
   const selectedManualDetail = manualDetails.find((detail) => detail.id === selectedManualDetailId) ?? null;
-  const target = selectedPart
-    ? { type: "part" as const, id: selectedPart.id }
-    : selectedManualDetail
-      ? { type: "manualDetail" as const, id: selectedManualDetail.id }
+  const selectedPart = selectedManualDetail?null:parts.find((part) => part.id === activePartId) ?? null;
+  const target = selectedManualDetail
+    ? { type: "manualDetail" as const, id: selectedManualDetail.id }
+    : selectedPart
+      ? { type: "part" as const, id: selectedPart.id }
       : null;
-  const targetName = selectedPart?.name ?? selectedManualDetail?.name ?? null;
-  const selectedColorId = selectedPart?.paletteColorId ?? selectedManualDetail?.colorId ?? null;
+  const targetName = selectedManualDetail?.name ?? selectedPart?.name ?? null;
+  const selectedColorId = selectedManualDetail?.colorId ?? selectedPart?.paletteColorId ?? null;
   const selectedColor = palette.find((color) => color.id === selectedColorId) ?? null;
   const hasSingleTarget = target !== null && selectedPartIds.length <= 1;
   const selectionValue = selectedPart
@@ -66,7 +66,7 @@ export function SimpleColorsSection() {
     <p className="simple-palette-muted mt-1 text-xs leading-5">
       {targetName ? t("editor.colors.assignTo", { name: targetName }) : t("editor.colors.selectDetail")}
     </p>
-    {parts.length + manualDetails.length > 0 ? <div className="relative mt-2">
+    {showPartSelector ? <div className="relative mt-2">
       <select
         aria-label={t("editor.accessibility.detailSelect")}
         value={selectionValue}
