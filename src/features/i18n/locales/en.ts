@@ -1,4 +1,5 @@
 export const en={
+ "editor.steps.actions.drag":"Drag to reorder {title}",
  "editor.mode.advancedUnavailable":"Advanced Mode is temporarily unavailable",
  "editor.manualDetails.editNamed":"Edit {name}",
  "simple.references.title":"References","simple.references.description":"Optional images to keep beside the model while you work.","simple.references.add":"Add images","simple.references.drop":"or drag & drop","simple.references.show":"Show reference","simple.references.showShort":"Show","simple.references.showing":"Showing","simple.references.select":"Select a reference image","simple.references.empty":"No reference images yet.","simple.references.viewer":"Reference image viewer","simple.references.deleteNamed":"Delete reference {name}",

@@ -1,5 +1,6 @@
 import type { TranslationDictionary } from "./en";
 export const uk:TranslationDictionary={
+ "editor.steps.actions.drag":"Перетягніть, щоб змінити порядок кроку «{title}»",
  "editor.mode.advancedUnavailable":"Розширений режим тимчасово недоступний",
  "editor.manualDetails.editNamed":"Редагувати «{name}»",
  "simple.references.title":"Референси","simple.references.description":"Необов’язкові зображення, які можна тримати поруч із моделлю під час роботи.","simple.references.add":"Додати зображення","simple.references.drop":"або перетягніть сюди","simple.references.show":"Показати референс","simple.references.showShort":"Показати","simple.references.showing":"Показано","simple.references.select":"Виберіть зображення-референс","simple.references.empty":"Зображень-референсів ще немає.","simple.references.viewer":"Перегляд зображення-референсу","simple.references.deleteNamed":"Видалити референс {name}",

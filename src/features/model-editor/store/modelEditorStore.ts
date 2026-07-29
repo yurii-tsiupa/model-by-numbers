@@ -152,6 +152,7 @@ type ModelEditorState = {
   updatePaintingStage: (partId:string,stageId:string,changes:UpdatePaintingStageInput)=>void;
   deletePaintingStage: (partId:string,stageId:string)=>void;
   deleteSimplePaintingStage:(partId:string,stageId:string)=>void;
+  reorderSimplePaintingStage:(partId:string,stageId:string,targetIndex:number)=>void;
   movePaintingStage: (partId:string,stageId:string,direction:"up"|"down")=>void;
   duplicatePaintingStage: (partId:string,stageId:string)=>void;
   addPaintingStagePreviewShot:(partId:string,stageId:string,manualDetailId:string,pinId:string)=>void;
@@ -388,6 +389,18 @@ export const useModelEditorStore =
         manualDetailFocusRequest:state.manualDetailFocusRequest&&deletedDetailIds.has(state.manualDetailFocusRequest.detailId)?null:state.manualDetailFocusRequest,
         ...markStateDirty(state),
       };
+    }),
+    reorderSimplePaintingStage:(partId,stageId,targetIndex)=>set(state=>{
+      const part=state.parts.find(candidate=>candidate.id===partId);
+      if(!part||state.simpleTargetMode===null)return state;
+      const stages=[...part.paintingWorkflow.stages];
+      const sourceIndex=stages.findIndex(stage=>stage.id===stageId);
+      const destination=Math.max(0,Math.min(stages.length-1,targetIndex));
+      if(sourceIndex<0||sourceIndex===destination)return state;
+      const[moved]=stages.splice(sourceIndex,1);
+      stages.splice(destination,0,moved);
+      const normalized=stages.map((stage,index)=>({...stage,order:index+1}));
+      return{parts:state.parts.map(candidate=>candidate.id===partId?{...candidate,paintingWorkflow:{...candidate.paintingWorkflow,stages:normalized}}:candidate),...markStateDirty(state)};
     }),
     movePaintingStage:(partId,stageId,direction)=>set((state)=>{const part=state.parts.find(p=>p.id===partId);if(!part)return state;const stages=[...part.paintingWorkflow.stages],i=stages.findIndex(s=>s.id===stageId),j=direction==="up"?i-1:i+1;if(i<0||j<0||j>=stages.length)return state;[stages[i],stages[j]]=[stages[j],stages[i]];const normalized=stages.map((s,index)=>({...s,order:index+1})),parts=state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages:normalized}}:p);return{parts,manualDetails:state.simpleTargetMode==="markers"?normalizeSimpleMarkerNumbers(state.manualDetails,parts):state.manualDetails,...markStateDirty(state)}}),
     duplicatePaintingStage:(partId,stageId)=>set((state)=>{const part=state.parts.find(p=>p.id===partId),index=part?.paintingWorkflow.stages.findIndex(s=>s.id===stageId)??-1;if(!part||index<0)return state;const source=part.paintingWorkflow.stages[index],now=new Date().toISOString(),duplicate={...source,id:crypto.randomUUID(),targetReferences:source.targetReferences?.map(reference=>({...reference})),previewShots:source.previewShots?.map(shot=>({...shot,id:crypto.randomUUID()})),createdAt:now,updatedAt:now},stages=[...part.paintingWorkflow.stages.slice(0,index+1),duplicate,...part.paintingWorkflow.stages.slice(index+1)].map((stage,i)=>({...stage,order:i+1}));return{parts:state.parts.map(p=>p.id===partId?{...p,paintingWorkflow:{...p.paintingWorkflow,stages}}:p),activePaintingStageId:duplicate.id,...markStateDirty(state)}}),
