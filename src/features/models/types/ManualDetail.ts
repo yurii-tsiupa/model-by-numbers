@@ -3,5 +3,5 @@ export type ManualDetailPin={id:string;position:Vector3Like;normal:Vector3Like|n
 export type ManualRegionSelection={meshId:string;triangleIndices:number[]};
 export type DetailRegion={selections:ManualRegionSelection[]};
 export type ManualDetailTargetMode="markers"|"region";
-export type ManualDetail={id:string;number:number;name:string;colorId:string|null;pins:ManualDetailPin[];targetMode?:ManualDetailTargetMode;region?:DetailRegion;createdAt:number;updatedAt:number};
+export type ManualDetail={id:string;number:number;markerNumber?:number;name:string;colorId:string|null;pins:ManualDetailPin[];targetMode?:ManualDetailTargetMode;region?:DetailRegion;createdAt:number;updatedAt:number};
 export type CreateManualDetailPinInput=Pick<ManualDetailPin,"position"|"normal"|"camera">;

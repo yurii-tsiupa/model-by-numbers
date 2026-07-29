@@ -77,7 +77,7 @@ export async function createStepPreviewBlob({
   const resolvedParts = shot?.type==="manualDetailRegion"?[]:wholeModel ? parts : resolved.parts;
   const regionSelections=new Map<string,{color:string;triangles:number[]}>();
   for(const detail of resolved.manualDetails)if(detail.targetMode==="region"&&(!shot||shot.type!=="manualDetailRegion"||detail.id===shot.manualDetailId))for(const selection of detail.region?.selections??[]){const meshUuid=parts.find(part=>part.id===selection.meshId)?.meshUuid??selection.meshId;regionSelections.set(meshUuid,{color:detail.colorId?palette.find(color=>color.id===detail.colorId)?.hex??baseColor:baseColor,triangles:selection.triangleIndices})}
-  const pinTargets = shot?.type==="manualDetailRegion"?[]:resolved.manualDetails.flatMap(detail => detail.pins.filter(pin=>!shot||(detail.id===shot.manualDetailId&&pin.id===shot.pinId)).map(pin => ({ pin, number: detail.number })));
+  const pinTargets = shot?.type==="manualDetailRegion"?[]:resolved.manualDetails.flatMap(detail => detail.pins.filter(pin=>!shot||(detail.id===shot.manualDetailId&&pin.id===shot.pinId)).map(pin => ({ pin, number: detail.markerNumber??detail.number })));
   if(shot?.type==="manualDetailLocation"&&!pinTargets.length)throw new Error("targetsUnavailable");
   if(shot?.type==="manualDetailRegion"&&!resolved.manualDetails.some(detail=>detail.id===shot.manualDetailId&&detail.targetMode==="region"&&detail.region?.selections.length))throw new Error("targetsUnavailable");
   if (!resolvedParts.length && !pinTargets.length && !regionSelections.size) throw new Error("targetsUnavailable");

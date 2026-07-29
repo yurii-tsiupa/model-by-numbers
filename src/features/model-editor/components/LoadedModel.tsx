@@ -147,7 +147,6 @@ function LoadedModelContent({
   const setPartExplodedOffset=useModelEditorStore(state=>state.setPartExplodedOffset);
   const stopExplodedLayoutEditing=useModelEditorStore(state=>state.stopExplodedLayoutEditing);
   const manualDetails=useModelEditorStore(state=>state.manualDetails);
-  const nextManualDetailNumber=useModelEditorStore(state=>state.nextManualDetailNumber);
   const selectedManualDetailId=useModelEditorStore(state=>state.selectedManualDetailId);
   const selectedManualDetailPinId=useModelEditorStore(state=>state.selectedManualDetailPinId);
   const activePaintingStageId=useModelEditorStore(state=>state.activePaintingStageId);
@@ -366,8 +365,8 @@ function LoadedModelContent({
   }
   const regionOverlays=useMemo(()=>{const rows:Array<{id:string;color:string;geometry:BufferGeometry}>=[],draftId=regionPlacement?.detailId;for(const detail of manualDetails){const selections=detail.id===draftId?regionPlacement?.selections:detail.region?.selections;if(detail.targetMode!=="region"||!selections?.length)continue;const color=palette.find(item=>item.id===detail.colorId)?.hex??"#F97316";for(const selection of selections){const meshUuid=parts.find(part=>part.id===selection.meshId)?.meshUuid??selection.meshId,mesh=model.getObjectByProperty("uuid",meshUuid);if(!(mesh instanceof Mesh))continue;const source=mesh.geometry,position=source.getAttribute("position"),index=source.index,values:number[]=[];for(const triangle of selection.triangleIndices)for(let offset=0;offset<3;offset++){const vertex=index?index.getX(triangle*3+offset):triangle*3+offset;if(vertex>=position.count)continue;const point=new Vector3().fromBufferAttribute(position,vertex).applyMatrix4(mesh.matrixWorld);values.push(point.x,point.y,point.z)}if(values.length){const geometry=new BufferGeometry();geometry.setAttribute("position",new Float32BufferAttribute(values,3));geometry.computeVertexNormals();rows.push({id:`${detail.id}:${selection.meshId}`,color,geometry})}}}return rows},[manualDetails,model,palette,parts,regionPlacement]);
   useEffect(()=>()=>{for(const overlay of regionOverlays)overlay.geometry.dispose()},[regionOverlays]);
-  const draftDetailNumber=manualDetailPlacement?.detailId?manualDetails.find(detail=>detail.id===manualDetailPlacement.detailId)?.number??nextManualDetailNumber:nextManualDetailNumber;
-  const renderedPins=hideManualDetailPins?[]:[...manualDetails.flatMap(detail=>detail.targetMode==="region"?[]:detail.pins.map((pin,index)=>({pin,detailId:detail.id,detailName:detail.name,detailNumber:detail.number,locationIndex:index+1,colorId:detail.colorId,isDraft:false}))),...(manualDetailPlacement?.pins.map((pin,index)=>({pin,detailId:manualDetailPlacement.detailId??"draft",detailName:manualDetailPlacement.name,detailNumber:draftDetailNumber,locationIndex:index+1,colorId:null,isDraft:true}))??[])];
+  const draftDetailNumber=manualDetailPlacement?.proposedMarkerNumber??1;
+  const renderedPins=hideManualDetailPins?[]:[...manualDetails.flatMap(detail=>detail.targetMode==="region"?[]:detail.pins.map((pin,index)=>({pin,detailId:detail.id,detailName:detail.name,detailNumber:detail.markerNumber??detail.number,locationIndex:index+1,colorId:detail.colorId,isDraft:false}))),...(manualDetailPlacement?.pins.map((pin,index)=>({pin,detailId:manualDetailPlacement.detailId??"draft",detailName:manualDetailPlacement.name,detailNumber:draftDetailNumber,locationIndex:index+1,colorId:null,isDraft:true}))??[])];
 
   return (
     <>
