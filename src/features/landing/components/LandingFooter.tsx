@@ -8,7 +8,7 @@ import { useTranslation } from '@/features/i18n/hooks/useTranslation';
 
 export function LandingFooter() {
   const { t } = useTranslation();
-  const navigation=[{label:t('landing.footer.guidePreview'),href:'#guide-preview'},{label:t('landing.footer.howItWorks'),href:'#how-it-works'},{label:t('landing.footer.features'),href:'#features'}];
+  const navigation=[{label:t('landing.footer.guidePreview'),href:'#guide-preview'},{label:t('landing.footer.howItWorks'),href:'#how-it-works'},{label:t('landing.footer.features'),href:'#features'},{label:t('landing.footer.feedback'),href:'#feedback'}];
   return (
     <footer className="border-t border-[var(--border)] py-8 sm:py-10">
       <Container>

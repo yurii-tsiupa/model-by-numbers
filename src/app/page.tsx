@@ -1,4 +1,5 @@
 import { FeaturesSection } from '@/features/landing/components/FeaturesSection';
+import { FeedbackSection } from '@/features/landing/components/FeedbackSection';
 import { FinalCtaSection } from '@/features/landing/components/FinalCtaSection';
 import { GuidePreviewSection } from '@/features/landing/components/GuidePreviewSection';
 import { HeroSection } from '@/features/landing/components/HeroSection';
@@ -14,6 +15,7 @@ export default function HomePage() {
         <GuidePreviewSection />
         <HowItWorksSection />
         <FeaturesSection />
+        <FeedbackSection />
         <FinalCtaSection />
       </main>
 
