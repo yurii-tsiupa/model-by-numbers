@@ -420,7 +420,9 @@ export const useModelEditorStore =
         const sourceIndex=order.indexOf(stageId),destination=Math.max(0,Math.min(order.length-1,targetIndex));
         if(sourceIndex<0||sourceIndex===destination)return state;
         const[moved]=order.splice(sourceIndex,1);order.splice(destination,0,moved);
-        return{simplePaintingStepOrder:order,...markStateDirty(state)};
+        const positionById=new Map(order.map((id,index)=>[id,index]));
+        const parts=state.parts.map(candidate=>({...candidate,paintingWorkflow:{...candidate.paintingWorkflow,stages:[...candidate.paintingWorkflow.stages].sort((a,b)=>(positionById.get(a.id)??Number.MAX_SAFE_INTEGER)-(positionById.get(b.id)??Number.MAX_SAFE_INTEGER)).map((stage,index)=>stage.order===index+1?stage:{...stage,order:index+1})}}));
+        return{parts,simplePaintingStepOrder:order,...markStateDirty(state)};
       }
       const part=state.parts.find(candidate=>candidate.id===partId);
       if(!part||state.simpleTargetMode===null)return state;
@@ -460,17 +462,21 @@ export const useModelEditorStore =
         const markerNumbersChanged=manualDetails.some((detail,index)=>detail.markerNumber!==state.manualDetails[index]?.markerNumber);
         const existingStepIds=parts.flatMap(part=>part.paintingWorkflow.stages.map(stage=>stage.id));
         const existingStepIdSet=new Set(existingStepIds);
+        const persistedStepOrder=[...new Set(state.simplePaintingStepOrder)];
+        const validPersistedStepOrder=persistedStepOrder.filter(id=>existingStepIdSet.has(id));
+        const normalizedSimplePaintingStepOrder=[...validPersistedStepOrder,...existingStepIds.filter(id=>!validPersistedStepOrder.includes(id))];
+        const stepOrderChanged=state.simpleTargetMode!==null&&(normalizedSimplePaintingStepOrder.length!==state.simplePaintingStepOrder.length||normalizedSimplePaintingStepOrder.some((id,index)=>id!==state.simplePaintingStepOrder[index]));
         return {
         parts,
         manualDetails,
         paintingOrder:normalizePaintingOrder({paintingOrder:state.paintingOrder,parts}),
-        simplePaintingStepOrder:[...state.simplePaintingStepOrder.filter(id=>existingStepIdSet.has(id)),...existingStepIds.filter(id=>!state.simplePaintingStepOrder.includes(id))],
+        simplePaintingStepOrder:normalizedSimplePaintingStepOrder,
         assemblySteps,
         ...(focusedStep && focusedStep.partIds.length > 0 ? {} : { focusedAssemblyStepId: null, assemblyFocusSnapshot: null }),
         selectedPartId: null,
-        isDirty: markerNumbersChanged,
-        saveStatus: markerNumbersChanged?"dirty":"saved",
-        changeVersion: markerNumbersChanged?state.changeVersion+1:0,
+        isDirty: markerNumbersChanged||stepOrderChanged,
+        saveStatus: markerNumbersChanged||stepOrderChanged?"dirty":"saved",
+        changeVersion: markerNumbersChanged||stepOrderChanged?state.changeVersion+1:0,
         saveError: null,
         };
       });
@@ -746,7 +752,7 @@ export const useModelEditorStore =
       });
     },
     hydratePaintingOrder:(paintingOrder)=>set({paintingOrder:[...paintingOrder]}),
-    hydrateSimplePaintingStepOrder:(simplePaintingStepOrder)=>set(state=>{const existing=state.parts.flatMap(part=>part.paintingWorkflow.stages.map(stage=>stage.id)),valid=new Set(existing);return{simplePaintingStepOrder:[...simplePaintingStepOrder.filter(id=>valid.has(id)),...existing.filter(id=>!simplePaintingStepOrder.includes(id))]}}),
+    hydrateSimplePaintingStepOrder:(simplePaintingStepOrder)=>set({simplePaintingStepOrder:[...new Set(simplePaintingStepOrder)]}),
     hydrateSimplePartColorAssignments:(simplePartColorAssignments)=>set({simplePartColorAssignments:{...simplePartColorAssignments},simplePartColorStepDraftAssignments:{}}),
     setPaintingOrder:(partIds)=>set((state)=>{const paintingOrder=normalizePaintingOrder({paintingOrder:partIds,parts:state.parts});if(paintingOrder.length===state.paintingOrder.length&&paintingOrder.every((id,i)=>id===state.paintingOrder[i]))return state;return{paintingOrder,...markStateDirty(state)}}),
     movePaintingOrderPart:(partId,direction)=>{const state=useModelEditorStore.getState(),index=state.paintingOrder.indexOf(partId);state.movePaintingOrderPartToIndex(partId,direction==="up"?index-1:index+1)},
