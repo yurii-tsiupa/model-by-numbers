@@ -48,6 +48,7 @@ import type {DetailRegion} from "@/features/models/types/ManualDetail";
 import {getBrushTriangleIndices,getConnectedAreaTriangleIndices,registerRegionGeometry,smoothRegionSelections} from "../lib/regionBrushGeometry";
 import type {StepPreviewDisplayMode} from "../types/PaintingWorkflow";
 import {resolveSavedPartColorAssignments,resolveSavedPartColors,resolveStepPreviewComposition} from "../step-previews/resolveStepPreviewComposition";
+import {getOrderedSimplePaintingSteps,withResolvedSimpleMarkerNumbers} from "../lib/markerNumbering";
 
 type RegionStroke={
   sessionId:string;
@@ -185,7 +186,8 @@ function LoadedModelContent({
   const highlightedPaintingPartIds = useMemo(() => activePaintingStage?.targetReferences?.filter((reference) => reference.type === "part").map((reference) => reference.id) ?? [], [activePaintingStage]);
   const highlightedPaintingManualDetailIds=useMemo(()=>new Set(activePaintingStage?.targetReferences?.filter(reference=>reference.type!=="part").map(reference=>reference.id)??[]),[activePaintingStage]);
   const previewStep=previewCapture?parts.flatMap(part=>part.paintingWorkflow.stages).find(stage=>stage.id===previewCapture.stepId):undefined;
-  const previewComposition=useMemo(()=>previewStep&&previewCapture?resolveStepPreviewComposition({step:previewStep,parts,manualDetails,palette,baseColor,displayMode:previewCapture.displayMode,stepOrder:simplePaintingStepOrder}):null,[baseColor,manualDetails,palette,parts,previewCapture,previewStep,simplePaintingStepOrder]);
+  const numberedManualDetails=useMemo(()=>withResolvedSimpleMarkerNumbers(manualDetails,getOrderedSimplePaintingSteps(parts,simplePaintingStepOrder)),[manualDetails,parts,simplePaintingStepOrder]);
+  const previewComposition=useMemo(()=>previewStep&&previewCapture?resolveStepPreviewComposition({step:previewStep,parts,manualDetails:numberedManualDetails,palette,baseColor,displayMode:previewCapture.displayMode,stepOrder:simplePaintingStepOrder}):null,[baseColor,numberedManualDetails,palette,parts,previewCapture,previewStep,simplePaintingStepOrder]);
   const simplePartColors=useMemo(()=>{if(!simpleMode||simpleTargetMode!=="parts"||previewComposition)return null;const values=resolveSavedPartColors(parts,palette,undefined,simplePartColorDraft?.stageId,simplePaintingStepOrder);for(const assignments of [simplePartColorAssignments,simplePartColorStepDraftAssignments])for(const[partId,colorId]of Object.entries(assignments)){const color=colorId?palette.find(item=>item.id===colorId):null;if(color)values.set(partId,color.hex);else values.delete(partId)}return values},[palette,parts,previewComposition,simpleMode,simplePaintingStepOrder,simplePartColorAssignments,simplePartColorDraft?.stageId,simplePartColorStepDraftAssignments,simpleTargetMode]);
   const displayBaseColor=simpleMode&&simpleTargetMode!=="parts"&&!previewComposition?simpleWholeModelBaseColor??baseColor:baseColor;
 
@@ -483,7 +485,7 @@ function LoadedModelContent({
   useEffect(()=>()=>{for(const overlay of regionOverlays)overlay.geometry.dispose()},[regionOverlays]);
   useEffect(()=>()=>{for(const overlay of captureRegionOverlays)overlay.geometry.dispose()},[captureRegionOverlays]);
   const draftDetailNumber=manualDetailPlacement?.proposedMarkerNumber??1;
-  const renderedPins=hideManualDetailPins?[]:[...(previewComposition?.markerDetails??manualDetails).flatMap(detail=>detail.targetMode==="region"?[]:detail.pins.map((pin,index)=>({pin,detailId:detail.id,detailName:detail.name,detailNumber:detail.markerNumber??detail.number,locationIndex:index+1,colorId:detail.colorId,isDraft:false}))),...(!previewCapture?manualDetailPlacement?.pins.map((pin,index)=>({pin,detailId:manualDetailPlacement.detailId??"draft",detailName:manualDetailPlacement.name,detailNumber:draftDetailNumber,locationIndex:index+1,colorId:null,isDraft:true}))??[]:[])];
+  const renderedPins=hideManualDetailPins?[]:[...(previewComposition?.markerDetails??numberedManualDetails).flatMap(detail=>detail.targetMode==="region"?[]:detail.pins.map((pin,index)=>({pin,detailId:detail.id,detailName:detail.name,detailNumber:detail.markerNumber??detail.number,locationIndex:index+1,colorId:detail.colorId,isDraft:false}))),...(!previewCapture?manualDetailPlacement?.pins.map((pin,index)=>({pin,detailId:manualDetailPlacement.detailId??"draft",detailName:manualDetailPlacement.name,detailNumber:draftDetailNumber,locationIndex:index+1,colorId:null,isDraft:true}))??[]:[])];
 
   return (
     <>

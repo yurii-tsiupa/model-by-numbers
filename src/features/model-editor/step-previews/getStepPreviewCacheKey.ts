@@ -3,11 +3,13 @@ import type {PaletteColor} from "@/features/models/types/PaletteColor";
 import {useModelEditorStore} from "../store/modelEditorStore";
 import type {PaintingStage,PaintingStepPreviewShot} from "../types/PaintingWorkflow";
 import {STEP_PREVIEW_RENDERER_VERSION} from "./constants";
+import {getOrderedSimplePaintingSteps,withResolvedSimpleMarkerNumbers} from "../lib/markerNumbering";
 
 type PreviewPart={id:string;meshUuid?:string;paletteColorId?:string|null;paintingWorkflow?:{stages:PaintingStage[]}};
 
 export function getStepPreviewCacheKey(projectId:string,step:PaintingStage,parts:readonly PreviewPart[],manualDetails:readonly ManualDetail[],palette:readonly Pick<PaletteColor,"id"|"hex">[]=useModelEditorStore.getState().palette,shot?:PaintingStepPreviewShot,stepOrder:readonly string[]=useModelEditorStore.getState().simplePaintingStepOrder){
- const partById=new Map(parts.map(part=>[part.id,part])),detailById=new Map(manualDetails.map(detail=>[detail.id,detail])),colors=new Map(palette.map(color=>[color.id,color.hex]));
+ const workflowParts=parts.flatMap(part=>part.paintingWorkflow?[{paintingWorkflow:part.paintingWorkflow}]:[]),numberedDetails=withResolvedSimpleMarkerNumbers(manualDetails,getOrderedSimplePaintingSteps(workflowParts,stepOrder));
+ const partById=new Map(parts.map(part=>[part.id,part])),detailById=new Map(numberedDetails.map(detail=>[detail.id,detail])),colors=new Map(palette.map(color=>[color.id,color.hex]));
  const shotDetail=shot?detailById.get(shot.manualDetailId):undefined,shotPin=shot?.type==="manualDetailLocation"?shotDetail?.pins.find(pin=>pin.id===shot.pinId):undefined;
  const references=step.type==="primer"&&!(step.targetReferences?.length)?parts.map(part=>({type:"part" as const,id:part.id})):step.targetReferences??[];
  const cumulative=shot?.type==="manualStepCapture"&&shot.displayMode==="through-current-step"?{stepOrder,stages:parts.flatMap(part=>part.paintingWorkflow?.stages??[]).map(stage=>({id:stage.id,order:stage.order,paletteColorId:stage.paletteColorId,targetReferences:stage.targetReferences,updatedAt:stage.updatedAt}))}:undefined;

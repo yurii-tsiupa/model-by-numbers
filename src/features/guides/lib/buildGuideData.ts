@@ -16,6 +16,7 @@ import { isPartIncludedInGuide } from "./isPartIncludedInGuide";
 import type { Locale } from "@/features/i18n/types/Locale";
 import { getPartsInPaintingOrder } from "@/features/model-editor/lib/paintingOrder";
 import { getPaintingPreviewSummary, getWorkflowPalette } from "./getPaintingGuidePreviewData";
+import {getOrderedSimplePaintingSteps,withResolvedSimpleMarkerNumbers} from "@/features/model-editor/lib/markerNumbering";
 
 type BuildGuideDataParams = {
   project: Project;
@@ -78,6 +79,7 @@ export function buildGuideData({
 
   const guidePalette = getGuidePalette(parts, palette);
   const previewSummary=getPaintingPreviewSummary(orderedParts);
+  const numberedManualDetails=withResolvedSimpleMarkerNumbers(project.manualDetails,getOrderedSimplePaintingSteps(orderedParts.flatMap(part=>part.paintingWorkflow?[{paintingWorkflow:part.paintingWorkflow}]:[]),project.simplePaintingStepOrder));
 
   return {
     templateId,
@@ -102,7 +104,7 @@ export function buildGuideData({
     workflowPalette:getWorkflowPalette(orderedParts,palette),
     previewPalette:palette.map(color=>({...color})),
     workflowParts,
-    manualDetails:project.manualDetails.map(detail=>({...detail,pins:detail.pins.map(pin=>({...pin,position:{...pin.position},normal:pin.normal?{...pin.normal}:null,camera:{...pin.camera,position:{...pin.camera.position},target:{...pin.camera.target}}}))})),
+    manualDetails:numberedManualDetails.map(detail=>({...detail,pins:detail.pins.map(pin=>({...pin,position:{...pin.position},normal:pin.normal?{...pin.normal}:null,camera:{...pin.camera,position:{...pin.camera.position},target:{...pin.camera.target}}}))})),
     paintingSummary:{modelName:project.originalFileName,createdAt:project.createdAt,stagesCount:previewSummary.stagesCount,estimatedTimeMinutes:previewSummary.estimatedTimeMinutes,difficulties:previewSummary.difficulties,isReady:true},
   };
 }

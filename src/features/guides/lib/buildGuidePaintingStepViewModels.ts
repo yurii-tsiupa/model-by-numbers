@@ -18,7 +18,7 @@ export function buildGuidePaintingStepViewModels(guide:ModelGuide):GuidePainting
       if(seen.has(key))continue;
       seen.add(key);
       if(reference.type==="part"){const target=partById.get(reference.id);if(target)labels.push(target.name)}
-      else{const detail=detailById.get(reference.id);if(detail)labels.push(translate(locale,"guide.steps.targets.manualDetail",{number:detail.number,name:detail.name}))}
+      else{const detail=detailById.get(reference.id);if(detail)labels.push(translate(locale,"guide.steps.targets.manualDetail",{number:detail.markerNumber??detail.number,name:detail.name}))}
     }
     const general=(stage.targetReferences?.length??0)===0,title=getPaintingStageLabel(stage,key=>translate(locale,key));
     function preview(id:string,label:string,shot?:PaintingStepPreviewShot):GuideStepPreviewState{
@@ -30,7 +30,7 @@ export function buildGuidePaintingStepViewModels(guide:ModelGuide):GuidePainting
     }
     const previews=[...(stage.overviewPreviewEnabled!==false?[preview("overview",translate(locale,"editor.steps.previewShots.automaticOverview"))]:[]),...(stage.previewShots??[]).map((shot,shotIndex)=>{
       const detail=detailById.get(shot.manualDetailId),index=shot.type==="manualDetailLocation"?detail?.pins.findIndex(pin=>pin.id===shot.pinId)??-1:-1;
-      const label=shot.type==="manualStepCapture"?translate(locale,"editor.steps.manualCapture.label",{index:shotIndex+1}):shot.type==="manualDetailRegion"&&detail?translate(locale,"editor.region.customPreviewLabel",{name:detail.name,index:shotIndex+1}):detail&&index>=0?translate(locale,"editor.steps.previewShots.detailLabel",{number:detail.number,name:detail.name,index:index+1}):translate(locale,"editor.steps.previewShots.unavailable");
+      const label=shot.type==="manualStepCapture"?translate(locale,"editor.steps.manualCapture.label",{index:shotIndex+1}):shot.type==="manualDetailRegion"&&detail?translate(locale,"editor.region.customPreviewLabel",{name:detail.name,index:shotIndex+1}):detail&&index>=0?translate(locale,"editor.steps.previewShots.detailLabel",{number:detail.markerNumber??detail.number,name:detail.name,index:index+1}):translate(locale,"editor.steps.previewShots.unavailable");
       return preview(shot.id,label,shot);
     })];
     return{id:stage.id,partId:part.id,order,title,instruction:stage.notes,stageType:stage.type,targetSummary:general?translate(locale,"guide.steps.targets.entireModel"):labels.length?labels.join(" · "):translate(locale,"guide.steps.targets.unavailable"),targetLabels:labels,previews};

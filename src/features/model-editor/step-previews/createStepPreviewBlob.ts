@@ -36,6 +36,7 @@ import {
 import { getStepPreviewFraming } from "./getStepPreviewFraming";
 import type { StepPreviewFraming } from "./types";
 import {resolveStepPreviewComposition} from "./resolveStepPreviewComposition";
+import {getOrderedSimplePaintingSteps,withResolvedSimpleMarkerNumbers} from "../lib/markerNumbering";
 
 let sharedRenderer: WebGLRenderer | null = null;
 let sharedCanvas: HTMLCanvasElement | null = null;
@@ -79,8 +80,9 @@ export async function createStepPreviewBlob({
   shot?:PaintingStepPreviewShot;
   stepOrder?:readonly string[];
 }): Promise<{ blob: Blob; framing: StepPreviewFraming }> {
-  const resolved = resolvePaintingTargetReferences(step.targetReferences, parts, manualDetails);
-  const sharedComposition=!shot||shot.type==="manualStepCapture"?resolveStepPreviewComposition({step,parts,manualDetails,palette,baseColor,displayMode:shot?.type==="manualStepCapture"?shot.displayMode:"current-step",stepOrder}):null;
+  const numberedDetails=withResolvedSimpleMarkerNumbers(manualDetails,getOrderedSimplePaintingSteps(parts,stepOrder));
+  const resolved = resolvePaintingTargetReferences(step.targetReferences, parts, numberedDetails);
+  const sharedComposition=!shot||shot.type==="manualStepCapture"?resolveStepPreviewComposition({step,parts,manualDetails:numberedDetails,palette,baseColor,displayMode:shot?.type==="manualStepCapture"?shot.displayMode:"current-step",stepOrder}):null;
   const wholeModel = step.type === "primer" && (step.targetReferences?.length ?? 0) === 0;
   const resolvedParts = shot?.type==="manualDetailRegion"?[]:wholeModel ? parts : resolved.parts;
   const regionSelections=new Map<string,{color:string;triangles:number[]}>();

@@ -15,6 +15,7 @@ import {getStepPreviewCacheKey} from "./getStepPreviewCacheKey";
 import {getCurrentStepPreviewCamera,getOrGenerateStepPreview} from "./stepPreviewService";
 import type {StepPreviewErrorCode,StepPreviewResult} from "./types";
 import {useManualStepPreviewCapture} from "./ManualStepPreviewCaptureContext";
+import {getOrderedSimplePaintingSteps,resolveSimpleMarkerNumbers} from "../lib/markerNumbering";
 
 function normalizeError(error:unknown):StepPreviewErrorCode{if(error instanceof Error&&["modelUnavailable","targetsUnavailable","renderUnavailable","generationCancelled"].includes(error.message))return error.message as StepPreviewErrorCode;return"unknown"}
 const previewFocusClass="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]";
@@ -28,6 +29,7 @@ export function StepPreview({projectId,step}:{projectId:string;step:PaintingStag
   const parts=useModelEditorStore(state=>state.parts);
   const details=useModelEditorStore(state=>state.manualDetails);
   const palette=useModelEditorStore(state=>state.palette);
+  const simplePaintingStepOrder=useModelEditorStore(state=>state.simplePaintingStepOrder);
   const addMarkerShot=useModelEditorStore(state=>state.addPaintingStagePreviewShot);
   const addRegionShot=useModelEditorStore(state=>state.addPaintingStageRegionPreviewShot);
   const replaceRegionShot=useModelEditorStore(state=>state.replacePaintingStageRegionPreviewShot);
@@ -45,6 +47,7 @@ export function StepPreview({projectId,step}:{projectId:string;step:PaintingStag
   const overviewEnabled=step.overviewPreviewEnabled!==false;
   const added=new Set(shots.filter(shot=>shot.type==="manualDetailLocation").map(shot=>`${shot.manualDetailId}:${shot.pinId}`));
   const title=getPaintingStageLabel(step,t);
+  const markerNumbers=useMemo(()=>resolveSimpleMarkerNumbers(getOrderedSimplePaintingSteps(parts,simplePaintingStepOrder),details),[details,parts,simplePaintingStepOrder]);
   const canManualCapture=Boolean(part)&&((step.targetReferences?.length??0)>0||step.type==="primer");
 
   function removeShot(shot:PaintingStepPreviewShot){if(!part)return;invalidateStepPreview(getStepPreviewCacheKey(projectId,step,parts,details,palette,shot));remove(part.id,step.id,shot.id)}
@@ -80,13 +83,13 @@ export function StepPreview({projectId,step}:{projectId:string;step:PaintingStag
     {previewError?<p role="alert" className="mt-2 text-xs text-red-400">{t("editor.region.previewCameraUnavailable")}</p>:null}
     {overviewEnabled||shots.length?<div className="mt-2.5 grid gap-1.5">
       {overviewEnabled?<PreviewImage projectId={projectId} step={step} label={t("editor.steps.previewShots.automaticOverview")} title={title} onRemove={removeOverview}/>:null}
-      {shots.map((shot,index)=>{const detail=details.find(item=>item.id===shot.manualDetailId);const pinIndex=shot.type==="manualDetailLocation"?detail?.pins.findIndex(pin=>pin.id===shot.pinId)??-1:-1;const unavailable=shot.type==="manualStepCapture"?false:!detail||(shot.type==="manualDetailLocation"?pinIndex<0:detail.targetMode!=="region"||!detail.region?.selections.length);const label=shot.type==="manualStepCapture"?t("editor.steps.manualCapture.label",{index:index+1}):shot.type==="manualDetailRegion"&&detail?t("editor.region.customPreviewLabel",{name:detail.name,index:index+1}):detail&&pinIndex>=0?t("editor.steps.previewShots.detailLabel",{number:detail.markerNumber??detail.number,name:detail.name,index:pinIndex+1}):t("editor.steps.previewShots.unavailable");return <PreviewImage key={shot.id} projectId={projectId} step={step} shot={shot} label={label} title={title} unavailable={unavailable} onReplace={shot.type==="manualDetailRegion"?()=>replaceRegion(shot):undefined} onRemove={()=>removeShot(shot)}/>})}
+      {shots.map((shot,index)=>{const detail=details.find(item=>item.id===shot.manualDetailId);const pinIndex=shot.type==="manualDetailLocation"?detail?.pins.findIndex(pin=>pin.id===shot.pinId)??-1:-1;const unavailable=shot.type==="manualStepCapture"?false:!detail||(shot.type==="manualDetailLocation"?pinIndex<0:detail.targetMode!=="region"||!detail.region?.selections.length);const label=shot.type==="manualStepCapture"?t("editor.steps.manualCapture.label",{index:index+1}):shot.type==="manualDetailRegion"&&detail?t("editor.region.customPreviewLabel",{name:detail.name,index:index+1}):detail&&pinIndex>=0?t("editor.steps.previewShots.detailLabel",{number:markerNumbers.get(detail.id)??detail.number,name:detail.name,index:pinIndex+1}):t("editor.steps.previewShots.unavailable");return <PreviewImage key={shot.id} projectId={projectId} step={step} shot={shot} label={label} title={title} unavailable={unavailable} onReplace={shot.type==="manualDetailRegion"?()=>replaceRegion(shot):undefined} onRemove={()=>removeShot(shot)}/>})}
     </div>:<p className="mt-2 rounded-lg bg-[var(--surface)] px-3 py-2 text-xs text-[var(--text-muted)]">{t("editor.steps.preview.empty")}</p>}
     {choosing?<div role="dialog" aria-modal="true" aria-label={regionDetails.length?t("editor.region.addCustomPreview"):t("editor.steps.previewShots.chooseLocation")} className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3">
       <div className="flex items-center justify-between"><p className="text-xs font-semibold">{regionDetails.length?t("editor.region.addCustomPreview"):t("editor.steps.previewShots.chooseLocation")}</p><button autoFocus type="button" aria-label={t("common.close")} onClick={closeChooser} className={`grid size-9 cursor-pointer place-items-center rounded-lg border border-[var(--border)] bg-[var(--card)] transition hover:bg-[var(--bg)] ${previewFocusClass}`}><X className="size-4"/></button></div>
       {regionDetails.length?<p className="mt-1 text-xs text-[var(--text-secondary)]">{t("editor.region.positionAndCapture")}</p>:null}
       <div className="mt-2 space-y-3">
-        {markerDetails.map(detail=><section key={detail.id}><p className="text-xs font-medium">{t("editor.manualDetails.detailLabel",{number:detail.markerNumber??detail.number,name:detail.name})}</p><div className="mt-1 flex flex-wrap gap-1">{detail.pins.map((pin,index)=>{const exists=added.has(`${detail.id}:${pin.id}`);return <button key={pin.id} type="button" disabled={exists} title={exists?t("editor.steps.previewShots.alreadyAdded"):undefined} onClick={()=>{if(part){addMarkerShot(part.id,step.id,detail.id,pin.id);closeChooser()}}} className={previewSecondaryClass}>{t("editor.steps.previewShots.location",{index:index+1})}</button>})}</div></section>)}
+        {markerDetails.map(detail=><section key={detail.id}><p className="text-xs font-medium">{t("editor.manualDetails.detailLabel",{number:markerNumbers.get(detail.id)??detail.number,name:detail.name})}</p><div className="mt-1 flex flex-wrap gap-1">{detail.pins.map((pin,index)=>{const exists=added.has(`${detail.id}:${pin.id}`);return <button key={pin.id} type="button" disabled={exists} title={exists?t("editor.steps.previewShots.alreadyAdded"):undefined} onClick={()=>{if(part){addMarkerShot(part.id,step.id,detail.id,pin.id);closeChooser()}}} className={previewSecondaryClass}>{t("editor.steps.previewShots.location",{index:index+1})}</button>})}</div></section>)}
         {regionDetails.map(detail=><button key={detail.id} type="button" onClick={()=>captureRegion(detail.id)} className={`flex w-full cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 text-left text-xs shadow-sm transition hover:border-[var(--accent)] hover:bg-[var(--bg)] active:scale-[.99] ${previewFocusClass}`}><Camera className="size-4 text-[var(--accent)]"/><span><span className="block font-medium">{detail.name}</span><span className="text-[10px] text-[var(--text-secondary)]">{t("editor.region.captureCurrentView")}</span></span></button>)}
       </div>
       <button type="button" onClick={closeChooser} className={`mt-3 ${previewSecondaryClass}`}>{t("common.cancel")}</button>
