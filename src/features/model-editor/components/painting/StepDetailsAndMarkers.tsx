@@ -25,6 +25,7 @@ export function StepDetailsAndMarkers({value,onChange}:{value:PaintingTargetRefe
   const startMarkers=useModelEditorStore(state=>state.startManualDetailPlacement);
   const cancelMarkers=useModelEditorStore(state=>state.cancelManualDetailPlacement);
   const finishMarkersStore=useModelEditorStore(state=>state.finishManualDetailPlacement);
+  const deleteDraftMarker=useModelEditorStore(state=>state.deleteDraftManualDetailPin);
   const createRegion=useModelEditorStore(state=>state.createRegionManualDetail);
   const startRegion=useModelEditorStore(state=>state.startRegionPlacement);
   const cancelRegion=useModelEditorStore(state=>state.cancelRegionPlacement);
@@ -48,8 +49,10 @@ export function StepDetailsAndMarkers({value,onChange}:{value:PaintingTargetRefe
     :{label:t("editor.workflow.selectPaintArea"),Icon:Paintbrush};
   const targeting=Boolean(markerDraft||regionDraft);
   const regionCount=(regionDraft?.selections??editing?.region?.selections??[]).reduce((sum,selection)=>sum+selection.triangleIndices.length,0);
-  const markerCount=(markerDraft?.pins.length??0)+(markerDraft?editing?.pins.length??0:editing?.pins.length??0);
+  const markerCount=markerDraft?.pins.length??editing?.pins.length??0;
   const activeCount=mode==="markers"?markerCount:regionCount;
+  const visibleMarkers=mode==="markers"?(markerDraft?.pins??editing?.pins??[]):[];
+  const markerGroupNumber=markerDraft?.proposedMarkerNumber??editing?.markerNumber??editing?.number??null;
 
   useEffect(()=>{if(!targeting)return;const escape=(event:KeyboardEvent)=>{if(event.key!=="Escape")return;event.preventDefault();if(markerDraft)cancelMarkers();if(regionDraft)cancelRegion()};window.addEventListener("keydown",escape);return()=>window.removeEventListener("keydown",escape)},[cancelMarkers,cancelRegion,markerDraft,regionDraft,targeting]);
   useEffect(()=>{if(mode==="markers"&&regionDraft)cancelRegion();if(mode==="region"&&markerDraft)cancelMarkers()},[cancelMarkers,cancelRegion,markerDraft,mode,regionDraft]);
@@ -81,6 +84,13 @@ export function StepDetailsAndMarkers({value,onChange}:{value:PaintingTargetRefe
     const id=existing??useModelEditorStore.getState().selectedManualDetailId;
     if(id){setEditorId(id);if(!existing)setPendingId(id);update(id,{name:name.trim(),colorId,targetMode:"markers",region:{selections:[]}})}
   }
+  function deleteMarkerFromList(pinId:string){
+    if(!markerDraft){
+      if(!editorId)return;
+      startMarkers(name.trim()||editing?.name||"",editorId);
+    }
+    deleteDraftMarker(pinId);
+  }
   function save(){
     if(!editorId||!name.trim()||!activeCount){setValidation(true);return}
     if(!attachedIds.has(editorId)&&attachedIds.size>0){if(pendingId)remove(pendingId);reset();return}
@@ -106,6 +116,14 @@ export function StepDetailsAndMarkers({value,onChange}:{value:PaintingTargetRefe
     {editorOpen?<div className="mt-3 space-y-3 rounded-xl bg-[var(--card)]">
       <label className="simple-editor-label block text-[10px] font-semibold uppercase tracking-wide">{t("editor.workflow.detailName")}<input value={name} disabled={targeting} placeholder={t("editor.workflow.detailNamePlaceholder")} onChange={event=>setName(event.target.value)} className="simple-editor-control mt-1 h-9 w-full px-3 text-sm normal-case tracking-normal placeholder:text-[var(--text-muted)]"/></label>
       <SimpleDetailColorSelect value={colorId} colors={palette} disabled={targeting} onChange={setColorId} label={t("editor.workflow.detailColor")}/>
+      {visibleMarkers.length?<section>
+        <div className="flex items-center justify-between gap-3"><h5 className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">{t("editor.workflow.markers")}</h5><span className="text-[10px] text-[var(--text-secondary)]">{t("editor.workflow.markerCount",{count:visibleMarkers.length})}</span></div>
+        <div className="mt-1.5 max-h-40 space-y-1 overflow-y-auto pr-1">{visibleMarkers.map((pin,index)=><div key={pin.id} className="flex min-h-8 items-center gap-2 rounded-md bg-[var(--surface)] px-2 py-1">
+          {markerGroupNumber?<span className="shrink-0 rounded bg-[var(--accent-soft)] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--accent)]">{t("editor.workflow.markerGroup",{number:markerGroupNumber})}</span>:null}
+          <span className="min-w-0 flex-1 truncate text-xs text-[var(--text)]">{t("editor.workflow.markerItem",{number:index+1})}</span>
+          <button type="button" onClick={()=>deleteMarkerFromList(pin.id)} title={t("editor.workflow.deleteMarkerNamed",{number:index+1})} aria-label={t("editor.workflow.deleteMarkerNamed",{number:index+1})} className={`grid size-7 shrink-0 cursor-pointer place-items-center rounded-md text-[var(--text-muted)] transition hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] ${focusClass}`}><Trash2 className="size-3.5"/></button>
+        </div>)}</div>
+      </section>:null}
       {validation?<p role="alert" className="text-xs text-red-400">{t("editor.region.targetRequired")}</p>:null}
       {markerDraft?<MarkerControls count={markerDraft.pins.length} finish={finishMarkers}/>:regionDraft?<RegionControls/>:null}
       <div className="space-y-2 border-t border-[var(--border)] pt-3">
@@ -121,6 +139,7 @@ export function StepDetailsAndMarkers({value,onChange}:{value:PaintingTargetRefe
 
 function MarkerControls({count,finish}:{count:number;finish:()=>void}){
   const{t}=useTranslation();
+  const draft=useModelEditorStore(state=>state.manualDetailPlacement);
   const undo=useModelEditorStore(state=>state.undoDraftManualDetailPin);
   const clear=useModelEditorStore(state=>state.clearDraftManualDetailPins);
   const cancel=useModelEditorStore(state=>state.cancelManualDetailPlacement);
@@ -136,7 +155,7 @@ function MarkerControls({count,finish}:{count:number;finish:()=>void}){
       <p className="mt-0.5 text-[11px] leading-4 text-[var(--text-muted)]">{t("editor.workflow.markerPlacementInstruction")}</p>
     </div>
     <div className="flex items-center gap-1">
-      <button type="button" disabled={!count} onClick={undo} title={t("editor.workflow.undoLast")} aria-label={t("editor.workflow.undoLast")} className={markerToolClass}><Undo2 className="size-4"/></button>
+      <button type="button" disabled={!draft?.history.length} onClick={undo} title={t("editor.workflow.undoLast")} aria-label={t("editor.workflow.undoLast")} className={markerToolClass}><Undo2 className="size-4"/></button>
       <button type="button" disabled={!count} onClick={clear} title={t("editor.workflow.clearMarkers")} aria-label={t("editor.workflow.clearMarkers")} className={`${markerToolClass} hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] disabled:hover:text-[var(--text-muted)]`}><Trash2 className="size-4"/></button>
     </div>
     <div className="grid grid-cols-[1fr_2fr] gap-1.5">
