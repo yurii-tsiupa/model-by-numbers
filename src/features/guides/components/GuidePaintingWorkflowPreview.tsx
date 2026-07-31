@@ -402,7 +402,7 @@ export function GuidePaintingWorkflowPreview({
                                         </span>
                                       </span>
                                     </div>
-                                  ) : null}
+                                  ) : stage.targetReferences?.some(reference=>reference.type==="part") ? <div className="mt-3 flex items-center gap-2"><span className="grid h-6 w-6 place-items-center rounded-lg border border-dashed border-[#D5CFDD] bg-white text-xs text-[#8A8291]">—</span><span className="font-[family-name:var(--font-inter)] text-sm text-[#716A79]">{t("painting.stage.noColor")}</span></div> : null}
 
                                   {missingColor ? (
                                     <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#E5D3A5] bg-[#FFF9E8] px-2.5 py-1.5 font-[family-name:var(--font-inter)] text-xs font-medium text-[#755B17]">

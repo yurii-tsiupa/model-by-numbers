@@ -42,7 +42,8 @@ export function resolveSavedPartColorAssignments(parts:ModelPart[],throughStepId
 export function resolveStepPreviewComposition({step,parts,manualDetails,palette,baseColor,displayMode,stepOrder=[]}:{step:PaintingStage;parts:ModelPart[];manualDetails:ManualDetail[];palette:readonly Pick<PaletteColor,"id"|"hex">[];baseColor:string;displayMode:StepPreviewDisplayMode;stepOrder?:readonly string[]}):StepPreviewComposition{
   const ordered=orderedStages(parts,stepOrder).map(candidate=>candidate.id===step.id?step:candidate);
   const currentIndex=ordered.findIndex(candidate=>candidate.id===step.id);
-  const included=displayMode==="through-current-step"&&currentIndex>=0?ordered.slice(0,currentIndex+1):[step];
+  const noColorPartStep=step.paletteColorId===null&&step.targetReferences?.some(reference=>reference.type==="part");
+  const included=(displayMode==="through-current-step"||noColorPartStep)&&currentIndex>=0?ordered.slice(0,currentIndex+1):[step];
   const colors=new Map(palette.map(color=>[color.id,color.hex]));
   const details=new Map(manualDetails.map(detail=>[detail.id,detail]));
   const partColors=new Map<string,string>();
@@ -51,7 +52,7 @@ export function resolveStepPreviewComposition({step,parts,manualDetails,palette,
     const color=stage.paletteColorId?colors.get(stage.paletteColorId)??baseColor:baseColor;
     const references=stage.type==="primer"&&!(stage.targetReferences?.length)?parts.map(part=>({type:"part" as const,id:part.id})):stage.targetReferences??[];
     for(const reference of references){
-      if(reference.type==="part"){partColors.set(reference.id,color);continue}
+      if(reference.type==="part"){if(stage.paletteColorId!==null||stage.type==="primer")partColors.set(reference.id,color);continue}
       const detail=details.get(reference.id);
       if(detail?.targetMode!=="region")continue;
       const regionColor=detail.colorId?colors.get(detail.colorId)??color:color;

@@ -9,12 +9,11 @@ import {useModelEditorStore} from "../../store/modelEditorStore";
 import {StepPreview} from "../../step-previews/StepPreview";
 import {StepDetailsAndMarkers} from "./StepDetailsAndMarkers";
 import {SimplePartColorDetail} from "./SimplePartColorDetail";
-import {resolveSavedPartColorAssignments} from "../../step-previews/resolveStepPreviewComposition";
 
 type Props={stage:PaintingStage;projectId:string;activeReferenceId?:string|null;onSelectReference?:(id:string)=>void;onShowReference?:(id:string)=>void;onReferenceDeleted?:(id:string)=>void;onClose:()=>void;onSave:(input:CreatePaintingStageInput)=>void};
 export function SimplePaintingStepEditor({stage,projectId,onClose,onSave}:Props){
  const{t}=useTranslation(),parts=useModelEditorStore(s=>s.parts),simpleTargetMode=useModelEditorStore(s=>s.simpleTargetMode),update=useModelEditorStore(s=>s.updatePaintingStage),deleteDetail=useModelEditorStore(s=>s.deleteManualDetail),clearPartDraft=useModelEditorStore(s=>s.setSimplePartColorDraft),clearAssignments=useModelEditorStore(s=>s.clearSimplePartColorAssignments),commitAssignment=useModelEditorStore(s=>s.commitSimplePartColorAssignment);
- const storeAtOpen=useModelEditorStore.getState(),savedPartId=stage.targetReferences?.find(reference=>reference.type==="part")?.id??null,currentDraft=storeAtOpen.simplePartColorDraft,initialPartId=savedPartId??currentDraft?.partId??storeAtOpen.selectedPartId,savedAssignments=resolveSavedPartColorAssignments(parts,undefined,stage.id,storeAtOpen.simplePaintingStepOrder),initialColorId=stage.paletteColorId??(initialPartId?(Object.hasOwn(storeAtOpen.simplePartColorStepDraftAssignments,initialPartId)?storeAtOpen.simplePartColorStepDraftAssignments[initialPartId]:Object.hasOwn(storeAtOpen.simplePartColorAssignments,initialPartId)?storeAtOpen.simplePartColorAssignments[initialPartId]:savedAssignments.get(initialPartId)??null):null);
+ const storeAtOpen=useModelEditorStore.getState(),savedPartId=stage.targetReferences?.find(reference=>reference.type==="part")?.id??null,currentDraft=storeAtOpen.simplePartColorDraft,initialPartId=savedPartId??currentDraft?.partId??storeAtOpen.selectedPartId,initialColorId=stage.paletteColorId;
  const[type,setType]=useState<PaintingStageType>(stage.type),[title,setTitle]=useState(stage.customName??getPaintingStageTypeLabel(stage.type,t)),[notes,setNotes]=useState(stage.notes),[targets,setTargets]=useState<PaintingTargetReference[]>(initialPartId?[{type:"part",id:initialPartId}]:stage.targetReferences??[]),[paletteColorId,setPaletteColorId]=useState<string|null>(initialColorId);
  useEffect(()=>{
   if(simpleTargetMode!=="parts")return;
@@ -26,7 +25,7 @@ export function SimplePaintingStepEditor({stage,projectId,onClose,onSave}:Props)
    setPaletteColorId(draft.paletteColorId);
   });
  },[clearPartDraft,initialColorId,initialPartId,simpleTargetMode,stage.id]);
- const valid=Boolean(title.trim())&&title.length<=100&&notes.length<=500&&(simpleTargetMode!=="parts"||type==="primer"||Boolean(targets.some(reference=>reference.type==="part")&&paletteColorId)),isPrimer=type==="primer";
+ const valid=Boolean(title.trim())&&title.length<=100&&notes.length<=500&&(simpleTargetMode!=="parts"||type==="primer"||targets.some(reference=>reference.type==="part")),isPrimer=type==="primer";
  function targetsChanged(value:PaintingTargetReference[]){const nextKeys=new Set(value.map(reference=>`${reference.type}:${reference.id}`));for(const reference of stage.targetReferences??[])if(!nextKeys.has(`${reference.type}:${reference.id}`)&&reference.type==="manualDetail"&&getStepsReferencingManualDetail(parts,reference.id).length<=1)deleteDetail(reference.id);setTargets(value);const owner=parts.find(part=>part.paintingWorkflow.stages.some(item=>item.id===stage.id));if(owner)update(owner.id,stage.id,{targetReferences:value})}
  const previewStage={...stage,type,customName:title.trim(),notes,paletteColorId,targetReferences:targets};
  function close(){clearPartDraft(null);clearAssignments();onClose()}
