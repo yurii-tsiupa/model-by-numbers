@@ -166,6 +166,7 @@ function LoadedModelContent({
   const addDraftManualDetailPin=useModelEditorStore(state=>state.addDraftManualDetailPin);
   const selectManualDetail=useModelEditorStore(state=>state.selectManualDetail);
   const simpleTargetMode=useModelEditorStore(state=>state.simpleTargetMode);
+  const simpleWholeModelBaseColor=useModelEditorStore(state=>state.simpleWholeModelBaseColor);
   const simplePartColorDraft=useModelEditorStore(state=>state.simplePartColorDraft);
   const simplePartColorAssignments=useModelEditorStore(state=>state.simplePartColorAssignments);
   const simplePartColorStepDraftAssignments=useModelEditorStore(state=>state.simplePartColorStepDraftAssignments);
@@ -186,6 +187,7 @@ function LoadedModelContent({
   const previewStep=previewCapture?parts.flatMap(part=>part.paintingWorkflow.stages).find(stage=>stage.id===previewCapture.stepId):undefined;
   const previewComposition=useMemo(()=>previewStep&&previewCapture?resolveStepPreviewComposition({step:previewStep,parts,manualDetails,palette,baseColor,displayMode:previewCapture.displayMode,stepOrder:simplePaintingStepOrder}):null,[baseColor,manualDetails,palette,parts,previewCapture,previewStep,simplePaintingStepOrder]);
   const simplePartColors=useMemo(()=>{if(!simpleMode||simpleTargetMode!=="parts"||previewComposition)return null;const values=resolveSavedPartColors(parts,palette,undefined,simplePartColorDraft?.stageId,simplePaintingStepOrder);for(const assignments of [simplePartColorAssignments,simplePartColorStepDraftAssignments])for(const[partId,colorId]of Object.entries(assignments)){const color=colorId?palette.find(item=>item.id===colorId):null;if(color)values.set(partId,color.hex);else values.delete(partId)}return values},[palette,parts,previewComposition,simpleMode,simplePaintingStepOrder,simplePartColorAssignments,simplePartColorDraft?.stageId,simplePartColorStepDraftAssignments,simpleTargetMode]);
+  const displayBaseColor=simpleMode&&simpleTargetMode!=="parts"&&!previewComposition?simpleWholeModelBaseColor??baseColor:baseColor;
 
   useEffect(()=>{
     const cleanups:Array<()=>void>=[];
@@ -227,13 +229,15 @@ function LoadedModelContent({
     () =>
       previewComposition||simplePartColors
         ? parts.map(part=>({...part,visible:true,paletteColorId:(previewComposition?.partColors??simplePartColors)?.has(part.id)?`preview:${part.id}`:null}))
+        : simpleMode&&simpleTargetMode!=="parts"
+        ? parts.map(part=>({...part,paletteColorId:null,color:null}))
         : showAllPartsForCapture
         ? parts.map((part) => ({
             ...part,
             visible: part.includeInGuide,
           }))
         : parts,
-    [parts, previewComposition,simplePartColors, showAllPartsForCapture],
+    [parts, previewComposition,simpleMode,simplePartColors,simpleTargetMode,showAllPartsForCapture],
   );
   const presentationPalette=useMemo(()=>{const values=previewComposition?.partColors??simplePartColors;return values?[...palette,...[...values].map(([id,hex],index)=>({id:`preview:${id}`,number:palette.length+index+1,name:"",hex}))]:palette},[palette,previewComposition,simplePartColors]);
   const partStructure=parts.map(part=>`${part.id}:${part.meshUuid}`).join("|");
@@ -341,7 +345,7 @@ function LoadedModelContent({
       parts: presentationParts,
       palette:presentationPalette,
       viewerMode,
-      baseColor,
+      baseColor:displayBaseColor,
       selectedPartId:previewCapture||simpleMode&&simpleTargetMode!=="parts"?null:selectedPartId,
       selectedPartIds:previewCapture||simpleMode&&simpleTargetMode!=="parts"?[]:selectedPartIds,
       highlightedPaletteColorId:previewCapture?null:highlightedPaletteColorId,
@@ -353,7 +357,7 @@ function LoadedModelContent({
     presentationParts,
     presentationPalette,
     viewerMode,
-    baseColor,
+    displayBaseColor,
     selectedPartId,
     selectedPartIds,
     highlightedPaletteColorId,

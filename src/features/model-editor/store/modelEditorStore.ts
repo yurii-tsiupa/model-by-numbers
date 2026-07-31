@@ -37,6 +37,7 @@ type ModelEditorState = {
   paintingOrder:string[];
   simplePaintingStepOrder:string[];
   simpleTargetMode:SimpleTargetMode|null;
+  simpleWholeModelBaseColor:string|null;
   simplePartColorDraft:{stageId:string;partId:string|null;paletteColorId:string|null}|null;
   simplePartColorAssignments:Record<string,string|null>;
   simplePartColorStepDraftAssignments:Record<string,string|null>;
@@ -217,6 +218,7 @@ type ModelEditorState = {
     target: ColorAssignmentTarget,
     hex: string,
   ) => void;
+  createAndAssignWholeModelColor: (hex: string) => void;
 
   clearPaletteColor: (partId: string) => void;
 
@@ -295,6 +297,7 @@ export const useModelEditorStore =
     paintingOrder:[],
     simplePaintingStepOrder:[],
     simpleTargetMode:null,
+    simpleWholeModelBaseColor:null,
     simplePartColorDraft:null,
     simplePartColorAssignments:{},
     simplePartColorStepDraftAssignments:{},
@@ -803,6 +806,23 @@ export const useModelEditorStore =
       if (synchronizedBaseColor) requestBaseColorSynchronization(synchronizedBaseColor);
     },
 
+    createAndAssignWholeModelColor: (hex) => {
+      let synchronizedBaseColor: string | null = null;
+      set((state) => {
+        if (state.simpleTargetMode === "parts") return state;
+        const ensured = ensurePaletteColor(state.palette, hex);
+        if (!ensured) return state;
+        synchronizedBaseColor = normalizeHexColor(ensured.color.hex);
+        if (!synchronizedBaseColor) return state;
+        return {
+          palette: ensured.palette,
+          simpleWholeModelBaseColor: synchronizedBaseColor,
+          ...(ensured.palette === state.palette ? {} : markStateDirty(state)),
+        };
+      });
+      if (synchronizedBaseColor) requestBaseColorSynchronization(synchronizedBaseColor);
+    },
+
     clearPaletteColor: (partId) => {
       set((state) => {
         const selectedPart = state.parts.find(
@@ -1163,6 +1183,7 @@ export const useModelEditorStore =
         paintingOrder:[],
         simplePaintingStepOrder:[],
         simpleTargetMode:null,
+        simpleWholeModelBaseColor:null,
         simplePartColorDraft:null,
         simplePartColorAssignments:{},
         simplePartColorStepDraftAssignments:{},
