@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
-import {
-  Inter,
-  JetBrains_Mono,
-  Space_Grotesk,
-} from 'next/font/google';
+
+import '@fontsource/unbounded/500.css';
+import '@fontsource/unbounded/600.css';
+import '@fontsource/unbounded/700.css';
+import '@fontsource-variable/inter';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
 
 import { I18nProvider } from '@/features/i18n/context/I18nProvider';
 import { AuthProvider } from '@/providers/AuthProvider';
@@ -11,24 +13,6 @@ import { QueryProvider } from '@/providers/QueryProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 
 import './globals.css';
-
-const inter = Inter({
-  subsets: ['latin', 'cyrillic'],
-  variable: '--font-body',
-  display: 'swap',
-});
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-heading',
-  display: 'swap',
-});
-
-const jetBrainsMono = JetBrains_Mono({
-  subsets: ['latin', 'cyrillic'],
-  variable: '--font-mono',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'Model by Numbers',
@@ -48,9 +32,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
     >
-      <body
-        className={`${inter.variable} ${spaceGrotesk.variable} ${jetBrainsMono.variable}`}
-      >
+      <body>
         <ThemeProvider
           attribute="data-theme"
           defaultTheme="system"

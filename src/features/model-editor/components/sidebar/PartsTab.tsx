@@ -73,11 +73,11 @@ export function PartsTab() {
       <div className="shrink-0 border-b border-[var(--border)] p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+            <p className="font-[family-name:var(--font-mono)] text-xs font-medium uppercase tracking-[0.18em] text-[var(--text-secondary)]">
               {t("editor.structure")}
             </p>
 
-            <h2 className="mt-2 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-[var(--text)]">
+            <h2 className="mt-2 font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--text)]">
               {t("editor.tabs.parts")}
             </h2>
           </div>

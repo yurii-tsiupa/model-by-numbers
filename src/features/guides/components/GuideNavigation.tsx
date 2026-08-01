@@ -254,7 +254,7 @@ export function GuideNavigation({
                   justify-center
                   rounded-lg
                   border
-                  font-[family-name:var(--font-jetbrains-mono)]
+                  font-[family-name:var(--font-mono)]
                   text-[10px]
                   font-semibold
                   transition-colors
@@ -268,7 +268,7 @@ export function GuideNavigation({
                 {String(index + 1).padStart(2, "0")}
               </span>
 
-              <span className="min-w-0 break-words font-[family-name:var(--font-inter)] text-sm leading-5">
+              <span className="min-w-0 break-words font-[family-name:var(--font-body)] text-sm leading-5">
                 {t(section.titleKey)}
               </span>
 
@@ -302,7 +302,7 @@ export function GuideNavigation({
             </div>
 
             <div className="min-w-0">
-              <span className="block font-[family-name:var(--font-space-grotesk)] text-sm font-semibold">
+              <span className="block font-[family-name:var(--font-body)] text-sm font-semibold">
                 {t("guide.navigation.contents")}
               </span>
 
@@ -338,7 +338,7 @@ export function GuideNavigation({
           </div>
 
           <div className="min-w-0">
-            <h2 className="font-[family-name:var(--font-space-grotesk)] text-sm font-semibold tracking-[-0.01em]">
+            <h2 className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-[-0.01em]">
               {t("guide.navigation.contents")}
             </h2>
 

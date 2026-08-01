@@ -285,7 +285,7 @@ export function ModelImportReport({
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-[var(--font-space-grotesk)] text-base font-semibold text-[var(--text)]">
+              <h3 className="font-[var(--font-display)] text-base font-semibold text-[var(--text)]">
                 {t("modelImport.report.success")}
               </h3>
 
@@ -331,7 +331,7 @@ export function ModelImportReport({
                 {t("modelImport.health.overall")}
               </p>
 
-              <p className="mt-2 font-[var(--font-space-grotesk)] text-4xl font-semibold tracking-tight text-[var(--text)]">
+              <p className="mt-2 font-[var(--font-mono)] text-4xl font-semibold tracking-tight text-[var(--text)]">
                 {health.overallScore}
                 <span className="ml-1 text-sm font-normal text-[var(--text-secondary)]">
                   / 100
@@ -448,7 +448,7 @@ export function ModelImportReport({
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-[var(--text-secondary)]" />
 
-              <h4 className="font-[var(--font-space-grotesk)] text-sm font-semibold text-[var(--text)]">
+              <h4 className="font-[var(--font-display)] text-sm font-semibold text-[var(--text)]">
                 {t(
                   "modelImport.health.recommendations.title",
                 )}

@@ -121,7 +121,7 @@ export function EditorSidebar({
                 setActiveTab(tab.id)
               }
               onKeyDown={(event) => handleTabKeyDown(event, index)}
-              className={`flex min-h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 font-[family-name:var(--font-inter)] text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+              className={`flex min-h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 font-[family-name:var(--font-body)] text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
                 isActive
                   ? "bg-[var(--bg)] text-[var(--accent)]"
                   : "text-[var(--text-secondary)] hover:bg-[var(--bg)] hover:text-[var(--text)]"

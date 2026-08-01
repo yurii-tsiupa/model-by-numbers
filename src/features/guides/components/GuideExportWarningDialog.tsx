@@ -47,13 +47,13 @@ export function GuideExportWarningDialog({
           </div>
 
           <div className="min-w-0">
-            <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+            <p className="font-[family-name:var(--font-mono)] text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
               Export check
             </p>
 
             <h2
               id="guide-export-warning-title"
-              className="mt-1 font-[family-name:var(--font-space-grotesk)] text-xl font-semibold tracking-[-0.02em] text-[var(--text)]"
+              className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.02em] text-[var(--text)]"
             >
               {t("guide.pdfExport.warningTitle", {
                 count: warnings.length,
@@ -62,7 +62,7 @@ export function GuideExportWarningDialog({
 
             <p
               id="guide-export-warning-description"
-              className="mt-2 font-[family-name:var(--font-inter)] text-sm leading-6 text-[var(--text-secondary)]"
+              className="mt-2 font-[family-name:var(--font-body)] text-sm leading-6 text-[var(--text-secondary)]"
             >
               {t("guide.pdfExport.warningDescription")}
             </p>
@@ -77,11 +77,11 @@ export function GuideExportWarningDialog({
               key={warning.code}
               className="flex gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3.5 py-3"
             >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--card)] font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold text-[var(--accent)]">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--card)] font-[family-name:var(--font-mono)] text-[10px] font-semibold text-[var(--accent)]">
                 {String(index + 1).padStart(2, "0")}
               </span>
 
-              <p className="pt-0.5 font-[family-name:var(--font-inter)] text-sm leading-6 text-[var(--text-secondary)]">
+              <p className="pt-0.5 font-[family-name:var(--font-body)] text-sm leading-6 text-[var(--text-secondary)]">
                 {t(
                   getGuideExportWarningTranslationKey(
                     warning.code,
@@ -99,7 +99,7 @@ export function GuideExportWarningDialog({
           <button
             type="button"
             onClick={onReview}
-            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 font-[family-name:var(--font-inter)] text-sm font-medium text-[var(--text)] transition-colors hover:bg-[var(--bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]"
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 font-[family-name:var(--font-body)] text-sm font-medium text-[var(--text)] transition-colors hover:bg-[var(--bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]"
           >
             {t("guide.pdfExport.reviewGuide")}
           </button>
@@ -107,7 +107,7 @@ export function GuideExportWarningDialog({
           <button
             type="button"
             onClick={onConfirm}
-            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-[var(--accent)] px-4 font-[family-name:var(--font-inter)] text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]"
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-[var(--accent)] px-4 font-[family-name:var(--font-body)] text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]"
           >
             {t("guide.pdfExport.exportAnyway")}
           </button>

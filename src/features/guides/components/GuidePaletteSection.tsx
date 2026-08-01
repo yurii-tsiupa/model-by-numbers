@@ -26,16 +26,16 @@ export function GuidePaletteSection({
       <div className="flex items-center gap-3">
         <span className="h-px w-10 bg-[#76558F]" />
 
-        <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
+        <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
           {t("guide.paintReference")}
         </p>
       </div>
 
-      <h2 className="mt-5 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-[-0.04em] text-[#181221] sm:text-4xl">
+      <h2 className="mt-5 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-[-0.04em] text-[#181221] sm:text-4xl">
         {t("guide.palette")}
       </h2>
 
-      <p className="mt-3 max-w-3xl font-[family-name:var(--font-inter)] text-sm leading-6 text-[#716A79]">
+      <p className="mt-3 max-w-3xl font-[family-name:var(--font-body)] text-sm leading-6 text-[#716A79]">
         {t("guide.paletteDescription")}
       </p>
 
@@ -54,20 +54,20 @@ export function GuidePaletteSection({
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-3">
-                <span className="inline-flex min-h-7 items-center rounded-full border border-[#D6CAE0] bg-[#F7F3FA] px-2.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold tracking-[0.08em] text-[#76558F]">
+                <span className="inline-flex min-h-7 items-center rounded-full border border-[#D6CAE0] bg-[#F7F3FA] px-2.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold tracking-[0.08em] text-[#76558F]">
                   {formatColorNumber(color.number)}
                 </span>
 
-                <span className="inline-flex min-h-7 items-center rounded-full border border-[#E3DEEC] bg-[#FAF9FC] px-2.5 font-[family-name:var(--font-inter)] text-xs text-[#716A79]">
+                <span className="inline-flex min-h-7 items-center rounded-full border border-[#E3DEEC] bg-[#FAF9FC] px-2.5 font-[family-name:var(--font-body)] text-xs text-[#716A79]">
                   {formatCount(locale, color.usageCount, "step")}
                 </span>
               </div>
 
-              <p className="mt-3 truncate font-[family-name:var(--font-inter)] text-sm font-semibold text-[#181221]">
+              <p className="mt-3 truncate font-[family-name:var(--font-body)] text-sm font-semibold text-[#181221]">
                 {color.name}
               </p>
 
-              <p className="mt-1 font-[family-name:var(--font-jetbrains-mono)] text-[11px] uppercase tracking-[0.08em] text-[#8A8291]">
+              <p className="mt-1 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-[#8A8291]">
                 {color.hex.toUpperCase()}
               </p>
             </div>

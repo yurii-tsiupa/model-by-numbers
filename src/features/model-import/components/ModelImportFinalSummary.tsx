@@ -107,7 +107,7 @@ export function ModelImportFinalSummary({
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-[var(--font-space-grotesk)] text-base font-semibold text-[var(--text)]">
+              <h3 className="font-[var(--font-display)] text-base font-semibold text-[var(--text)]">
                 {t("modelImport.final.title")}
               </h3>
 

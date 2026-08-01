@@ -35,14 +35,14 @@ export function ClassicExplodedSection({
               className="h-full w-full object-contain"
             />
           ) : (
-            <p className="font-[family-name:var(--font-inter)] text-sm text-[#716A79]">
+            <p className="font-[family-name:var(--font-body)] text-sm text-[#716A79]">
               {t("guide.exploded.imageMissing")}
             </p>
           )}
         </div>
 
         <div className="p-4">
-          <p className="font-[family-name:var(--font-inter)] text-sm text-[#716A79]">
+          <p className="font-[family-name:var(--font-body)] text-sm text-[#716A79]">
             {t("guide.exploded.partsCount", {
               count: view.partsCount,
             })}

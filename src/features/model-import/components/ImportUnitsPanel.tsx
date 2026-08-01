@@ -59,7 +59,7 @@ export function ImportUnitsPanel({
           </div>
 
           <div>
-            <h3 className="font-[var(--font-space-grotesk)] text-base font-semibold text-[var(--text)]">
+            <h3 className="font-[var(--font-display)] text-base font-semibold text-[var(--text)]">
               {t("modelImport.units.title")}
             </h3>
 

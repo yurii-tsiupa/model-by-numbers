@@ -120,7 +120,7 @@ export function ModelPartsReview({
   return (
     <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)]">
       <div className="border-b border-[var(--border)] px-5 py-4 sm:px-6">
-        <h3 className="font-[var(--font-space-grotesk)] text-base font-semibold text-[var(--text)]">
+        <h3 className="font-[var(--font-display)] text-base font-semibold text-[var(--text)]">
           {t("modelImport.partsReview.title")}
         </h3>
 

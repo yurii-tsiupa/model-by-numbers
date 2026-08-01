@@ -151,14 +151,14 @@ export function GuidePreviewHeader({
               role="status"
               className="absolute right-4 top-full mt-2 flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2 shadow-lg sm:right-6"
             >
-              <span className="font-[family-name:var(--font-inter)] text-sm font-medium text-[var(--accent-2)]">
+              <span className="font-[family-name:var(--font-body)] text-sm font-medium text-[var(--accent-2)]">
                 {t("guide.pdfExport.success")}
               </span>
 
               <button
                 type="button"
                 onClick={onReset}
-                className="cursor-pointer font-[family-name:var(--font-inter)] text-sm text-[var(--text-secondary)] underline underline-offset-4 transition-colors hover:text-[var(--text)]"
+                className="cursor-pointer font-[family-name:var(--font-body)] text-sm text-[var(--text-secondary)] underline underline-offset-4 transition-colors hover:text-[var(--text)]"
               >
                 {t("common.close")}
               </button>
@@ -176,7 +176,7 @@ export function GuidePreviewHeader({
                   strokeWidth={1.8}
                 />
 
-                <span className="font-[family-name:var(--font-inter)] text-sm leading-6 text-[var(--text-secondary)]">
+                <span className="font-[family-name:var(--font-body)] text-sm leading-6 text-[var(--text-secondary)]">
                   {t("guide.pdfExport.failed")}{" "}
                   {exportError
                     ? t(
@@ -191,7 +191,7 @@ export function GuidePreviewHeader({
               <button
                 type="button"
                 onClick={onRetry}
-                className="inline-flex min-h-9 cursor-pointer items-center justify-center rounded-lg bg-[var(--accent)] px-4 font-[family-name:var(--font-inter)] text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                className="inline-flex min-h-9 cursor-pointer items-center justify-center rounded-lg bg-[var(--accent)] px-4 font-[family-name:var(--font-body)] text-sm font-semibold text-white transition-opacity hover:opacity-90"
               >
                 {t("guide.pdfExport.retry")}
               </button>

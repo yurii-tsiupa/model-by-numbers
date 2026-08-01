@@ -154,7 +154,7 @@ export function ModelCard({
 
         <div className="absolute left-4 top-4">
           <span
-            className={`inline-flex rounded-full border px-3 py-1.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium uppercase tracking-[0.12em] ${
+            className={`inline-flex rounded-full border px-3 py-1.5 font-[family-name:var(--font-mono)] text-[10px] font-medium uppercase tracking-[0.12em] ${
               project.status === "ready" ||
               project.status === "generated"
                 ? "border-[color-mix(in_srgb,var(--accent-2)_35%,var(--border))] bg-[color-mix(in_srgb,var(--accent-2)_10%,var(--card))] text-[var(--accent-2)]"
@@ -180,11 +180,11 @@ export function ModelCard({
 
       <div className="flex flex-1 flex-col p-4">
         <div className="min-w-0">
-          <h2 className="truncate font-[family-name:var(--font-space-grotesk)] text-lg font-semibold tracking-[-0.02em] text-[var(--text)]">
+          <h2 className="truncate font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.02em] text-[var(--text)]">
             {project.name}
           </h2>
 
-          <p className="mt-1 line-clamp-1 font-[family-name:var(--font-inter)] text-sm leading-5 text-[var(--text-secondary)]">
+          <p className="mt-1 line-clamp-1 font-[family-name:var(--font-body)] text-sm leading-5 text-[var(--text-secondary)]">
             {project.description ||
               t("models.noDescription")}
           </p>
@@ -192,11 +192,11 @@ export function ModelCard({
 
         <div className="mt-4 grid grid-cols-2 gap-2">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3 py-2">
-            <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase tracking-[0.12em] text-[var(--text-secondary)]">
+            <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-[var(--text-secondary)]">
               {t("guide.parts")}
             </p>
 
-            <p className="mt-1 font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-[var(--text)]">
+            <p className="mt-1 font-[family-name:var(--font-mono)] text-sm font-semibold text-[var(--text)]">
               {formatCount(
                 locale,
                 includedParts.length,
@@ -206,11 +206,11 @@ export function ModelCard({
           </div>
 
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3 py-2.5">
-            <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase tracking-[0.12em] text-[var(--text-secondary)]">
+            <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-[var(--text-secondary)]">
               {t("guide.colors")}
             </p>
 
-            <p className="mt-1 font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-[var(--text)]">
+            <p className="mt-1 font-[family-name:var(--font-mono)] text-sm font-semibold text-[var(--text)]">
               {formatCount(
                 locale,
                 usedColors.length,
@@ -222,11 +222,11 @@ export function ModelCard({
 
         {latestGuide ? (
           <div className="mt-2 flex items-center justify-between rounded-xl border border-[color-mix(in_srgb,var(--accent-2)_30%,var(--border))] bg-[color-mix(in_srgb,var(--accent-2)_8%,var(--card))] px-3 py-2.5">
-            <span className="font-[family-name:var(--font-inter)] text-xs font-medium text-[var(--accent-2)]">
+            <span className="font-[family-name:var(--font-body)] text-xs font-medium text-[var(--accent-2)]">
               {t("status.generated")}
             </span>
 
-            <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[var(--accent-2)]">
+            <span className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--accent-2)]">
               {t("history.version", {
                 version: latestGuide.version,
               })}
@@ -245,7 +245,7 @@ export function ModelCard({
               </span>
             </span>
 
-            <span className="shrink-0 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[var(--text-secondary)]">
+            <span className="shrink-0 font-[family-name:var(--font-mono)] text-[10px] text-[var(--text-secondary)]">
               {formatFileSize(
                 project.originalFileSize,
                 t("models.unknownSize"),
@@ -300,7 +300,7 @@ export function ModelCard({
               event.stopPropagation();
               openProject();
             }}
-            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 font-[family-name:var(--font-inter)] text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 font-[family-name:var(--font-body)] text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Box className="h-4 w-4" />
             {t("common.open")}

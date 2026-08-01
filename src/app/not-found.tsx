@@ -18,7 +18,7 @@ export default function NotFoundPage() {
         className="pointer-events-none absolute inset-0 flex items-center justify-center"
         aria-hidden="true"
       >
-        <span className="font-[var(--font-heading)] text-[clamp(12rem,35vw,32rem)] font-semibold leading-none text-[var(--border)]">
+        <span className="font-[var(--font-display)] text-[clamp(12rem,35vw,32rem)] font-semibold leading-none text-[var(--border)]">
           404
         </span>
       </div>
@@ -29,7 +29,7 @@ export default function NotFoundPage() {
             {t("notFound.eyebrow")}
           </p>
 
-          <h1 className="mt-4 font-[var(--font-heading)] text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
+          <h1 className="mt-4 font-[var(--font-display)] text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
             {t("notFound.title")}
           </h1>
 

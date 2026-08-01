@@ -135,13 +135,13 @@ export function ConfirmationModal({
             </div>
 
             <div className="min-w-0 pt-0.5">
-              <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+              <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                 {isDanger ? t("common.danger") : t("common.confirmation")}
               </p>
 
               <h2
                 id="confirmation-modal-title"
-                className="mt-1 break-words font-[family-name:var(--font-space-grotesk)] text-lg font-semibold leading-6 text-[var(--text)]"
+                className="mt-1 break-words font-[family-name:var(--font-display)] text-lg font-semibold leading-6 text-[var(--text)]"
               >
                 {title}
               </h2>

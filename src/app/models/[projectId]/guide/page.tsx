@@ -124,7 +124,7 @@ function GuideErrorState({
               Guide
             </p>
 
-            <h1 className="mt-1 font-[family-name:var(--font-space-grotesk)] text-xl font-semibold tracking-[-0.02em] text-[var(--text)]">
+            <h1 className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.02em] text-[var(--text)]">
               {title}
             </h1>
 

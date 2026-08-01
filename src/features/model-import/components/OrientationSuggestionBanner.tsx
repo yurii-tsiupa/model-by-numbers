@@ -45,7 +45,7 @@ export function OrientationSuggestionBanner({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-[var(--font-space-grotesk)] text-sm font-semibold text-[var(--text)]">
+            <p className="font-[var(--font-body)] text-sm font-semibold text-[var(--text)]">
               {t(
                 applied
                   ? "modelImport.orientation.appliedTitle"

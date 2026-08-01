@@ -21,7 +21,7 @@ export function Loader({
         </div>
       </div>
 
-      <span className="mt-4 font-[family-name:var(--font-inter)] text-sm text-[var(--text-secondary)]">
+      <span className="mt-4 font-[family-name:var(--font-body)] text-sm text-[var(--text-secondary)]">
         {label}
       </span>
     </div>

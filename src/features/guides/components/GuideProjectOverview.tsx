@@ -62,17 +62,17 @@ export function GuideProjectOverview({
       <div className="flex items-center gap-3">
         <span className="h-px w-10 bg-[#76558F]" />
 
-        <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
+        <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
           {t("guide.classic")}
         </p>
       </div>
 
-      <h2 className="mt-5 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-[-0.04em] text-[#181221] sm:text-4xl">
+      <h2 className="mt-5 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-[-0.04em] text-[#181221] sm:text-4xl">
         {t("guide.overview")}
       </h2>
 
       {guide.description ? (
-        <p className="mt-5 max-w-3xl whitespace-pre-wrap font-[family-name:var(--font-inter)] text-base leading-7 text-[#5F5866]">
+        <p className="mt-5 max-w-3xl whitespace-pre-wrap font-[family-name:var(--font-body)] text-base leading-7 text-[#5F5866]">
           {guide.description}
         </p>
       ) : null}
@@ -83,18 +83,18 @@ export function GuideProjectOverview({
             key={detail.label}
             className="rounded-2xl border border-[#E3DEEC] bg-white p-4"
           >
-            <dt className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium uppercase tracking-[0.12em] text-[#8A8291]">
+            <dt className="font-[family-name:var(--font-mono)] text-[10px] font-medium uppercase tracking-[0.12em] text-[#8A8291]">
               {detail.label}
             </dt>
 
-            <dd className="mt-2 break-words font-[family-name:var(--font-inter)] text-sm font-semibold leading-6 text-[#312A37]">
+            <dd className="mt-2 break-words font-[family-name:var(--font-body)] text-sm font-semibold leading-6 text-[#312A37]">
               {detail.value}
             </dd>
           </div>
         ))}
 
         <div className="rounded-2xl border border-[#E3DEEC] bg-white p-4">
-          <dt className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium uppercase tracking-[0.12em] text-[#8A8291]">
+          <dt className="font-[family-name:var(--font-mono)] text-[10px] font-medium uppercase tracking-[0.12em] text-[#8A8291]">
             {t("guide.baseColor")}
           </dt>
 
@@ -106,7 +106,7 @@ export function GuideProjectOverview({
               }}
             />
 
-            <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs font-semibold tracking-[0.08em] text-[#312A37]">
+            <span className="font-[family-name:var(--font-mono)] text-xs font-semibold tracking-[0.08em] text-[#312A37]">
               {guide.baseColor.toUpperCase()}
             </span>
           </dd>

@@ -16,7 +16,7 @@ export const guidePdfStyles = StyleSheet.create({
   page: {
     backgroundColor: pdfColors.background,
     color: pdfColors.text,
-    fontFamily: "Roboto",
+    fontFamily: defaultGuideDesignTokens.bodyFont,
     fontSize: 10,
     lineHeight: 1.5,
     paddingTop: PDF_PAGE_POINTS.marginTop,

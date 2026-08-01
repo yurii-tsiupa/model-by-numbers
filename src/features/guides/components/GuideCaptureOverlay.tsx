@@ -107,7 +107,7 @@ export function GuideCaptureOverlay({
                 {completedSteps} / {totalSteps}
               </p>
 
-              <h2 className="mt-2 font-[family-name:var(--font-space-grotesk)] text-xl font-semibold tracking-[-0.025em] text-[var(--text)]">
+              <h2 className="mt-2 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.025em] text-[var(--text)]">
                 {t("capture.title")}
               </h2>
 
@@ -158,7 +158,7 @@ export function GuideCaptureOverlay({
                 Error
               </p>
 
-              <h2 className="mt-2 font-[family-name:var(--font-space-grotesk)] text-xl font-semibold tracking-[-0.025em] text-[var(--text)]">
+              <h2 className="mt-2 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.025em] text-[var(--text)]">
                 {t("capture.failed")}
               </h2>
 

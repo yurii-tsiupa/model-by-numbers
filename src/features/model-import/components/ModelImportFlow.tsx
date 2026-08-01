@@ -163,7 +163,7 @@ export function ModelImportFlow(props: Props) {
             <UploadCloud className="h-5 w-5" />
           </div>
 
-          <h4 className="mt-4 font-[var(--font-space-grotesk)] text-base font-semibold text-[var(--text)]">
+          <h4 className="mt-4 font-[var(--font-display)] text-base font-semibold text-[var(--text)]">
             {t("modelImport.empty.drop")}
           </h4>
 

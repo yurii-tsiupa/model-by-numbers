@@ -88,12 +88,12 @@ export function DeleteProjectModal({
 
         <h2
           id="delete-project-title"
-          className="mt-6 font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-[-0.03em] text-[var(--text)]"
+          className="mt-6 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.03em] text-[var(--text)]"
         >
           Delete project?
         </h2>
 
-        <p className="mt-3 font-[family-name:var(--font-inter)] text-sm leading-6 text-[var(--text-secondary)]">
+        <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-6 text-[var(--text-secondary)]">
           You are about to permanently delete{" "}
           <span className="font-medium text-[var(--text)]">
             {project.name}
@@ -104,7 +104,7 @@ export function DeleteProjectModal({
         {error ? (
           <p
             role="alert"
-            className="mt-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 font-[family-name:var(--font-inter)] text-sm text-red-500"
+            className="mt-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 font-[family-name:var(--font-body)] text-sm text-red-500"
           >
             {error}
           </p>
@@ -115,7 +115,7 @@ export function DeleteProjectModal({
             type="button"
             disabled={isDeleting}
             onClick={onClose}
-            className="min-h-11 cursor-pointer rounded-xl border border-[var(--border)] bg-[var(--bg)] px-5 py-3 font-[family-name:var(--font-inter)] text-sm font-medium text-[var(--text)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-11 cursor-pointer rounded-xl border border-[var(--border)] bg-[var(--bg)] px-5 py-3 font-[family-name:var(--font-body)] text-sm font-medium text-[var(--text)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
@@ -124,7 +124,7 @@ export function DeleteProjectModal({
             type="button"
             disabled={isDeleting}
             onClick={onConfirm}
-            className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-red-500 px-5 py-3 font-[family-name:var(--font-inter)] text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-red-500 px-5 py-3 font-[family-name:var(--font-body)] text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDeleting ? (
               <>

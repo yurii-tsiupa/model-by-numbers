@@ -41,7 +41,7 @@ export function ClassicReferencesSection({
             </div>
 
             {reference.caption?.trim() ? <div className="border-t border-[#E3DEEC] p-4">
-              <p className="break-words font-[family-name:var(--font-inter)] text-sm font-medium leading-6 text-[#312A37]">
+              <p className="break-words font-[family-name:var(--font-body)] text-sm font-medium leading-6 text-[#312A37]">
                 {reference.caption.trim()}
               </p>
             </div> : null}

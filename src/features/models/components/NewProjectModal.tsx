@@ -275,7 +275,7 @@ export function NewProjectModal({
 
               <h2
                 id="new-project-title"
-                className="font-[var(--font-space-grotesk)] text-2xl font-semibold tracking-[-0.03em] text-[var(--text)] sm:text-3xl"
+                className="font-[var(--font-display)] text-2xl font-semibold tracking-[-0.03em] text-[var(--text)] sm:text-3xl"
               >
                 {t("modelImport.modal.title")}
               </h2>
@@ -322,7 +322,7 @@ export function NewProjectModal({
                     </div>
 
                     <div>
-                      <h3 className="font-[var(--font-space-grotesk)] text-base font-semibold text-[var(--text)]">
+                      <h3 className="font-[var(--font-display)] text-base font-semibold text-[var(--text)]">
                         {t("modelImport.form.projectName")}
                       </h3>
 
@@ -525,7 +525,7 @@ export function NewProjectModal({
                     </div>
 
                     <div>
-                      <h3 className="font-[var(--font-space-grotesk)] text-base font-semibold text-[var(--text)]">
+                      <h3 className="font-[var(--font-display)] text-base font-semibold text-[var(--text)]">
                         {t("modelImport.form.modelFile")}
                       </h3>
 
@@ -688,7 +688,7 @@ export function NewProjectModal({
 
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-3">
-                          <h3 className="font-[var(--font-space-grotesk)] text-base font-semibold text-[var(--text)]">
+                          <h3 className="font-[var(--font-display)] text-base font-semibold text-[var(--text)]">
                             {t("modelImport.footer.ready")}
                           </h3>
 

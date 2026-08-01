@@ -21,18 +21,18 @@ export function ModelsErrorState({
           />
         </div>
 
-        <h2 className="mt-6 font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-[-0.02em] text-[var(--text)]">
+        <h2 className="mt-6 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.02em] text-[var(--text)]">
           {t("models.errorTitle")}
         </h2>
 
-        <p className="mt-3 font-[family-name:var(--font-inter)] text-sm leading-6 text-[var(--text-secondary)]">
+        <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-6 text-[var(--text-secondary)]">
           {t("models.errorDescription")}
         </p>
 
         <button
           type="button"
           onClick={onRetry}
-          className="mt-8 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg)] px-5 py-3 font-[family-name:var(--font-inter)] text-sm font-medium text-[var(--text)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+          className="mt-8 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg)] px-5 py-3 font-[family-name:var(--font-body)] text-sm font-medium text-[var(--text)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
         >
           <RefreshCw className="h-4 w-4" />
           {t("common.retry")}

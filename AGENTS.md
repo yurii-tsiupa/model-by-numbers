@@ -66,6 +66,16 @@
 - Respect reduced-motion preferences.
 - Verify keyboard navigation, focus handling, Escape behavior, responsive positioning and screen-reader support.
 
+## Typography
+
+- Display and headings (`h1`–`h6`, hero titles, and the navigation wordmark) use **Unbounded**, with weights 500, 600, and 700 only. Never use Unbounded for small UI text such as buttons, labels, navigation links, badges, or inputs.
+- Body and UI text use the **Inter variable font**. It is the default for `html` and `body`, and all components inherit it unless intentionally overridden.
+- Monospace, code, and technical labels use **JetBrains Mono**, with weights 400 and 500 only.
+- Fonts are self-hosted with `@fontsource` and `@fontsource-variable`. Do not load fonts from the Google Fonts CDN or add a Google Fonts `<link>`.
+- Use the `--font-display`, `--font-body`, and `--font-mono` design tokens defined in `src/styles/tokens.css`.
+- Space Grotesk was fully removed from this project. Do not reintroduce it.
+- The site is bilingual in Ukrainian and English. Verify full Cyrillic support before adopting any new font.
+
 ## Validation
 
 After code changes:

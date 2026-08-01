@@ -36,7 +36,7 @@ export function GuideNotReadyState({
               Guide Status
             </p>
 
-            <h1 className="mt-1 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-[-0.03em] text-[var(--text)]">
+            <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-[-0.03em] text-[var(--text)]">
               Finish preparing this guide
             </h1>
 

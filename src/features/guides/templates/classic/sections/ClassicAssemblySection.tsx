@@ -43,7 +43,7 @@ export function ClassicAssemblySection({
                     className="h-full w-full object-contain"
                   />
                 ) : (
-                  <p className="font-[family-name:var(--font-inter)] text-sm text-[#716A79]">
+                  <p className="font-[family-name:var(--font-body)] text-sm text-[#716A79]">
                     {t("guide.assembly.imageMissing")}
                   </p>
                 )}
@@ -51,18 +51,18 @@ export function ClassicAssemblySection({
             ) : null}
 
             <div className="p-5">
-              <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#76558F]">
+              <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#76558F]">
                 {t("guide.assembly.step", {
                   number: String(step.order).padStart(2, "0"),
                 })}
               </p>
 
-              <h3 className="mt-2 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold tracking-[-0.02em] text-[#181221]">
+              <h3 className="mt-2 font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.02em] text-[#181221]">
                 {step.title}
               </h3>
 
               {step.description ? (
-                <p className="mt-3 font-[family-name:var(--font-inter)] text-sm leading-6 text-[#5F5866]">
+                <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-6 text-[#5F5866]">
                   {step.description}
                 </p>
               ) : null}
@@ -71,9 +71,9 @@ export function ClassicAssemblySection({
                 {step.parts.map((part) => (
                   <span
                     key={part.id}
-                    className="inline-flex items-center rounded-full border border-[#D6CAE0] bg-[#F7F3FA] px-3 py-1.5 font-[family-name:var(--font-inter)] text-xs font-medium text-[#5F5866]"
+                    className="inline-flex items-center rounded-full border border-[#D6CAE0] bg-[#F7F3FA] px-3 py-1.5 font-[family-name:var(--font-body)] text-xs font-medium text-[#5F5866]"
                   >
-                    <span className="mr-2 font-[family-name:var(--font-jetbrains-mono)] text-[#76558F]">
+                    <span className="mr-2 font-[family-name:var(--font-mono)] text-[#76558F]">
                       {String(part.number).padStart(2, "0")}
                     </span>
 

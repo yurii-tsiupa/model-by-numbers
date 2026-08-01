@@ -112,17 +112,17 @@ export default function SavedGuidePage() {
             />
           </div>
 
-          <p className="mt-5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+          <p className="mt-5 font-[family-name:var(--font-mono)] text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
             Guide unavailable
           </p>
 
-          <h1 className="mt-2 font-[family-name:var(--font-space-grotesk)] text-xl font-semibold tracking-[-0.02em] text-[var(--text)]">
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.02em] text-[var(--text)]">
             {t(
               "guide.savedNotFound",
             )}
           </h1>
 
-          <p className="mt-3 font-[family-name:var(--font-inter)] text-sm leading-6 text-[var(--text-secondary)]">
+          <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-6 text-[var(--text-secondary)]">
             {t(
               "guide.savedNotFoundDescription",
             )}
@@ -130,7 +130,7 @@ export default function SavedGuidePage() {
 
           <Link
             href={editorHref}
-            className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 font-[family-name:var(--font-inter)] text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]"
+            className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 font-[family-name:var(--font-body)] text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]"
           >
             <ArrowLeft
               className="h-4 w-4"

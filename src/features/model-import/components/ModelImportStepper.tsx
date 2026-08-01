@@ -93,7 +93,7 @@ export function ModelImportStepper({
                 <span className="min-w-0">
                   <span
                     className={`
-                      block font-[var(--font-space-grotesk)] text-xs font-medium
+                      block font-[var(--font-body)] text-xs font-medium
                       ${
                         isCurrent
                           ? "text-[var(--accent)]"

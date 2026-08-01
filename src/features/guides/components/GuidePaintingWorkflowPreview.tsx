@@ -85,16 +85,16 @@ export function GuidePaintingWorkflowPreview({
       <section className="rounded-3xl border border-[#E3DEEC] bg-[#FAF9FC] p-5 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="min-w-0">
-            <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.16em] text-[#76558F]">
+            <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.16em] text-[#76558F]">
               {t("guide.workflow.projectSummary")}
             </p>
 
-            <h1 className="mt-3 break-words font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-[-0.035em] text-[#181221] sm:text-4xl">
+            <h1 className="mt-3 break-words font-[family-name:var(--font-display)] text-3xl font-semibold tracking-[-0.035em] text-[#181221] sm:text-4xl">
               {guide.title}
             </h1>
 
             {summary?.modelName ? (
-              <p className="mt-2 font-[family-name:var(--font-inter)] text-sm text-[#716A79]">
+              <p className="mt-2 font-[family-name:var(--font-body)] text-sm text-[#716A79]">
                 {summary.modelName}
               </p>
             ) : null}
@@ -110,7 +110,7 @@ export function GuidePaintingWorkflowPreview({
                 rounded-full
                 border
                 px-3
-                font-[family-name:var(--font-inter)]
+                font-[family-name:var(--font-body)]
                 text-xs
                 font-semibold
                 ${
@@ -200,15 +200,15 @@ export function GuidePaintingWorkflowPreview({
                 />
 
                 <div className="min-w-0">
-                  <h3 className="truncate font-[family-name:var(--font-inter)] text-sm font-semibold text-[#181221]">
+                  <h3 className="truncate font-[family-name:var(--font-display)] text-sm font-semibold text-[#181221]">
                     {color.name}
                   </h3>
 
-                  <p className="mt-1 font-[family-name:var(--font-jetbrains-mono)] text-[11px] uppercase tracking-[0.08em] text-[#716A79]">
+                  <p className="mt-1 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-[#716A79]">
                     {color.hex}
                   </p>
 
-                  <p className="mt-1 font-[family-name:var(--font-inter)] text-xs text-[#716A79]">
+                  <p className="mt-1 font-[family-name:var(--font-body)] text-xs text-[#716A79]">
                     {t("guide.workflow.colorUsage", {
                       count: color.usageCount,
                     })}
@@ -242,16 +242,16 @@ export function GuidePaintingWorkflowPreview({
               >
                 <header>
                   <div className="flex items-start gap-4">
-                    <span className="pt-1 font-[family-name:var(--font-jetbrains-mono)] text-xs font-semibold text-[#76558F]">
+                    <span className="pt-1 font-[family-name:var(--font-mono)] text-xs font-semibold text-[#76558F]">
                       {String(index + 1).padStart(2, "0")}
                     </span>
 
                     <div className="min-w-0 flex-1">
-                      <h3 className="break-words font-[family-name:var(--font-space-grotesk)] text-xl font-semibold tracking-[-0.02em] text-[#181221]">
+                      <h3 className="break-words font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.02em] text-[#181221]">
                         {part.name}
                       </h3>
 
-                      <p className="mt-2 font-[family-name:var(--font-inter)] text-sm leading-6 text-[#716A79]">
+                      <p className="mt-2 font-[family-name:var(--font-body)] text-sm leading-6 text-[#716A79]">
                         {workflow?.stages.length
                           ? t(
                               "guide.workflow.stageCount",
@@ -280,7 +280,7 @@ export function GuidePaintingWorkflowPreview({
                       </p>
 
                       {workflow?.paintBeforeAssembly ? (
-                        <span className="mt-3 inline-flex min-h-7 items-center rounded-full border border-[#D6CAE0] bg-[#F7F3FA] px-2.5 font-[family-name:var(--font-inter)] text-xs font-medium text-[#76558F]">
+                        <span className="mt-3 inline-flex min-h-7 items-center rounded-full border border-[#D6CAE0] bg-[#F7F3FA] px-2.5 font-[family-name:var(--font-body)] text-xs font-medium text-[#76558F]">
                           {t(
                             "guide.workflow.beforeAssembly",
                           )}
@@ -335,7 +335,7 @@ export function GuidePaintingWorkflowPreview({
                                 key={stage.id}
                                 className="flex break-inside-avoid-page gap-4 border-b border-[var(--border)] pb-5 last:border-b-0 last:pb-0"
                               >
-                                <span className="pt-1 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[#AAA2B1]">
+                                <span className="pt-1 font-[family-name:var(--font-mono)] text-[10px] text-[#AAA2B1]">
                                   {String(
                                     stage.order,
                                   ).padStart(2, "0")}
@@ -350,13 +350,13 @@ export function GuidePaintingWorkflowPreview({
                                 </div>
 
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium uppercase tracking-[0.12em] text-[#8A8291]">
+                                  <p className="font-[family-name:var(--font-mono)] text-[10px] font-medium uppercase tracking-[0.12em] text-[#8A8291]">
                                     {t(
                                       `painting.stageTypes.${stage.type}`,
                                     )}
                                   </p>
 
-                                  <h4 className="mt-1 font-[family-name:var(--font-inter)] text-base font-semibold text-[#181221]">
+                                  <h4 className="mt-1 font-[family-name:var(--font-display)] text-base font-semibold text-[#181221]">
                                     {getPaintingStageLabel(
                                       stage,
                                       t,
@@ -373,18 +373,18 @@ export function GuidePaintingWorkflowPreview({
                                         }}
                                       />
 
-                                      <span className="font-[family-name:var(--font-inter)] text-sm text-[#716A79]">
+                                      <span className="font-[family-name:var(--font-body)] text-sm text-[#716A79]">
                                         {color.name}
                                         {" · "}
-                                        <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs">
+                                        <span className="font-[family-name:var(--font-mono)] text-xs">
                                           C{String(color.number).padStart(2, "0")} · {color.hex.toUpperCase()}
                                         </span>
                                       </span>
                                     </div>
-                                  ) : missingColor ? null : <div className="mt-3 flex items-center gap-2"><span className="grid h-6 w-6 place-items-center rounded-lg border border-dashed border-[#D5CFDD] bg-white text-xs text-[#8A8291]">—</span><span className="font-[family-name:var(--font-inter)] text-sm text-[#716A79]">{t("painting.stage.noColor")}</span></div>}
+                                  ) : missingColor ? null : <div className="mt-3 flex items-center gap-2"><span className="grid h-6 w-6 place-items-center rounded-lg border border-dashed border-[#D5CFDD] bg-white text-xs text-[#8A8291]">—</span><span className="font-[family-name:var(--font-body)] text-sm text-[#716A79]">{t("painting.stage.noColor")}</span></div>}
 
                                   {missingColor ? (
-                                    <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#E5D3A5] bg-[#FFF9E8] px-2.5 py-1.5 font-[family-name:var(--font-inter)] text-xs font-medium text-[#755B17]">
+                                    <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#E5D3A5] bg-[#FFF9E8] px-2.5 py-1.5 font-[family-name:var(--font-body)] text-xs font-medium text-[#755B17]">
                                       <CircleAlert
                                         className="h-3.5 w-3.5"
                                         strokeWidth={1.8}
@@ -398,7 +398,7 @@ export function GuidePaintingWorkflowPreview({
                                   ) : null}
 
                                   {stage.recommendedCoats ? (
-                                    <p className="mt-3 font-[family-name:var(--font-inter)] text-sm text-[#716A79]">
+                                    <p className="mt-3 font-[family-name:var(--font-body)] text-sm text-[#716A79]">
                                       {t(
                                         "guide.workflow.coats",
                                         {
@@ -410,7 +410,7 @@ export function GuidePaintingWorkflowPreview({
                                   ) : null}
 
                                   {stage.notes ? (
-                                    <p className="mt-3 whitespace-pre-wrap font-[family-name:var(--font-inter)] text-sm leading-6 text-[#5F5866]">
+                                    <p className="mt-3 whitespace-pre-wrap font-[family-name:var(--font-body)] text-sm leading-6 text-[#5F5866]">
                                       {stage.notes}
                                     </p>
                                   ) : null}
@@ -430,7 +430,7 @@ export function GuidePaintingWorkflowPreview({
                           aria-hidden="true"
                         />
 
-                        <p className="font-[family-name:var(--font-inter)] text-sm leading-6 text-[#755B17]">
+                        <p className="font-[family-name:var(--font-body)] text-sm leading-6 text-[#755B17]">
                           {t(
                             "guide.workflow.noWorkflowAvailable",
                           )}
@@ -468,11 +468,11 @@ function Summary({
 }: SummaryProps) {
   return (
     <div className="rounded-xl border border-[#E3DEEC] bg-white p-3.5">
-      <dt className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase tracking-[0.1em] text-[#8A8291]">
+      <dt className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.1em] text-[#8A8291]">
         {label}
       </dt>
 
-      <dd className="mt-2 break-words font-[family-name:var(--font-inter)] text-sm font-medium leading-5 text-[#312A37]">
+      <dd className="mt-2 break-words font-[family-name:var(--font-body)] text-sm font-medium leading-5 text-[#312A37]">
         {value}
       </dd>
     </div>
@@ -490,11 +490,11 @@ function SectionHeading({
 }: SectionHeadingProps) {
   return (
     <div className="flex items-center gap-4">
-      <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs font-semibold text-[#76558F]">
+      <span className="font-[family-name:var(--font-mono)] text-xs font-semibold text-[#76558F]">
         {index}
       </span>
 
-      <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold tracking-[-0.03em] text-[#181221] sm:text-3xl">
+      <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.03em] text-[#181221] sm:text-3xl">
         {title}
       </h2>
 
@@ -515,7 +515,7 @@ function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="mt-5 rounded-2xl border border-dashed border-[#D5CFDD] bg-[#FAF9FC] px-5 py-6">
-      <p className="font-[family-name:var(--font-inter)] text-sm text-[#716A79]">
+      <p className="font-[family-name:var(--font-body)] text-sm text-[#716A79]">
         {children}
       </p>
     </div>

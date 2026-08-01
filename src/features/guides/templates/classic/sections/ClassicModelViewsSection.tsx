@@ -35,7 +35,7 @@ export function ClassicModelViewsSection({
               key={view.id}
               className="break-inside-avoid page-break-inside-avoid"
             >
-              <h3 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-sm font-semibold tracking-[-0.01em] text-[#181221]">
+              <h3 className="mb-2 font-[family-name:var(--font-display)] text-sm font-semibold tracking-[-0.01em] text-[#181221]">
                 {view.caption??t(view.labelKey)}
               </h3>
               <div className="w-full">

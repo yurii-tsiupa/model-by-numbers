@@ -50,7 +50,7 @@ export function ModelImportProgress({
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="font-[var(--font-space-grotesk)] text-base font-semibold text-[var(--text)]">
+                <p className="font-[var(--font-body)] text-base font-semibold text-[var(--text)]">
                   {t(stageKey)}
                 </p>
 

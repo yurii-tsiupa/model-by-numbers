@@ -25,16 +25,16 @@ export function GuidePartsSection({
       <div className="flex items-center gap-3">
         <span className="h-px w-10 bg-[#76558F]" />
 
-        <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
+        <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
           {t("guide.stepReference")}
         </p>
       </div>
 
-      <h2 className="mt-5 font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-[-0.04em] text-[#181221]">
+      <h2 className="mt-5 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-[-0.04em] text-[#181221]">
         {t("guide.parts")}
       </h2>
 
-      <p className="mt-3 max-w-3xl font-[family-name:var(--font-inter)] text-sm leading-6 text-[#716A79]">
+      <p className="mt-3 max-w-3xl font-[family-name:var(--font-body)] text-sm leading-6 text-[#716A79]">
         {t("guide.partsDescription")}
       </p>
 
@@ -53,12 +53,12 @@ export function GuidePartsSection({
               className="rounded-2xl border border-[#E3DEEC] bg-white p-4"
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D6CAE0] bg-[#F7F3FA] font-[family-name:var(--font-jetbrains-mono)] text-sm font-semibold text-[#76558F]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D6CAE0] bg-[#F7F3FA] font-[family-name:var(--font-mono)] text-sm font-semibold text-[#76558F]">
                   {part.number}
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-[family-name:var(--font-inter)] text-sm font-semibold text-[#181221]">
+                  <p className="truncate font-[family-name:var(--font-body)] text-sm font-semibold text-[#181221]">
                     {part.name}
                   </p>
 
@@ -80,7 +80,7 @@ export function GuidePartsSection({
                     }}
                   />
                 ) : (
-                  <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs text-[#AAA2B1]">
+                  <span className="font-[family-name:var(--font-mono)] text-xs text-[#AAA2B1]">
                     —
                   </span>
                 )}
@@ -96,24 +96,24 @@ export function GuidePartsSection({
         <table className="w-full min-w-[42rem] border-collapse">
           <thead className="border-b border-[#E3DEEC] bg-[#FAF9FC]">
             <tr>
-              <th className="px-5 py-4 text-left font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A8291]">
+              <th className="px-5 py-4 text-left font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A8291]">
                 #
               </th>
 
-              <th className="px-5 py-4 text-left font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A8291]">
+              <th className="px-5 py-4 text-left font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A8291]">
                 {t("guide.parts")}
               </th>
 
-              <th className="px-5 py-4 text-left font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A8291]">
+              <th className="px-5 py-4 text-left font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A8291]">
                 {t("guide.palette")}
               </th>
 
-              <th className="px-5 py-4 text-left font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A8291]">
+              <th className="px-5 py-4 text-left font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A8291]">
                 {t("guide.paintReference")}
               </th>
 
               <th
-                className="px-5 py-4 text-left font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A8291]"
+                className="px-5 py-4 text-left font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A8291]"
                 aria-label={t("guide.baseColor")}
               />
             </tr>
@@ -135,15 +135,15 @@ export function GuidePartsSection({
                       : "bg-[#FCFBFD]"
                   }`}
                 >
-                  <td className="px-5 py-4 font-[family-name:var(--font-jetbrains-mono)] text-sm font-semibold text-[#76558F]">
+                  <td className="px-5 py-4 font-[family-name:var(--font-mono)] text-sm font-semibold text-[#76558F]">
                     {part.number}
                   </td>
 
-                  <td className="px-5 py-4 font-[family-name:var(--font-inter)] text-sm font-medium text-[#181221]">
+                  <td className="px-5 py-4 font-[family-name:var(--font-body)] text-sm font-medium text-[#181221]">
                     {part.name}
                   </td>
 
-                  <td className="px-5 py-4 font-[family-name:var(--font-jetbrains-mono)] text-xs text-[#5F5866]">
+                  <td className="px-5 py-4 font-[family-name:var(--font-mono)] text-xs text-[#5F5866]">
                     {assigned
                       ? formatColorNumber(
                           part.colorNumber!,
@@ -151,7 +151,7 @@ export function GuidePartsSection({
                       : t("common.unassigned")}
                   </td>
 
-                  <td className="px-5 py-4 font-[family-name:var(--font-inter)] text-sm text-[#5F5866]">
+                  <td className="px-5 py-4 font-[family-name:var(--font-body)] text-sm text-[#5F5866]">
                     {assigned
                       ? part.colorName
                       : t("common.unassigned")}
@@ -167,7 +167,7 @@ export function GuidePartsSection({
                         }}
                       />
                     ) : (
-                      <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs text-[#AAA2B1]">
+                      <span className="font-[family-name:var(--font-mono)] text-xs text-[#AAA2B1]">
                         —
                       </span>
                     )}

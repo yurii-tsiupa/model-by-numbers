@@ -2,6 +2,10 @@
 [data-theme='light'] {
   color-scheme: light;
 
+  --font-display: 'Unbounded', sans-serif;
+  --font-body: 'Inter Variable', 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
   --bg: #f7f6f9;
   --card: #ffffff;
   --surface: #f0eef3;

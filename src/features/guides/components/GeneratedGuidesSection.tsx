@@ -102,7 +102,7 @@ export function GeneratedGuidesSection({
         </div>
 
         <div className="min-w-0">
-          <h3 className="font-[family-name:var(--font-space-grotesk)] text-base font-semibold tracking-[-0.02em] text-[var(--text)]">
+          <h3 className="font-[family-name:var(--font-display)] text-base font-semibold tracking-[-0.02em] text-[var(--text)]">
             {t("history.title")}
           </h3>
 
@@ -191,7 +191,7 @@ export function GeneratedGuidesSection({
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="font-[family-name:var(--font-space-grotesk)] text-sm font-semibold tracking-[-0.015em] text-[var(--text)]">
+                  <p className="font-[family-name:var(--font-mono)] text-sm font-semibold tracking-[-0.015em] text-[var(--text)]">
                     {versionLabel}
                   </p>
 

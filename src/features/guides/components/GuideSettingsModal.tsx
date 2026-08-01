@@ -130,7 +130,7 @@ export function GuideSettingsModal({
 
               <h2
                 id="guide-settings-title"
-                className="mt-1 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold tracking-[-0.025em] text-[var(--text)]"
+                className="mt-1 font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.025em] text-[var(--text)]"
               >
                 {t("guide.settings.title")}
               </h2>

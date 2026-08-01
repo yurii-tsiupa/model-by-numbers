@@ -121,11 +121,11 @@ export function PropertiesPanel() {
   return (
     <aside className="flex max-h-[22rem] min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-[var(--border)] bg-[var(--card)] lg:h-full lg:max-h-none lg:w-72 lg:border-l lg:border-t-0">
       <div className="shrink-0 border-b border-[var(--border)] p-4">
-        <p className="font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+        <p className="font-[family-name:var(--font-mono)] text-xs font-medium uppercase tracking-[0.18em] text-[var(--text-secondary)]">
           {t("properties.title")}
         </p>
 
-        <h2 className="mt-2 truncate font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-[var(--text)]">
+        <h2 className="mt-2 truncate font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--text)]">
           {selectedPart
             ? selectedPart.name
             : t("properties.noSelection")}

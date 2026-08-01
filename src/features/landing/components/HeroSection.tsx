@@ -24,7 +24,7 @@ export function HeroSection() {
               {t('landing.hero.eyebrow')}
             </div>
 
-            <h1 className="m-0 max-w-[900px] text-[clamp(42px,6vw,82px)] font-semibold leading-[0.96] tracking-[-0.055em]">
+            <h1 className="m-0 max-w-[900px] text-[clamp(38px,5.4vw,72px)] font-semibold leading-[0.98] tracking-[-0.045em]">
               {t('landing.hero.title')}
             </h1>
 

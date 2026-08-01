@@ -51,17 +51,17 @@ export function GuideCoverSection({
         <div className="flex items-center gap-3">
           <span className="h-px w-10 bg-[#76558F]" />
 
-          <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
+          <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
             {t("guide.cover.document")}
           </p>
         </div>
 
-        <h1 className="mt-5 max-w-3xl break-words font-[family-name:var(--font-space-grotesk)] text-4xl font-semibold leading-[1.05] tracking-[-0.045em] text-[#181221] sm:text-5xl">
+        <h1 className="mt-5 max-w-3xl break-words font-[family-name:var(--font-display)] text-4xl font-semibold leading-[1.05] tracking-[-0.045em] text-[#181221] sm:text-5xl">
           {guide.title}
         </h1>
 
         {summary?.modelName ? (
-          <p className="mt-3 break-words font-[family-name:var(--font-inter)] text-lg text-[#716A79]">
+          <p className="mt-3 break-words font-[family-name:var(--font-body)] text-lg text-[#716A79]">
             {summary.modelName}
           </p>
         ) : null}
@@ -84,7 +84,7 @@ export function GuideCoverSection({
             <div className="space-y-2 text-center">
               <div className="mx-auto h-10 w-10 rounded-xl border border-[#E3DEEC] bg-[#FAF9FC]" />
 
-              <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase tracking-[0.12em] text-[#AAA2B1]">
+              <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-[#AAA2B1]">
                 {t("guide.workflow.notSpecified")}
               </p>
             </div>
@@ -93,7 +93,7 @@ export function GuideCoverSection({
       </div>
 
       <div>
-        <p className="font-[family-name:var(--font-inter)] text-sm text-[#8A8291]">
+        <p className="font-[family-name:var(--font-body)] text-sm text-[#8A8291]">
           {t("guide.generated")}
           {" · "}
           {formatLocalizedDate(
@@ -122,7 +122,7 @@ export function GuideCoverSection({
         </dl>
 
         {guide.description ? (
-          <p className="mt-6 max-w-3xl whitespace-pre-wrap font-[family-name:var(--font-inter)] text-sm leading-6 text-[#5F5866]">
+          <p className="mt-6 max-w-3xl whitespace-pre-wrap font-[family-name:var(--font-body)] text-sm leading-6 text-[#5F5866]">
             {guide.description}
           </p>
         ) : null}
@@ -142,11 +142,11 @@ function CoverFact({
 }: CoverFactProps) {
   return (
     <div>
-      <dt className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium uppercase tracking-[0.12em] text-[#8A8291]">
+      <dt className="font-[family-name:var(--font-mono)] text-[10px] font-medium uppercase tracking-[0.12em] text-[#8A8291]">
         {label}
       </dt>
 
-      <dd className="mt-2 break-words font-[family-name:var(--font-inter)] text-base font-semibold text-[#312A37]">
+      <dd className="mt-2 break-words font-[family-name:var(--font-body)] text-base font-semibold text-[#312A37]">
         {value}
       </dd>
     </div>

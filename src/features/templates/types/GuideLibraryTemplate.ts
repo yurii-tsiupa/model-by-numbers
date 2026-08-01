@@ -6,8 +6,8 @@ export type GuideTemplateSettings = {
   pageBackground: string;
   textColor: string;
   accentColor: string;
-  headingFont: "spaceGrotesk" | "inter";
-  bodyFont: "inter" | "spaceGrotesk";
+  headingFont: "unbounded";
+  bodyFont: "inter";
   pageNumberStyle: PageNumberStyle;
   pageNumberPosition: PageNumberPosition;
   dividerStyle: "none" | "line" | "accent";
