@@ -161,7 +161,7 @@ export function GuidePreview({
   }
 
   return (
-    <main className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+    <main className="min-h-0 flex-1 bg-[var(--bg)] text-[var(--text)]">
       <GuidePreviewHeader
         projectId={resolvedGuide.projectId}
         title={resolvedGuide.title}

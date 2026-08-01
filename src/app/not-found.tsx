@@ -11,7 +11,7 @@ import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 export default function NotFoundPage() {
   const { t } = useTranslation();
   return (
-    <main className="relative flex min-h-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--text)]">
+    <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--bg)] text-[var(--text)]">
       <AppHeader variant="public" showNavigation={false}/>
 
       <div

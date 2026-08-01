@@ -10,6 +10,6 @@ import { AppShell } from "./AppShell";
 export function ProtectedAppShell({ children }: { children: ReactNode }) {
   const router = useRouter(); const { user, isLoading } = useAuth(); const { t } = useTranslation();
   useEffect(() => { if (!isLoading && !user) router.replace("/login"); }, [isLoading, router, user]);
-  if (isLoading || !user) return <main className="flex min-h-screen items-center justify-center bg-[var(--bg)]"><Loader label={t("auth.checking")}/></main>;
-  return <AppShell variant="application"><main className="min-h-[calc(100dvh-4rem)] w-full min-w-0 p-4 sm:p-6 lg:p-8">{children}</main></AppShell>;
+  if (isLoading || !user) return <main className="flex min-h-0 flex-1 items-center justify-center bg-[var(--bg)]"><Loader label={t("auth.checking")}/></main>;
+  return <AppShell variant="application"><main className="h-full w-full min-w-0 p-4 sm:p-6 lg:p-8">{children}</main></AppShell>;
 }

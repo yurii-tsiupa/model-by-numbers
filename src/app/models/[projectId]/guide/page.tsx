@@ -69,7 +69,7 @@ type GuideLoadingStateProps = {
 
 function GuideLoadingState({ label }: GuideLoadingStateProps) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
+    <main className="flex min-h-0 flex-1 items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
       <section className="flex flex-col items-center text-center">
         <div className="relative flex h-16 w-16 items-center justify-center">
           <span className="absolute bottom-1 h-8 w-11 rounded-xl border border-[var(--border)] bg-[var(--card)]" />
@@ -109,7 +109,7 @@ function GuideErrorState({
   const ErrorIcon = isAccessError ? ShieldAlert : Box;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6 py-12 text-[var(--text)]">
+    <main className="flex min-h-0 flex-1 items-center justify-center bg-[var(--bg)] px-6 py-12 text-[var(--text)]">
       <section className="w-full max-w-md rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 sm:p-8">
         <div className="flex items-start gap-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--bg)]">

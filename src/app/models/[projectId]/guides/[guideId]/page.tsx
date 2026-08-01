@@ -79,7 +79,7 @@ export default function SavedGuidePage() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
+      <main className="flex min-h-0 flex-1 items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
         <Loader
           label={t(
             "guide.loadingSaved",
@@ -102,7 +102,7 @@ export default function SavedGuidePage() {
 
   if (unavailable) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6 py-12 text-[var(--text)]">
+      <main className="flex min-h-0 flex-1 items-center justify-center bg-[var(--bg)] px-6 py-12 text-[var(--text)]">
         <section className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 text-center sm:p-8">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg)]">
             <FileQuestion

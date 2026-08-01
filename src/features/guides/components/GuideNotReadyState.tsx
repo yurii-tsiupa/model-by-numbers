@@ -17,7 +17,7 @@ export function GuideNotReadyState({
   );
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6 py-12 text-[var(--text)]">
+    <main className="flex min-h-0 flex-1 items-center justify-center bg-[var(--bg)] px-6 py-12 text-[var(--text)]">
       <section className="w-full max-w-3xl rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 sm:p-8">
         <div className="flex items-start gap-4">
           <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">

@@ -32,7 +32,7 @@ export default function ModelEditorPage() {
 
   if (isAuthLoading || !user) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
+      <main className="flex min-h-0 flex-1 items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
         <Loader label={t("models.loading")} />
       </main>
     );
@@ -40,7 +40,7 @@ export default function ModelEditorPage() {
 
   if (projectQuery.isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
+      <main className="flex min-h-0 flex-1 items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
         <div className="flex flex-col items-center gap-4">
           <LoaderCircle className="h-7 w-7 animate-spin text-[var(--accent)]" />
 
@@ -60,7 +60,7 @@ export default function ModelEditorPage() {
 
   if (projectQuery.isError || !projectQuery.data) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
+      <main className="flex min-h-0 flex-1 items-center justify-center bg-[var(--bg)] px-6 text-[var(--text)]">
         <div className="w-full max-w-md rounded-[1.75rem] border border-[var(--border)] bg-[var(--card)] p-8 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--bg)]">
             <Box className="h-6 w-6 text-[var(--accent)]" />
