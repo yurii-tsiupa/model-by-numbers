@@ -1,14 +1,15 @@
 import { StyleSheet } from "@react-pdf/renderer";
 import { PDF_PAGE_POINTS } from "./printPageConstants";
+import { defaultGuideDesignTokens } from "../design/guideDesignTokens";
 
 export const pdfColors = {
-  accent: "#f97316",
-  accentLight: "#fff7ed",
-  background: "#ffffff",
-  surface: "#f5f5f5",
-  border: "#e5e5e5",
-  text: "#171717",
-  muted: "#737373",
+  accent: defaultGuideDesignTokens.accentColor,
+  accentLight: "#f7f3fa",
+  background: defaultGuideDesignTokens.pageBackground,
+  surface: defaultGuideDesignTokens.surfaceColor,
+  border: defaultGuideDesignTokens.borderColor,
+  text: defaultGuideDesignTokens.textColor,
+  muted: defaultGuideDesignTokens.mutedTextColor,
 };
 
 export const guidePdfStyles = StyleSheet.create({

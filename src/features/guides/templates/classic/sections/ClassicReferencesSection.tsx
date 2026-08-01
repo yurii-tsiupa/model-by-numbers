@@ -26,25 +26,25 @@ export function ClassicReferencesSection({
         description={t("guide.referencesDescription")}
       />
 
-      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {references.map((reference) => (
+      <div className="mt-8 grid gap-5 sm:grid-cols-2">
+        {references.map((reference, index) => (
           <article
             key={reference.id}
-            className={`${styles.card} overflow-hidden`}
+            className={`${styles.card} overflow-hidden ${references.length === 1 || (references.length === 3 && index === 0) ? "sm:col-span-2" : ""}`}
           >
             <div className="flex aspect-[4/3] items-center justify-center bg-[#FAF9FC] p-4">
               <img
                 src={reference.dataUrl}
-                alt={reference.name}
+                alt={reference.caption?.trim() || t("guide.references")}
                 className="h-full w-full object-contain"
               />
             </div>
 
-            <div className="border-t border-[#E3DEEC] p-4">
+            {reference.caption?.trim() ? <div className="border-t border-[#E3DEEC] p-4">
               <p className="break-words font-[family-name:var(--font-inter)] text-sm font-medium leading-6 text-[#312A37]">
-                {reference.name}
+                {reference.caption.trim()}
               </p>
-            </div>
+            </div> : null}
           </article>
         ))}
       </div>

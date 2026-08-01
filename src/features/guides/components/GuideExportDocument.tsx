@@ -31,7 +31,7 @@ export function GuideExportDocument({
             templateSettings={templateSettings}
           />
 
-          {viewModel.hasPaintingWorkflow ? (
+          {viewModel.sections.some((section) => section.id === "painting-workflow") ? (
             <GuideSectionAnchor id="painting-workflow">
               <GuidePaintingWorkflowSection
                 guide={viewModel.workflowGuide}

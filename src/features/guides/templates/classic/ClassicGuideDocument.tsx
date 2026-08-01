@@ -61,11 +61,9 @@ export function ClassicGuideDocument({
       {...metadata}
     >
       <GuidePdfTemplateProvider settings={templateSettings}>
-      <GuideCoverPage guide={guide} exportDate={exportDate} templateSettings={templateSettings} />
+      <GuideCoverPage viewModel={model} exportDate={exportDate} templateSettings={templateSettings} />
 
-      <GuideTableOfContentsPage
-        viewModel={model}
-      />
+      {model.sections.length > 4 ? <GuideTableOfContentsPage viewModel={model} /> : null}
 
       {model.sections.map((section) => {
         switch (section.id) {
@@ -73,7 +71,7 @@ export function ClassicGuideDocument({
             return (
               <GuideProjectPage
                 key={section.id}
-                guide={guide}
+                viewModel={model}
               />
             );
 
@@ -81,7 +79,7 @@ export function ClassicGuideDocument({
             return (
               <GuideModelViewsPage
                 key={section.id}
-                guide={guide}
+                viewModel={model}
               />
             );
 
@@ -106,7 +104,7 @@ export function ClassicGuideDocument({
               <GuideReferencesPage
                 key={section.id}
                 references={
-                  guide.references ?? []
+                  model.includedReferences
                 }
                 locale={model.locale}
                 projectName={guide.title}
@@ -117,7 +115,7 @@ export function ClassicGuideDocument({
             return (
               <GuidePalettePage
                 key={section.id}
-                guide={guide}
+                viewModel={model}
               />
             );
 
@@ -126,6 +124,7 @@ export function ClassicGuideDocument({
               <GuidePartsPage
                 key={section.id}
                 guide={guide}
+                parts={model.referencedParts}
               />
             );
 

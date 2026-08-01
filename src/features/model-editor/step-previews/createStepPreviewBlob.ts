@@ -8,6 +8,8 @@ import {
   DirectionalLight,
   DoubleSide,
   Float32BufferAttribute,
+  Line as ThreeLine,
+  LineBasicMaterial,
   Mesh,
   MeshStandardMaterial,
   Object3D,
@@ -33,10 +35,11 @@ import {
   STEP_PREVIEW_THEME,
   STEP_PREVIEW_WIDTH,
 } from "./constants";
-import { getStepPreviewFraming } from "./getStepPreviewFraming";
+import {getGuideOverviewFraming,getStepPreviewFraming} from "./getStepPreviewFraming";
 import type { StepPreviewFraming } from "./types";
 import {resolveStepPreviewComposition} from "./resolveStepPreviewComposition";
 import {getOrderedSimplePaintingSteps,withResolvedSimpleMarkerNumbers} from "../lib/markerNumbering";
+import {markerWorldDiameter,resolveMarkerVisualConfig,usesCompactMarkerVisuals,type MarkerRenderContext} from "./markerVisuals";
 
 let sharedRenderer: WebGLRenderer | null = null;
 let sharedCanvas: HTMLCanvasElement | null = null;
@@ -70,6 +73,7 @@ export async function createStepPreviewBlob({
   baseColor,
   shot,
   stepOrder=[],
+  markerRenderContext="step-preview",
 }: {
   model: Object3D;
   step: PaintingStage;
@@ -79,6 +83,7 @@ export async function createStepPreviewBlob({
   baseColor: string;
   shot?:PaintingStepPreviewShot;
   stepOrder?:readonly string[];
+  markerRenderContext?:MarkerRenderContext;
 }): Promise<{ blob: Blob; framing: StepPreviewFraming }> {
   const numberedDetails=withResolvedSimpleMarkerNumbers(manualDetails,getOrderedSimplePaintingSteps(parts,stepOrder));
   const resolved = resolvePaintingTargetReferences(step.targetReferences, parts, numberedDetails);
@@ -155,7 +160,8 @@ export async function createStepPreviewBlob({
   const modelBounds = new Box3().setFromObject(clone, true);
   const pins = pinTargets.map(target => target.pin);
   const manualCamera=shot?.type==="manualDetailRegion"||shot?.type==="manualStepCapture"?shot.camera:null;
-  const framing = manualCamera?{cameraPosition:manualCamera.position,target:manualCamera.target,up:manualCamera.up,targetRadius:manualCamera.targetRadius}:getStepPreviewFraming(targetBounds, modelBounds, pins.length === 1 && !resolvedParts.length ? pins[0] : undefined);
+  const guideOverview=!manualCamera&&markerRenderContext==="overview-marker-map";
+  const framing = manualCamera?{cameraPosition:manualCamera.position,target:manualCamera.target,up:manualCamera.up,targetRadius:manualCamera.targetRadius}:guideOverview?getGuideOverviewFraming(modelBounds):getStepPreviewFraming(targetBounds, modelBounds, pins.length === 1 && !resolvedParts.length ? pins[0] : undefined);
   const camera = new PerspectiveCamera(42, STEP_PREVIEW_ASPECT_RATIO, 0.01, 1000);
   camera.position.set(framing.cameraPosition.x, framing.cameraPosition.y, framing.cameraPosition.z);
   if(manualCamera)camera.zoom=manualCamera.zoom;
@@ -166,18 +172,22 @@ export async function createStepPreviewBlob({
   camera.far = Math.max(100, modelSize * 12);
   camera.updateProjectionMatrix();
 
+  const markerVisual=resolveMarkerVisualConfig(markerRenderContext,{width:STEP_PREVIEW_WIDTH,height:STEP_PREVIEW_HEIGHT}),compactMarkers=usesCompactMarkerVisuals(markerRenderContext),occupiedLabels:Array<{x:number;y:number}>=[];
   for (const { pin, number } of pinTargets) {
     const label = document.createElement("canvas");
     label.width = 256;
     label.height = 256;
     const context = label.getContext("2d");
     if (!context) continue;
+    const textureScale=256/markerVisual.diameter;
+    if(compactMarkers){context.shadowColor="rgba(24, 18, 33, 0.38)";context.shadowBlur=markerVisual.shadowBlur*textureScale;context.fillStyle="#FFFFFF";context.beginPath();context.arc(128,128,128-markerVisual.shadowBlur*textureScale,0,Math.PI*2);context.fill();context.shadowColor="transparent";}
     context.fillStyle = STEP_PREVIEW_THEME.markerBackground;
     context.beginPath();
-    context.arc(128, 128, 108, 0, Math.PI * 2);
+    context.arc(128,128,compactMarkers?128-(markerVisual.shadowBlur+markerVisual.outlineWidth)*textureScale:108,0,Math.PI*2);
     context.fill();
     context.fillStyle = STEP_PREVIEW_THEME.markerForeground;
-    context.font = "bold 128px sans-serif";
+    const fittedFont=markerVisual.fontSize*(String(number).length>2?.78:String(number).length>1?.9:1);
+    context.font = compactMarkers?`600 ${fittedFont*textureScale}px sans-serif`:"bold 128px sans-serif";
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(String(number), 128, 136);
@@ -187,8 +197,18 @@ export async function createStepPreviewBlob({
     const sprite = new Sprite(material);
     textures.push(texture);
     materials.push(material);
-    sprite.position.set(pin.position.x, pin.position.y, pin.position.z);
-    const size = Math.max(framing.targetRadius * 0.18, modelSize * 0.015);
+    const anchor=new Vector3(pin.position.x,pin.position.y,pin.position.z),projected=anchor.clone().project(camera),screen={x:(projected.x+1)*STEP_PREVIEW_WIDTH/2,y:(1-projected.y)*STEP_PREVIEW_HEIGHT/2};
+    const guideContext=compactMarkers;
+    let offsetX=0,offsetY=0;
+    if(guideContext&&occupiedLabels.some(item=>Math.hypot(item.x-screen.x,item.y-screen.y)<markerVisual.diameter*.86)){
+      const offsets=[[markerVisual.diameter*.72,-markerVisual.diameter*.72],[-markerVisual.diameter*.72,-markerVisual.diameter*.72],[markerVisual.diameter*.72,markerVisual.diameter*.72],[-markerVisual.diameter*.72,markerVisual.diameter*.72]];
+      const available=offsets.find(([x,y])=>!occupiedLabels.some(item=>Math.hypot(item.x-(screen.x+x),item.y-(screen.y+y))<markerVisual.diameter*.86));
+      if(available)[offsetX,offsetY]=available;
+    }
+    const display=projected.clone();display.x+=offsetX*2/STEP_PREVIEW_WIDTH;display.y-=offsetY*2/STEP_PREVIEW_HEIGHT;sprite.position.copy(display.unproject(camera));
+    occupiedLabels.push({x:screen.x+offsetX,y:screen.y+offsetY});
+    if(offsetX||offsetY){const geometry=new BufferGeometry().setFromPoints([anchor,sprite.position]);const lineMaterial=new LineBasicMaterial({color:0x6d28d9,transparent:true,opacity:.55,linewidth:markerVisual.leaderLineWidth});materials.push(lineMaterial);scene.add(new ThreeLine(geometry,lineMaterial));}
+    const size=compactMarkers?markerWorldDiameter(camera,sprite.position,markerVisual.diameter,STEP_PREVIEW_HEIGHT):Math.max(framing.targetRadius*.18,modelSize*.015);
     sprite.scale.set(size, size, size);
     sprite.renderOrder = 10;
     scene.add(sprite);

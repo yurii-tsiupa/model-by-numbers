@@ -6,12 +6,12 @@ import type { Locale } from "@/features/i18n/types/Locale";
 import { translate } from "@/features/i18n/lib/i18n";
 import { GuidePage } from "./GuidePage";
 
-const styles = StyleSheet.create({ grid: { flexDirection: "row", flexWrap: "wrap", gap: 14 }, card: { backgroundColor: "#fafafa", borderColor: pdfColors.border, borderRadius: 9, borderStyle: "solid", borderWidth: 1, padding: 7, width: "48%" }, image: { height: 184, objectFit: "contain", backgroundColor: "#f5f5f5" }, caption: { paddingHorizontal: 3, paddingBottom: 3 }, name: { fontSize: 10, fontWeight: 700, marginTop: 8 }, type: { fontSize: 8, color: pdfColors.muted, marginTop: 2, textTransform: "capitalize" } });
+const styles = StyleSheet.create({ grid: { flexDirection: "row", flexWrap: "wrap", gap: 14 }, card: { backgroundColor: "#fafafa", borderColor: pdfColors.border, borderRadius: 9, borderStyle: "solid", borderWidth: 1, padding: 7, width: "48%" }, image: { height: 184, objectFit: "contain", backgroundColor: "#f5f5f5" }, largeImage:{height:360}, caption: { paddingHorizontal: 3, paddingBottom: 3 }, name: { fontSize: 10, fontWeight: 700, marginTop: 8 }, type: { fontSize: 8, color: pdfColors.muted, marginTop: 2, textTransform: "capitalize" } });
 
 export function GuideReferencesPage({ references, locale, projectName }: { references: GuideReferenceImage[]; locale: Locale; projectName: string }) {
   const t = (key: Parameters<typeof translate>[1], values?: Parameters<typeof translate>[2]) => translate(locale, key, values);
   return <GuidePage locale={locale} projectName={projectName}>
     <Text style={guidePdfStyles.eyebrow}>{t("guide.source")}</Text><Text style={guidePdfStyles.pageTitle}>{t("guide.references")}</Text><Text style={guidePdfStyles.sectionDescription}>{t("pdf.referencesHelp")}</Text>
-    <View style={styles.grid}>{references.map(reference => <View key={reference.id} style={styles.card} wrap={false}>{reference.dataUrl ? <Image src={reference.dataUrl} style={styles.image}/> : <View style={[styles.image, guidePdfStyles.placeholder]}><Text>{t("pdf.missingView")}</Text></View>}<View style={styles.caption}><Text style={styles.name}>{reference.name}</Text><Text style={styles.type}>{t("guide.referenceType", { type: reference.type })}</Text></View></View>)}</View>
+    <View style={styles.grid}>{references.map((reference,index) => {const large=references.length===1||(references.length===3&&index===0),caption=reference.caption?.trim();return <View key={reference.id} style={[styles.card,large?{width:"100%"}:{}]} wrap={false}>{reference.dataUrl ? <Image src={reference.dataUrl} style={[styles.image,large?styles.largeImage:{}]}/> : <View style={[styles.image, guidePdfStyles.placeholder]}><Text>{t("pdf.missingView")}</Text></View>}{caption?<View style={styles.caption}><Text style={styles.name}>{caption}</Text></View>:null}</View>})}</View>
   </GuidePage>;
 }

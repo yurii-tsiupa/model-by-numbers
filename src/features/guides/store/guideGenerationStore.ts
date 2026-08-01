@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import type { GuideAssemblyStep, GuideExplodedView, GuideImages, GuideSettings } from "../types/ModelGuide";
+import type { GuideAssemblyStep, GuideExplodedView, GuideImages, GuideOverviewView, GuideReferenceImage, GuideSettings } from "../types/ModelGuide";
 import type { GuideAssetReference } from "../services/assets/types";
 
 export type GuideGenerationStatus =
@@ -30,6 +30,10 @@ type GuideGenerationState = {
   explodedView: GuideExplodedView | null;
   assemblySteps: GuideAssemblyStep[];
   assetReferences: GuideAssetReference[];
+  guideReferences: GuideReferenceImage[] | null;
+  guideReferencesProjectId: string | null;
+  overviewViews: GuideOverviewView[] | null;
+  overviewCaptureRequest: { projectId:string; viewId:string|null; type:GuideOverviewView["type"] } | null;
 
   startCapture: (projectId: string,totalSteps?:number) => void;
   setGuideExtras:(settings:GuideSettings,explodedView:GuideExplodedView|null,assemblySteps:GuideAssemblyStep[],assetReferences:GuideAssetReference[])=>void;
@@ -41,6 +45,9 @@ type GuideGenerationState = {
     projectId: string,
     images: GuideImages,
   ) => void;
+  setGuideReferences: (projectId: string, references: GuideReferenceImage[]) => void;
+  setOverviewViews:(views:GuideOverviewView[])=>void;
+  requestOverviewCapture:(request:{projectId:string;viewId:string|null;type:GuideOverviewView["type"]}|null)=>void;
   setError: (message: string) => void;
   reset: () => void;
 };
@@ -55,7 +62,7 @@ const initialState = {
   projectId: null,
   images: null,
   error: null,
-  settings:null,explodedView:null,assemblySteps:[],assetReferences:[],
+  settings:null,explodedView:null,assemblySteps:[],assetReferences:[],guideReferences:null,guideReferencesProjectId:null,overviewViews:null,overviewCaptureRequest:null,
 };
 
 export const useGuideGenerationStore =
@@ -63,7 +70,7 @@ export const useGuideGenerationStore =
     ...initialState,
 
     startCapture: (projectId,totalSteps=TOTAL_CAPTURE_STEPS) => {
-      set({
+      set((state)=>({
         status: "capturing",
         currentStep: null,
         completedSteps: 0,
@@ -71,7 +78,11 @@ export const useGuideGenerationStore =
         projectId,
         images: null,
         error: null,
-      });
+        guideReferences: null,
+        guideReferencesProjectId: null,
+        overviewViews: state.projectId===projectId?state.overviewViews:null,
+        overviewCaptureRequest: null,
+      }));
     },
     setGuideExtras:(settings,explodedView,assemblySteps,assetReferences)=>set({settings,explodedView,assemblySteps:assemblySteps.map(step=>({...step,parts:step.parts.map(part=>({...part}))})),assetReferences:[...assetReferences]}),
 
@@ -99,6 +110,9 @@ export const useGuideGenerationStore =
           : state,
       );
     },
+    setGuideReferences: (guideReferencesProjectId, guideReferences) => set({ guideReferencesProjectId, guideReferences: guideReferences.map((reference) => ({ ...reference })) }),
+    setOverviewViews:(overviewViews)=>set({overviewViews:overviewViews.map(view=>({...view,camera:view.camera?{...view.camera,position:{...view.camera.position},target:{...view.camera.target},up:{...view.camera.up}}:undefined}))}),
+    requestOverviewCapture:(overviewCaptureRequest)=>set({overviewCaptureRequest}),
 
     setError: (error) => {
       set({

@@ -1,4 +1,4 @@
-import { translate } from "@/features/i18n/lib/i18n";
+import { formatCount, translate } from "@/features/i18n/lib/i18n";
 import type { Locale } from "@/features/i18n/types/Locale";
 
 import type { GuidePaletteColor } from "../types/ModelGuide";
@@ -59,9 +59,7 @@ export function GuidePaletteSection({
                 </span>
 
                 <span className="inline-flex min-h-7 items-center rounded-full border border-[#E3DEEC] bg-[#FAF9FC] px-2.5 font-[family-name:var(--font-inter)] text-xs text-[#716A79]">
-                  {t("guide.usedBy", {
-                    count: color.usageCount,
-                  })}
+                  {formatCount(locale, color.usageCount, "step")}
                 </span>
               </div>
 

@@ -1,20 +1,116 @@
-import {Image,StyleSheet,Text,View} from "@react-pdf/renderer";
 /* eslint-disable jsx-a11y/alt-text -- React PDF Image does not render DOM accessibility attributes. */
-import {translate} from "@/features/i18n/lib/i18n";
-import {formatPaintingTime} from "@/features/model-editor/lib/paintingWorkflow";
-import {getPaintingStageLabel} from "@/features/model-editor/lib/paintingStageLabel";
-import type {GuideViewModel} from "../lib/getGuideViewModel";
-import {GuidePage} from "./GuidePage";
-import {PrintKeepTogether} from "./PrintKeepTogether";
-import {PrintSectionStart} from "./PrintSectionStart";
-import {guidePdfStyles,pdfColors} from "./guidePdfStyles";
+import { Image, StyleSheet, Text, View } from "@react-pdf/renderer";
 
-const styles=StyleSheet.create({summary:{flexDirection:"row",flexWrap:"wrap",gap:8,marginBottom:20},summaryItem:{...guidePdfStyles.card,width:"31.5%"},part:{borderColor:pdfColors.border,borderRadius:8,borderStyle:"solid",borderWidth:1,marginBottom:12,padding:12},partHeader:{borderBottomColor:pdfColors.border,borderBottomStyle:"solid",borderBottomWidth:1,marginBottom:8,paddingBottom:8},partTitle:{fontSize:13,fontWeight:700},partMeta:{color:pdfColors.muted,fontSize:8,marginTop:3},stage:{flexDirection:"row",paddingBottom:8,paddingTop:8},stageNumber:{color:pdfColors.accent,fontSize:8,width:25},stageBody:{flexGrow:1},stageTitle:{fontSize:10,fontWeight:700},target:{color:pdfColors.muted,fontSize:8,marginTop:4},previewRow:{display:"flex",flexDirection:"row",flexWrap:"wrap",gap:6,marginTop:7},previewItem:{width:"48%"},preview:{backgroundColor:"#f7f7f5",height:105,objectFit:"contain",width:"100%"},previewCaption:{color:pdfColors.muted,fontSize:7,marginTop:2},notes:{fontSize:8,lineHeight:1.5,marginTop:4},swatch:{borderColor:pdfColors.border,borderRadius:3,borderStyle:"solid",borderWidth:1,height:13,marginRight:5,width:13},colorRow:{alignItems:"center",flexDirection:"row",marginTop:4},warning:{color:"#b45309",fontSize:8,marginTop:4}});
+import { translate } from "@/features/i18n/lib/i18n";
+import { formatPaintingTime } from "@/features/model-editor/lib/paintingWorkflow";
 
-export function GuidePaintingWorkflowPages({viewModel}:{viewModel:GuideViewModel}){
- const{workflowGuide:guide,locale}=viewModel,t=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values),summary=guide.paintingSummary,palette=new Map((guide.workflowPalette??[]).map(color=>[color.id,color])),steps=new Map(viewModel.paintingSteps.map(step=>[step.id,step]));
- return <GuidePage id="painting-workflow" locale={locale} projectName={guide.title}><PrintSectionStart><Text style={guidePdfStyles.eyebrow}>{t("guide.paintingGuide")}</Text><Text style={guidePdfStyles.pageTitle}>{t("guide.workflow.instructions")}</Text></PrintSectionStart>{summary?<PrintKeepTogether style={styles.summary}><Summary label={t("guide.workflow.parts")} value={String(guide.parts.length)}/><Summary label={t("guide.workflow.stages")} value={String(summary.stagesCount)}/><Summary label={t("guide.workflow.totalTime")} value={summary.estimatedTimeMinutes?formatPaintingTime(summary.estimatedTimeMinutes,locale):t("guide.workflow.notSpecified")}/></PrintKeepTogether>:null}
- {guide.parts.map((part,index)=>{const workflow=part.paintingWorkflow;return <View key={part.id} style={styles.part}><PrintSectionStart style={styles.partHeader}><Text style={styles.partTitle}>{String(index+1).padStart(2,"0")}  {part.name}</Text>{workflow?<Text style={styles.partMeta}>{t("guide.workflow.stageCount",{count:workflow.stages.length})}{workflow.estimatedTimeMinutes?` · ${formatPaintingTime(workflow.estimatedTimeMinutes,locale)}`:""}{workflow.difficulty?` · ${t(`painting.difficulty.${workflow.difficulty}`)}`:""}</Text>:null}{workflow?.paintBeforeAssembly?<Text style={styles.warning}>{t("guide.workflow.beforeAssembly")}</Text>:null}</PrintSectionStart>
- {workflow?.stages.length?workflow.stages.map(stage=>{const color=stage.paletteColorId?palette.get(stage.paletteColorId):undefined,step=steps.get(stage.id),ready=step?.previews.filter(preview=>preview.status==="ready")??[];return <PrintKeepTogether key={stage.id} style={styles.stage}><Text style={styles.stageNumber}>{String(stage.order).padStart(2,"0")}</Text><View style={styles.stageBody}><Text style={styles.stageTitle}>{getPaintingStageLabel(stage,t)}</Text>{step?<Text style={styles.target}>{step.targetSummary}</Text>:null}{ready.length?<View style={styles.previewRow}>{ready.map(preview=>preview.status==="ready"?<View key={preview.id} style={styles.previewItem}><Image src={preview.image.src} style={styles.preview}/><Text style={styles.previewCaption}>{preview.label}</Text></View>:null)}</View>:step?.previews.some(preview=>preview.status==="unavailable"&&preview.reason!=="general")?<Text style={styles.warning}>{t("guide.steps.preview.unavailable")}</Text>:null}{color?<View style={styles.colorRow}><View style={[styles.swatch,{backgroundColor:color.hex}]}/><Text style={styles.partMeta}>{color.name} · {color.hex.toUpperCase()}</Text></View>:stage.paletteColorId?<Text style={styles.warning}>{t("guide.workflow.missingColor")}</Text>:stage.targetReferences?.some(reference=>reference.type==="part")?<Text style={styles.partMeta}>{t("painting.stage.noColor")}</Text>:null}{stage.recommendedCoats?<Text style={styles.partMeta}>{t("guide.workflow.coats",{count:stage.recommendedCoats})}</Text>:null}{stage.notes?<Text style={styles.notes}>{stage.notes}</Text>:null}</View></PrintKeepTogether>}):<PrintKeepTogether><Text style={styles.warning}>{t("guide.workflow.noWorkflowAvailable")}</Text></PrintKeepTogether>}{workflow?.notes?<View><Text style={styles.notes}>{workflow.notes}</Text></View>:null}</View>})}</GuidePage>;
+import { getGuideScreenshotLayout } from "../lib/getGuideScreenshotLayout";
+import type { GuideViewModel } from "../lib/getGuideViewModel";
+import type { GuidePaintingStepViewModel } from "../types/GuidePaintingStep";
+import { GuidePage } from "./GuidePage";
+import { PrintKeepTogether } from "./PrintKeepTogether";
+import { PrintSectionStart } from "./PrintSectionStart";
+import { guidePdfStyles, pdfColors } from "./guidePdfStyles";
+
+const styles = StyleSheet.create({
+  intro: { color: pdfColors.muted, fontSize: 9, marginBottom: 18 },
+  step: {
+    borderBottomColor: pdfColors.border,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
+    marginBottom: 13,
+    paddingBottom: 13,
+  },
+  header: { alignItems: "flex-start", flexDirection: "row" },
+  number: { color: pdfColors.accent, fontSize: 13, fontWeight: 700, width: 34 },
+  heading: { flexGrow: 1 },
+  title: { fontSize: 12, fontWeight: 700 },
+  target: { color: pdfColors.muted, fontSize: 8, marginTop: 3 },
+  color: { alignItems: "center", flexDirection: "row", marginLeft: 8 },
+  swatch: {
+    borderColor: pdfColors.border,
+    borderRadius: 3,
+    borderStyle: "solid",
+    borderWidth: 1,
+    height: 16,
+    marginRight: 6,
+    width: 16,
+  },
+  colorText: { color: pdfColors.muted, fontSize: 8, maxWidth: 105 },
+  instruction: { fontSize: 9, lineHeight: 1.55, marginLeft: 34, marginTop: 8 },
+  previews: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginLeft: 34, marginTop: 9 },
+  preview: { backgroundColor: pdfColors.surface, height: 126, objectFit: "contain", width: "100%" },
+  warning: { color: pdfColors.muted, fontSize: 8, marginLeft: 34, marginTop: 7 },
+});
+
+function StepBlock({ step, noColor, missingColor }: { step: GuidePaintingStepViewModel; noColor: string; missingColor: string }) {
+  const ready = step.previews.filter((preview) => preview.status === "ready");
+  const layout = getGuideScreenshotLayout(ready.length);
+  const visible = ready.slice(0, layout.visibleCount);
+
+  return (
+    <View style={styles.step}>
+      <PrintKeepTogether>
+        <View style={styles.header}>
+          <Text style={styles.number}>{String(step.order).padStart(2, "0")}</Text>
+          <View style={styles.heading}>
+            <Text style={styles.title}>{step.title}</Text>
+            <Text style={styles.target}>{step.targetSummary}</Text>
+          </View>
+          <View style={styles.color}>
+            {step.color ? <View style={[styles.swatch, { backgroundColor: step.color.hex }]} /> : null}
+            <Text style={styles.colorText}>
+              {step.color
+                ? `C${String(step.color.number).padStart(2, "0")} · ${step.color.name} · ${step.color.hex.toUpperCase()}`
+                : step.colorStatus === "missing" ? missingColor : noColor}
+            </Text>
+          </View>
+        </View>
+        {step.instruction ? <Text style={styles.instruction}>{step.instruction}</Text> : null}
+      </PrintKeepTogether>
+
+      {visible.length ? (
+        <View style={styles.previews}>
+          {visible.map((preview, index) =>
+            preview.status === "ready" ? (
+              <View
+                key={preview.id}
+                wrap={false}
+                style={{
+                  width:
+                    layout.columns === 1 || (layout.primaryFirst && index === 0)
+                      ? "100%"
+                      : "48.8%",
+                }}
+              >
+                <Image src={preview.image.src} style={styles.preview} />
+              </View>
+            ) : null,
+          )}
+        </View>
+      ) : step.previews.some((preview) => preview.status === "unavailable" && preview.reason !== "general") ? (
+        <Text style={styles.warning}>—</Text>
+      ) : null}
+    </View>
+  );
 }
-function Summary({label,value}:{label:string;value:string}){return <View style={styles.summaryItem}><Text style={guidePdfStyles.label}>{label}</Text><Text style={guidePdfStyles.value}>{value}</Text></View>}
+
+export function GuidePaintingWorkflowPages({ viewModel }: { viewModel: GuideViewModel }) {
+  const { workflowGuide: guide, locale, metrics, paintingSteps } = viewModel;
+  const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
+
+  return (
+    <GuidePage id="painting-workflow" locale={locale} projectName={guide.title}>
+      <PrintSectionStart>
+        <Text style={guidePdfStyles.eyebrow}>{t("guide.paintingGuide")}</Text>
+        <Text style={guidePdfStyles.pageTitle}>{t("guide.workflow.instructions")}</Text>
+        <Text style={styles.intro}>
+          {metrics.stepCount} · {metrics.usedColorCount} · {metrics.estimatedTotalTime ? formatPaintingTime(metrics.estimatedTotalTime, locale) : ""}
+        </Text>
+      </PrintSectionStart>
+      {paintingSteps.map((step) => (
+        <StepBlock key={step.id} step={step} noColor={t("painting.stage.noColor")} missingColor={t("guide.workflow.missingColor")} />
+      ))}
+    </GuidePage>
+  );
+}

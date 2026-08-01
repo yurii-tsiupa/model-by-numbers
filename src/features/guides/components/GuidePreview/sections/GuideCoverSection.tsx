@@ -7,17 +7,18 @@ import {
 import type { Locale } from "@/features/i18n/types/Locale";
 import { formatPaintingTime } from "@/features/model-editor/lib/paintingWorkflow";
 
-import type { ModelGuide } from "../../../types/ModelGuide";
+import type { GuideViewModel } from "../../../lib/getGuideViewModel";
 
 type GuideCoverSectionProps = {
-  guide: ModelGuide;
+  viewModel: GuideViewModel;
   locale: Locale;
 };
 
 export function GuideCoverSection({
-  guide,
+  viewModel,
   locale,
 }: GuideCoverSectionProps) {
+  const { guide, metrics, targetMode } = viewModel;
   const t = (
     key: Parameters<typeof translate>[1],
   ) => translate(locale, key);
@@ -30,24 +31,22 @@ export function GuideCoverSection({
     guide.images.original ??
     guide.images.numbers;
 
-  const difficulty = summary?.difficulties.length
-    ? summary.difficulties
-        .map((value) =>
-          t(`painting.difficulty.${value}`),
-        )
-        .join(" · ")
-    : t("guide.workflow.notSpecified");
-
   const paintingTime =
     summary?.estimatedTimeMinutes
       ? formatPaintingTime(
           summary.estimatedTimeMinutes,
           locale,
         )
-      : t("guide.workflow.notSpecified");
+    : null;
+  const targetLabel =
+    targetMode === "markers"
+      ? t("guide.metrics.paintingTargets")
+      : targetMode === "region"
+        ? t("guide.metrics.paintedAreas")
+        : t("guide.metrics.modelParts");
 
   return (
-    <section className="guide-cover flex min-h-[38rem] flex-col justify-between overflow-hidden rounded-3xl border border-[#E3DEEC] bg-[#FAF9FC] p-6 text-[#181221] sm:p-10">
+    <section className="guide-cover flex min-h-[38rem] flex-col justify-between overflow-hidden bg-white p-6 text-[#181221] sm:p-10">
       <header>
         <div className="flex items-center gap-3">
           <span className="h-px w-10 bg-[#76558F]" />
@@ -105,23 +104,21 @@ export function GuideCoverSection({
 
         <dl className="mt-5 grid gap-x-6 gap-y-4 border-t border-[#E3DEEC] pt-5 sm:grid-cols-3">
           <CoverFact
-            label={t("guide.visibleParts")}
-            value={String(guide.partsCount)}
+            label={t("guide.metrics.steps")}
+            value={String(metrics.stepCount)}
           />
 
           <CoverFact
-            label={t(
-              "guide.workflow.difficulty",
-            )}
-            value={difficulty}
+            label={t("guide.usedColors")}
+            value={String(metrics.usedColorCount)}
           />
 
           <CoverFact
-            label={t(
-              "guide.workflow.totalTime",
-            )}
-            value={paintingTime}
+            label={targetLabel}
+            value={String(metrics.targetCount)}
           />
+
+          {paintingTime ? <CoverFact label={t("guide.workflow.totalTime")} value={paintingTime} /> : null}
         </dl>
 
         {guide.description ? (

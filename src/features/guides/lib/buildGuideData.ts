@@ -10,6 +10,7 @@ import type {
   GuideSettings,
   GuideExplodedView,
   GuideAssemblyStep,
+  GuideOverviewView,
 } from "../types/ModelGuide";
 import { getGuidePalette } from "./getGuidePalette";
 import { isPartIncludedInGuide } from "./isPartIncludedInGuide";
@@ -30,6 +31,7 @@ type BuildGuideDataParams = {
   explodedView?: GuideExplodedView | null;
   assemblySteps?: readonly GuideAssemblyStep[];
   templateId?: string;
+  overviewViews?: readonly GuideOverviewView[];
 };
 
 export function buildGuideData({
@@ -44,6 +46,7 @@ export function buildGuideData({
   explodedView = null,
   assemblySteps = [],
   templateId,
+  overviewViews,
 }: BuildGuideDataParams): ModelGuide {
   const paletteById = new Map(
     palette.map((color) => [color.id, color]),
@@ -82,6 +85,7 @@ export function buildGuideData({
   const numberedManualDetails=withResolvedSimpleMarkerNumbers(project.manualDetails,getOrderedSimplePaintingSteps(orderedParts.flatMap(part=>part.paintingWorkflow?[{paintingWorkflow:part.paintingWorkflow}]:[]),project.simplePaintingStepOrder));
 
   return {
+    simpleTargetMode: project.simpleTargetMode,
     templateId,
     locale,
     projectId: project.id,
@@ -96,12 +100,13 @@ export function buildGuideData({
     palette: guidePalette,
     parts: guideParts,
     images: { ...images },
+    overviewViews:overviewViews?.map(view=>({...view,camera:view.camera?{...view.camera,position:{...view.camera.position},target:{...view.camera.target},up:{...view.camera.up}}:undefined})),
     references: references.map(reference=>({...reference})),
     generatedAt: new Date(),
     settings,
     explodedView: explodedView ? { ...explodedView } : null,
     assemblySteps: assemblySteps.map(step=>({...step,parts:step.parts.map(part=>({...part}))})).sort((a,b)=>a.order-b.order),
-    workflowPalette:getWorkflowPalette(orderedParts,palette),
+    workflowPalette:getWorkflowPalette(orderedParts,palette,project.manualDetails),
     previewPalette:palette.map(color=>({...color})),
     workflowParts,
     manualDetails:numberedManualDetails.map(detail=>({...detail,pins:detail.pins.map(pin=>({...pin,position:{...pin.position},normal:pin.normal?{...pin.normal}:null,camera:{...pin.camera,position:{...pin.camera.position},target:{...pin.camera.target}}}))})),

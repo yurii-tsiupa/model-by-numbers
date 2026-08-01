@@ -12,3 +12,8 @@ export function getStepPreviewFraming(targetBounds:Box3,modelBounds:Box3,singleP
  const halfFov=MathUtils.degToRad(42)/2,halfHorizontal=Math.atan(Math.tan(halfFov)*(1200/800)),distanceForFrame=radius/Math.sin(Math.min(halfFov,halfHorizontal)),offset=center.clone().sub(modelCenter),safeRadius=modelRadius*1.08,b=offset.dot(direction),c=offset.lengthSq()-safeRadius*safeRadius,discriminant=b*b-c,exitDistance=discriminant>=0?-b+Math.sqrt(discriminant):0,distance=MathUtils.clamp(Math.max(distanceForFrame,exitDistance+modelRadius*.04),radius*1.1,modelRadius*4),position=center.clone().addScaledVector(direction,distance);
  return{cameraPosition:{x:position.x,y:position.y,z:position.z},target:{x:center.x,y:center.y,z:center.z},up:{x:0,y:1,z:0},targetRadius:radius};
 }
+
+export function getGuideOverviewFraming(modelBounds:Box3):StepPreviewFraming{
+ const center=modelBounds.getCenter(new Vector3()),sphere=modelBounds.getBoundingSphere(new Sphere()),radius=Math.max(sphere.radius,.1),direction=DEFAULT_DIRECTION.clone(),halfVertical=MathUtils.degToRad(42)/2,halfHorizontal=Math.atan(Math.tan(halfVertical)*(1200/800)),distance=radius/(Math.tan(Math.min(halfVertical,halfHorizontal))*.78),position=center.clone().addScaledVector(direction,distance);
+ return{cameraPosition:{x:position.x,y:position.y,z:position.z},target:{x:center.x,y:center.y,z:center.z},up:{x:0,y:1,z:0},targetRadius:radius};
+}

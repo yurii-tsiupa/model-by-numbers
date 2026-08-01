@@ -1,10 +1,4 @@
-import {
-  ArrowLeft,
-  CircleAlert,
-  Download,
-  Layers3,
-  LoaderCircle,
-} from "lucide-react";
+import { ArrowLeft, CircleAlert, Download, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -72,67 +66,38 @@ export function GuidePreviewHeader({
 
   return (
     <>
-      <div data-guide-controls className="print:hidden"><AppHeader variant="guide" showNavigation={false}/></div>
+      <AppHeader variant="guide" showNavigation={false} className="print:hidden" />
 
       <section
         data-guide-controls
-        className="border-b border-[var(--border)] bg-[var(--bg)] print:hidden"
+        className="bg-[var(--bg)] print:hidden"
       >
-        <div className="mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0 max-w-2xl">
-              <div className="mb-5 flex items-center gap-3">
-                <div
-                  aria-hidden="true"
-                  className="flex flex-col gap-1"
-                >
-                  <span className="h-1 w-7 rounded-full bg-[var(--accent)]" />
-                  <span className="h-1 w-5 rounded-full bg-[var(--accent)] opacity-60" />
-                  <span className="h-1 w-3 rounded-full bg-[var(--accent)] opacity-30" />
-                </div>
-
-                <p className="font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium uppercase tracking-[0.16em] text-[var(--accent)]">
-                  {t("guide.preview")}
-                </p>
-              </div>
-
-              <div className="flex min-w-0 items-start gap-4">
-                <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--card)] sm:flex">
-                  <Layers3
-                    className="h-5 w-5 text-[var(--accent)]"
-                    strokeWidth={1.8}
-                  />
-                </div>
-
-                <div className="min-w-0">
-                  <h1 className="truncate font-[family-name:var(--font-space-grotesk)] text-3xl font-semibold tracking-[-0.035em] text-[var(--text)] sm:text-4xl lg:text-[2.75rem] lg:leading-[1.05]">
-                    {title}
-                  </h1>
-
-                  <p className="mt-4 max-w-xl font-[family-name:var(--font-inter)] text-sm leading-6 text-[var(--text-secondary)] sm:text-base sm:leading-7">
-                    {t("guide.preview")}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap lg:justify-end">
+        <div className="relative mx-auto flex w-full max-w-[100rem] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <Link
                 href={`/models/${projectId}`}
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-5 py-3 font-[family-name:var(--font-inter)] text-sm font-medium text-[var(--text)] transition-colors hover:bg-[var(--bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] sm:w-auto"
+                className="guide-back-action inline-flex min-h-9 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg px-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
               >
                 <ArrowLeft
-                  className="h-4 w-4"
+                  className="h-4 w-4 text-inherit"
                   strokeWidth={2}
                 />
                 {t("guide.backEditor")}
               </Link>
 
-              <button
+              <span className="hidden h-9 w-px shrink-0 bg-[var(--border)] sm:block" aria-hidden="true" />
+
+              <div className="min-w-0">
+                <h1 className="truncate text-base font-semibold tracking-[-0.01em] text-[var(--text)] sm:text-[17px]">{title}</h1>
+                <p className="hidden truncate text-xs text-[var(--text-secondary)] sm:block">{t("guide.preview")}</p>
+              </div>
+          </div>
+
+              <div className="ml-auto flex shrink-0 items-center justify-end gap-2"><button
                 type="button"
                 disabled={isExporting}
                 onClick={onDownload}
-                className="inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-3 font-[family-name:var(--font-inter)] text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                className="guide-download-button inline-flex min-h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--accent-foreground)] transition duration-200 hover:-translate-y-px hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isExporting ? (
                   <LoaderCircle
@@ -161,44 +126,30 @@ export function GuidePreviewHeader({
                   type="button"
                   disabled={isExporting}
                   onClick={onDelete}
-                  className="inline-flex min-h-12 w-full cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-transparent px-5 py-3 font-[family-name:var(--font-inter)] text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--card)] hover:text-[var(--text)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                  className="hidden min-h-9 cursor-pointer items-center justify-center rounded-lg px-3 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text)] disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex"
                 >
                   {t("guide.delete")}
                 </button>
-              ) : null}
-            </div>
-          </div>
-
+              ) : null}</div>
           {isExporting && statusKey ? (
             <div
               role="status"
-              className="mt-8 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]"
+              className="absolute inset-x-0 bottom-0 h-0.5 bg-[var(--border)]"
             >
-              <div className="flex items-center justify-between gap-4 px-4 py-3">
-                <span className="font-[family-name:var(--font-inter)] text-sm text-[var(--text-secondary)]">
-                  {t(statusKey)}
-                </span>
-
-                <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium text-[var(--accent)]">
-                  {progress}%
-                </span>
-              </div>
-
-              <div className="h-1 bg-[var(--border)]">
                 <div
                   className="h-full bg-[var(--accent)] transition-[width] duration-300"
+                  aria-label={`${t(statusKey)} ${progress}%`}
                   style={{
                     width: `${progress}%`,
                   }}
                 />
-              </div>
             </div>
           ) : null}
 
           {exportStatus === "success" ? (
             <div
               role="status"
-              className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3"
+              className="absolute right-4 top-full mt-2 flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2 shadow-lg sm:right-6"
             >
               <span className="font-[family-name:var(--font-inter)] text-sm font-medium text-[var(--accent-2)]">
                 {t("guide.pdfExport.success")}
@@ -217,7 +168,7 @@ export function GuidePreviewHeader({
           {exportStatus === "error" ? (
             <div
               role="alert"
-              className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3"
+              className="absolute left-4 right-4 top-full mt-2 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 shadow-lg sm:left-auto sm:right-6 sm:max-w-xl"
             >
               <div className="flex min-w-0 items-start gap-3">
                 <CircleAlert

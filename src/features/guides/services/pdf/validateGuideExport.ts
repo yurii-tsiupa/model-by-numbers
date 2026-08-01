@@ -38,7 +38,7 @@ export function validateGuideExport(viewModel: GuideViewModel): GuideExportValid
   const coverImages=[guide.images.painted,guide.images.base,guide.images.original,guide.images.numbers];
   if (!coverImages.some(Boolean)) warnings.push({code:"MISSING_THUMBNAIL"});
 
-  const missingGuideImages=modelViews.filter(view=>!guide.images[view.key]).length;
+  const missingGuideImages=modelViews.filter(view=>!view.image).length;
   if (missingGuideImages) warnings.push({code:"MISSING_IMAGES",count:missingGuideImages});
 
   if (settings.includeExplodedView&&!guide.explodedView?.image) warnings.push({code:"MISSING_EXPLODED_VIEW"});

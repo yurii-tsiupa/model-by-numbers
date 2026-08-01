@@ -5,17 +5,17 @@ import {
   View,
 } from "@react-pdf/renderer";
 
-import type { ModelGuide } from "../types/ModelGuide";
+import type { GuideViewModel } from "../lib/getGuideViewModel";
 import { GuidePageFooter } from "./GuidePageFooter";
 import { GuidePageHeader } from "./GuidePageHeader";
 import {
   guidePdfStyles,
   pdfColors,
 } from "./guidePdfStyles";
-import { translate } from "@/features/i18n/lib/i18n";
+import { formatCount, translate } from "@/features/i18n/lib/i18n";
 
 type GuidePalettePageProps = {
-  guide: ModelGuide;
+  viewModel: GuideViewModel;
 };
 
 const COLORS_PER_PAGE = 12;
@@ -73,12 +73,13 @@ function formatColorNumber(number: number): string {
 }
 
 export function GuidePalettePage({
-  guide,
+  viewModel,
 }: GuidePalettePageProps) {
+  const {guide,usedPalette}=viewModel;
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values);
   const pageCount = Math.max(
     1,
-    Math.ceil(guide.palette.length / COLORS_PER_PAGE),
+    Math.ceil(usedPalette.length / COLORS_PER_PAGE),
   );
 
   return (
@@ -97,11 +98,11 @@ export function GuidePalettePage({
             {t("guide.palette")}{pageIndex > 0 ? ` (${t("guide.continued")})` : ""}
           </Text>
           <Text style={guidePdfStyles.sectionDescription}>
-            {t("pdf.paletteHelp",{count:guide.colorsCount})}
+            {t("pdf.paletteHelp",{count:usedPalette.length})}
           </Text>
 
           <View style={styles.list}>
-            {guide.palette
+            {usedPalette
               .slice(
                 pageIndex * COLORS_PER_PAGE,
                 (pageIndex + 1) * COLORS_PER_PAGE,
@@ -120,7 +121,7 @@ export function GuidePalettePage({
                   <Text style={styles.name}>{color.name}</Text>
                   <Text style={styles.hex}>{color.hex.toUpperCase()}</Text>
                   <Text style={styles.usage}>
-                    {t("guide.usedBy",{count:color.usageCount})}
+                    {formatCount(locale,color.usageCount,"step")}
                   </Text>
                 </View>
               ))}

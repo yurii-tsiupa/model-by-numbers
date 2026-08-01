@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 
-import { translate } from "@/features/i18n/lib/i18n";
+import { formatCount, translate } from "@/features/i18n/lib/i18n";
 import type { Locale } from "@/features/i18n/types/Locale";
 
 import type {
@@ -38,7 +38,15 @@ export function GuideNavigation({
 
   const t = (
     key: Parameters<typeof translate>[1],
-  ) => translate(locale, key);
+    values?: Parameters<typeof translate>[2],
+  ) => translate(locale, key, values);
+
+  const resolvedActiveId = sections.some((section) => section.id === activeId)
+    ? activeId
+    : sections[0]?.id;
+  const activeIndex = Math.max(0, sections.findIndex((section) => section.id === resolvedActiveId));
+  const activeSection = sections[activeIndex];
+  const progress = sections.length ? ((activeIndex + 1) / sections.length) * 100 : 0;
 
   useEffect(() => {
     const elements = sections
@@ -201,9 +209,9 @@ export function GuideNavigation({
   }
 
   const links = (
-    <ol className="mt-4 space-y-1">
+    <ol className="space-y-1.5">
       {sections.map((section, index) => {
-        const isActive = activeId === section.id;
+        const isActive = resolvedActiveId === section.id;
 
         return (
           <li key={section.id}>
@@ -219,19 +227,20 @@ export function GuideNavigation({
               className={`
                 group/link
                 flex
+                min-h-12
                 items-center
                 gap-3
                 rounded-xl
-                px-3
-                py-2.5
+                px-2
+                py-2
                 transition-colors
                 focus-visible:outline-none
                 focus-visible:ring-2
                 focus-visible:ring-[var(--accent)]
                 ${
                   isActive
-                    ? "bg-[var(--bg)] text-[var(--text)]"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg)] hover:text-[var(--text)]"
+                    ? "bg-[var(--accent-soft)] font-semibold text-[var(--text)]"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text)]"
                 }
               `}
             >
@@ -251,15 +260,15 @@ export function GuideNavigation({
                   transition-colors
                   ${
                     isActive
-                      ? "border-[var(--accent)] bg-[var(--card)] text-[var(--accent)]"
-                      : "border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)]"
+                      ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]"
+                      : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)]"
                   }
                 `}
               >
                 {String(index + 1).padStart(2, "0")}
               </span>
 
-              <span className="min-w-0 font-[family-name:var(--font-inter)] text-sm font-medium leading-5">
+              <span className="min-w-0 break-words font-[family-name:var(--font-inter)] text-sm leading-5">
                 {t(section.titleKey)}
               </span>
 
@@ -280,11 +289,11 @@ export function GuideNavigation({
     <>
       <details
         data-guide-navigation
-        className="group mx-5 mt-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 text-[var(--text)] sm:mx-6 lg:hidden"
+        className="group rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 text-[var(--text)] 2xl:hidden"
       >
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg)]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)]">
               <Layers3
                 className="h-4 w-4 text-[var(--accent)]"
                 strokeWidth={1.8}
@@ -297,8 +306,8 @@ export function GuideNavigation({
                 {t("guide.navigation.contents")}
               </span>
 
-              <span className="mt-0.5 block font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase tracking-[0.12em] text-[var(--text-secondary)]">
-                {sections.length} sections
+              <span className="mt-0.5 block text-xs text-[var(--text-secondary)]">
+                {formatCount(locale, sections.length, "section")}
               </span>
             </div>
           </div>
@@ -310,26 +319,22 @@ export function GuideNavigation({
           />
         </summary>
 
-        {links}
+        <div className="mt-4">{links}</div>
       </details>
 
       <nav
         data-guide-navigation
         aria-label={t("guide.navigation.label")}
-        className="sticky top-6 hidden max-h-[calc(100vh-3rem)] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 text-[var(--text)] lg:block"
+        className="guide-side-panel sticky top-20 col-start-1 row-start-1 hidden max-h-[calc(100vh-6rem)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 text-[var(--text)] 2xl:flex"
       >
         <div className="flex items-center gap-3 px-1">
-          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)]">
             <Layers3
               className="h-[18px] w-[18px] text-[var(--accent)]"
               strokeWidth={1.8}
               aria-hidden="true"
             />
 
-            <span
-              aria-hidden="true"
-              className="absolute -bottom-1 left-2 right-2 h-1 rounded-full bg-[var(--accent)] opacity-30"
-            />
           </div>
 
           <div className="min-w-0">
@@ -337,15 +342,30 @@ export function GuideNavigation({
               {t("guide.navigation.contents")}
             </h2>
 
-            <p className="mt-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase tracking-[0.12em] text-[var(--text-secondary)]">
-              {sections.length} sections
+            <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+              {formatCount(locale, sections.length, "section")}
             </p>
           </div>
         </div>
 
         <div className="my-4 h-px bg-[var(--border)]" />
 
-        {links}
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">{links}</div>
+
+        {activeSection ? <div className="mt-4 shrink-0 border-t border-[var(--border)] pt-4">
+          <div className="h-1 overflow-hidden rounded-full bg-[var(--surface)]" aria-hidden="true">
+            <div
+              className="h-full rounded-full transition-[width] duration-200 ease-out"
+              style={{
+                width: `${progress}%`,
+                backgroundImage: "linear-gradient(90deg, var(--accent), var(--accent-2))",
+              }}
+            />
+          </div>
+          <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">
+            {t("guide.navigation.progress", { current: activeIndex + 1, total: sections.length, title: t(activeSection.titleKey) })}
+          </p>
+        </div> : null}
       </nav>
     </>
   );

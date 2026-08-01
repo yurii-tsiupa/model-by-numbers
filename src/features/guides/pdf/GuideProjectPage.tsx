@@ -5,7 +5,7 @@ import {
   View,
 } from "@react-pdf/renderer";
 
-import type { ModelGuide } from "../types/ModelGuide";
+import type { GuideViewModel } from "../lib/getGuideViewModel";
 import { GuidePageFooter } from "./GuidePageFooter";
 import { GuidePageHeader } from "./GuidePageHeader";
 import {
@@ -15,7 +15,7 @@ import {
 import { translate } from "@/features/i18n/lib/i18n";
 
 type GuideProjectPageProps = {
-  guide: ModelGuide;
+  viewModel: GuideViewModel;
 };
 
 const styles = StyleSheet.create({
@@ -51,11 +51,16 @@ const styles = StyleSheet.create({
 });
 
 export function GuideProjectPage({
-  guide,
+  viewModel,
 }: GuideProjectPageProps) {
+  const {guide,metrics,targetMode}=viewModel;
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
   const details = [
-    [t("guide.author"), guide.author],[t("guide.printer"), guide.printerType.toUpperCase()],[t("guide.material"), guide.material.toUpperCase()],[t("guide.visibleParts"), String(guide.partsCount)],[t("guide.usedColors"), String(guide.colorsCount)],
+    [t("guide.author"), guide.author],
+    [t("guide.printer"), [guide.printerType,guide.material].filter(Boolean).join(" · ").toUpperCase()],
+    [t("guide.metrics.steps"), String(metrics.stepCount)],
+    [t("guide.usedColors"), String(metrics.usedColorCount)],
+    [targetMode==="markers"?t("guide.metrics.paintingTargets"):targetMode==="region"?t("guide.metrics.paintedAreas"):t("guide.metrics.modelParts"),String(metrics.targetCount)],
   ];
 
   return (
@@ -66,11 +71,7 @@ export function GuideProjectPage({
 
       {guide.description ? (
         <Text style={styles.description}>{guide.description}</Text>
-      ) : (
-        <Text style={guidePdfStyles.sectionDescription}>
-          {t("guide.noDescription")}
-        </Text>
-      )}
+      ) : null}
 
       <View style={styles.details}>
         {details.map(([label, value]) => (

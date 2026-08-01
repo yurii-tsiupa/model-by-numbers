@@ -1,20 +1,20 @@
 import type { Locale } from "@/features/i18n/types/Locale";
 
-import type { ModelGuide } from "../../../types/ModelGuide";
+import type { GuideViewModel } from "../../../lib/getGuideViewModel";
 import { GuideProjectOverview } from "../../GuideProjectOverview";
 
 type GuideProjectSectionProps = {
-  guide: ModelGuide;
+  viewModel: GuideViewModel;
   locale: Locale;
 };
 
 export function GuideProjectSection({
-  guide,
+  viewModel,
   locale,
 }: GuideProjectSectionProps) {
   return (
     <GuideProjectOverview
-      guide={guide}
+      viewModel={viewModel}
       locale={locale}
     />
   );

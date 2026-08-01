@@ -5,7 +5,7 @@ import {
   View,
 } from "@react-pdf/renderer";
 
-import type { ModelGuide } from "../types/ModelGuide";
+import type { GuidePart, ModelGuide } from "../types/ModelGuide";
 import { GuidePageFooter } from "./GuidePageFooter";
 import { GuidePageHeader } from "./GuidePageHeader";
 import {
@@ -16,6 +16,7 @@ import { translate } from "@/features/i18n/lib/i18n";
 
 type GuidePartsPageProps = {
   guide: ModelGuide;
+  parts: readonly GuidePart[];
 };
 
 const PARTS_PER_PAGE = 10;
@@ -85,11 +86,12 @@ function formatColorNumber(number: number): string {
 
 export function GuidePartsPage({
   guide,
+  parts,
 }: GuidePartsPageProps) {
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
   const pageCount = Math.max(
     1,
-    Math.ceil(guide.parts.length / PARTS_PER_PAGE),
+    Math.ceil(parts.length / PARTS_PER_PAGE),
   );
 
   return (
@@ -112,7 +114,7 @@ export function GuidePartsPage({
           </Text>
 
           <View style={styles.list}>
-            {guide.parts
+            {parts
               .slice(
                 pageIndex * PARTS_PER_PAGE,
                 (pageIndex + 1) * PARTS_PER_PAGE,

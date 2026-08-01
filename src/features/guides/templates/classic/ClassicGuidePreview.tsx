@@ -36,26 +36,34 @@ export function ClassicGuidePreview({
   ) => translate(locale, key, values);
 
   const assemblySteps = guide.assemblySteps ?? [];
-  const references = guide.references ?? [];
+  const references = viewModel.includedReferences;
 
   return (
-    <div className="space-y-16 px-5 py-6 sm:px-10 sm:py-10" style={{backgroundColor:templateSettings?.pageBackground,color:templateSettings?.textColor}}>
+    <div className="space-y-6" style={{color:templateSettings?.textColor}}>
       <GuideCoverSection
-        guide={guide}
+        viewModel={viewModel}
         locale={locale}
       />
 
       <GuideSectionAnchor id="project-overview">
         <GuideProjectSection
-          guide={guide}
+          viewModel={viewModel}
           locale={locale}
         />
       </GuideSectionAnchor>
 
+      {viewModel.usedPalette.length > 0 ? (
+        <GuideSectionAnchor id="palette">
+          <GuidePalettePreviewSection
+            palette={viewModel.usedPalette}
+            locale={locale}
+          />
+        </GuideSectionAnchor>
+      ) : null}
+
       {modelViews.length > 0 ? (
         <GuideSectionAnchor id="model-views">
           <ClassicModelViewsSection
-            guide={guide}
             views={modelViews}
             t={t}
           />
@@ -94,17 +102,10 @@ export function ClassicGuidePreview({
         </GuideSectionAnchor>
       ) : null}
 
-      <GuideSectionAnchor id="palette">
-        <GuidePalettePreviewSection
-          palette={guide.palette}
-          locale={locale}
-        />
-      </GuideSectionAnchor>
-
-      {settings.includePartsTable ? (
+      {viewModel.sections.some((section) => section.id === "parts-overview") ? (
         <GuideSectionAnchor id="parts-overview">
           <GuidePartsPreviewSection
-            parts={guide.parts}
+            parts={viewModel.referencedParts}
             locale={locale}
           />
         </GuideSectionAnchor>

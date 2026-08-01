@@ -92,6 +92,7 @@ async function renderWithRetry(request: StepPreviewRequest): Promise<{ blob: Blo
         baseColor: complete.baseColor,
         shot:request.shot,
         stepOrder:useModelEditorStore.getState().simplePaintingStepOrder,
+        markerRenderContext:request.shot?.type==="manualStepCapture"?"step-custom-view":"step-preview",
       });
     } catch (error) {
       lastError = error;

@@ -50,6 +50,7 @@ import {ExplodedViewToolbar} from "./ExplodedViewToolbar";
 import type { ExplodedLabelsMode } from "../types/ExplodedLabelsMode";
 import { captureAssemblyCanvas } from "../lib/captureAssemblyCanvas";
 import { isEditableKeyboardTarget } from "../lib/isEditableKeyboardTarget";
+import {createStepPreviewBlob} from "../step-previews/createStepPreviewBlob";
 
 type ModelViewerProps = {
   project: Project;
@@ -60,11 +61,12 @@ type ModelViewerProps = {
 };
 
 export type ModelViewerHandle = {
-  captureView: (mode: ViewerMode) => Promise<string>;
+  captureView: (mode: ViewerMode,options?:{preserveCamera?:boolean;whiteBackground?:boolean;hideManualDetailPins?:boolean}) => Promise<string>;
   fitView: () => void;
   captureAssemblyStep: (options: {partIds:string[];labelsMode:ExplodedLabelsMode}) => Promise<Blob>;
   getCurrentPreviewCamera:()=>PaintingPreviewCamera|null;
   setPreviewCamera:(camera:PaintingPreviewCamera,duration?:number)=>void;
+  captureGuideMarkerMap:(camera?:PaintingPreviewCamera)=>Promise<Blob>;
 };
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
@@ -93,6 +95,8 @@ type SceneProps = {
   onControlsStart:()=>void;
   previewCapture?:{stepId:string;displayMode:StepPreviewDisplayMode}|null;
   simpleMode:boolean;
+  whiteBackground:boolean;
+  isolatedCapture:boolean;
 };
 
 function Scene({
@@ -113,10 +117,12 @@ function Scene({
   onControlsStart,
   previewCapture,
   simpleMode,
+  whiteBackground,
+  isolatedCapture,
 }: SceneProps) {
   return (
     <>
-      <color attach="background" args={["#151515"]} />
+      <color attach="background" args={[whiteBackground ? "#ffffff" : "#151515"]} />
 
       <ambientLight intensity={0.8} />
 
@@ -137,7 +143,7 @@ function Scene({
       <directionalLight
         position={[-4, 4, -3]}
         intensity={0.7}
-        color="#fed7aa"
+        color={whiteBackground ? "#ffffff" : "#fed7aa"}
       />
 
       <Suspense fallback={null}>
@@ -161,15 +167,15 @@ function Scene({
           simpleMode={simpleMode}
         />
 
-        <Environment preset="studio" />
+        {!isolatedCapture?<Environment preset="studio" />:null}
 
-        <ContactShadows
+        {!isolatedCapture?<ContactShadows
           position={[0, -0.015, 0]}
           opacity={0.4}
           scale={12}
           blur={2.5}
           far={7}
-        />
+        />:null}
       </Suspense>
 
       {isGridVisible&&!previewCapture ? (
@@ -295,6 +301,9 @@ export const ModelViewer = forwardRef<
     useState(false);
   const [forceAssembled,setForceAssembled]=useState(false);
   const [forceFullyExploded,setForceFullyExploded]=useState(false);
+  const [whiteCaptureBackground,setWhiteCaptureBackground]=useState(false);
+  const [hidePinsForCapture,setHidePinsForCapture]=useState(false);
+  const [isolatedCapture,setIsolatedCapture]=useState(false);
 
   const [viewerError, setViewerError] =
     useState<Error | null>(null);
@@ -480,6 +489,16 @@ export const ModelViewer = forwardRef<
   useImperativeHandle (
     ref,
     () => ({
+      captureGuideMarkerMap:async(camera)=>{
+        const model=modelRef.current;
+        if(!model||localModel.isLoading||isAssetLoading)throw new Error("Model is not ready for capture.");
+        const state=useModelEditorStore.getState();
+        const markerDetails=state.manualDetails.filter(detail=>(detail.targetMode??"markers")==="markers"&&detail.pins.length>0);
+        const now=new Date().toISOString();
+        const step={id:"guide-marker-map",order:Number.MAX_SAFE_INTEGER,type:"custom" as const,customName:"Guide marker map",paletteColorId:null,recommendedCoats:null,notes:"",targetReferences:markerDetails.map(detail=>({type:"manualDetail" as const,id:detail.id})),createdAt:now,updatedAt:now};
+        const shot=camera?{id:"guide-marker-map-camera",type:"manualStepCapture" as const,manualDetailId:"" as const,camera,displayMode:"current-step" as const}:undefined;
+        return (await createStepPreviewBlob({model,step,parts:state.parts,manualDetails:state.manualDetails,palette:state.palette,baseColor:state.simpleWholeModelBaseColor??project.baseColor,shot,stepOrder:state.simplePaintingStepOrder,markerRenderContext:camera?"overview-custom-marker-map":"overview-marker-map"})).blob;
+      },
       getCurrentPreviewCamera:()=>{
         const controls=controlsRef.current,camera=controls?.object;
         if(!controls||!(camera instanceof PerspectiveCamera))return null;
@@ -518,7 +537,7 @@ export const ModelViewer = forwardRef<
           camera.position.copy(saved.cameraPosition);camera.quaternion.copy(saved.cameraQuaternion);camera.up.copy(saved.cameraUp);camera.near=saved.near;camera.far=saved.far;camera.zoom=saved.zoom;camera.updateProjectionMatrix();controls.target.copy(saved.target);controls.enabled=saved.controlsEnabled;controls.update();await waitForAnimationFrames(2);isCaptureInProgressRef.current=false;
         }
       },
-      captureView: async (mode) => {
+      captureView: async (mode,options) => {
         cancelFocusAnimation();
         if (isCaptureInProgressRef.current) {
           throw new Error(
@@ -585,11 +604,14 @@ export const ModelViewer = forwardRef<
           setShowAllPartsForCapture(true);
           setForceAssembled(true);
           setIsGridVisible(false);
+          setIsolatedCapture(Boolean(options?.whiteBackground));
           setShowAllNumberCalloutsForCapture(mode === "numbers");
+          setWhiteCaptureBackground(options?.whiteBackground === true);
+          setHidePinsForCapture(options?.hideManualDetailPins === true);
 
           await waitForAnimationFrames(3);
           model.updateWorldMatrix(true, true);
-          fitCameraToBounds({ camera, controls, bounds: getModelBounds(model), direction: new Vector3(...INITIAL_CAMERA_POSITION).normalize() });
+          if(!options?.preserveCamera)fitCameraToBounds({ camera, controls, bounds: getModelBounds(model), direction: new Vector3(...INITIAL_CAMERA_POSITION).normalize() });
           await waitForAnimationFrames(3);
 
           const image = canvas.toDataURL("image/png");
@@ -621,6 +643,9 @@ export const ModelViewer = forwardRef<
           setForceAssembled(false);
           setIsGridVisible(savedGridVisibility);
           setShowAllNumberCalloutsForCapture(false);
+          setWhiteCaptureBackground(false);
+          setIsolatedCapture(false);
+          setHidePinsForCapture(false);
 
           camera.position.copy(savedCameraState.position);
           camera.quaternion.copy(savedCameraState.quaternion);
@@ -644,6 +669,7 @@ export const ModelViewer = forwardRef<
       isAssetLoading,
       isGridVisible,
       localModel.isLoading,
+      project.baseColor,
       selectPart,
       setHighlightedPaletteColorId,
       setSelectedPartIds,
@@ -731,12 +757,14 @@ export const ModelViewer = forwardRef<
                 showAllNumberCalloutsForCapture
               }
               showAllPartsForCapture={showAllPartsForCapture}
-              hideManualDetailPins={hideManualDetailPins||areManualDetailPinsSuppressed}
+              hideManualDetailPins={hideManualDetailPins||areManualDetailPinsSuppressed||hidePinsForCapture}
               forceAssembled={forceAssembled}
               forceFullyExploded={forceFullyExploded}
               onControlsStart={cancelFocusAnimation}
               previewCapture={previewCapture}
               simpleMode={simplified}
+              whiteBackground={whiteCaptureBackground}
+              isolatedCapture={isolatedCapture}
             />
           </Canvas>
         </ViewerErrorBoundary>

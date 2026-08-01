@@ -1,16 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 
-import { ImageIcon } from "lucide-react";
-
 import type { TranslationKey } from "@/features/i18n/locales/en";
 
 import type { GuideModelView } from "../../../lib/getGuideViewModel";
-import type { ModelGuide } from "../../../types/ModelGuide";
 import { ClassicSectionHeading } from "../ClassicSectionHeading";
 import { classicPreviewStyles as styles } from "../classic.styles";
 
 type ClassicModelViewsSectionProps = {
-  guide: ModelGuide;
   views: readonly GuideModelView[];
   t: (
     key: TranslationKey,
@@ -19,7 +15,6 @@ type ClassicModelViewsSectionProps = {
 };
 
 export function ClassicModelViewsSection({
-  guide,
   views,
   t,
 }: ClassicModelViewsSectionProps) {
@@ -27,48 +22,32 @@ export function ClassicModelViewsSection({
     <section className={styles.section}>
       <ClassicSectionHeading
         eyebrow={t("guide.visual")}
-        title={t("guide.modelViews")}
-        description={t("guide.modelViewsDescription")}
+        title={t("guide.modelOverview")}
+        description={t("guide.modelOverviewDescription")}
       />
 
-      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-7 space-y-9">
         {views.map((view) => {
-          const image = guide.images[view.key];
+          const image = view.image;
 
           return (
             <article
-              key={view.key}
-              className={`${styles.card} overflow-hidden`}
+              key={view.id}
+              className="break-inside-avoid page-break-inside-avoid"
             >
-              <div className="flex aspect-[4/3] items-center justify-center border-b border-[#E3DEEC] bg-[#FAF9FC] p-4">
+              <h3 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-sm font-semibold tracking-[-0.01em] text-[#181221]">
+                {view.caption??t(view.labelKey)}
+              </h3>
+              <div className="w-full">
                 {image ? (
                   <img
                     src={image}
-                    alt={t(view.labelKey)}
-                    className="h-full w-full object-contain"
+                    alt={view.caption??t(view.labelKey)}
+                    className="block h-auto w-full object-contain"
                   />
                 ) : (
-                  <div className="flex flex-col items-center gap-2 text-[#AAA2B1]">
-                    <ImageIcon
-                      className="h-7 w-7"
-                      strokeWidth={1.6}
-                    />
-
-                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase tracking-[0.12em]">
-                      No Preview
-                    </span>
-                  </div>
+                  <p className="py-8 text-sm text-[#716A79]">{t("pdf.missingView")}</p>
                 )}
-              </div>
-
-              <div className="p-4">
-                <h3 className="font-[family-name:var(--font-space-grotesk)] text-base font-semibold tracking-[-0.02em] text-[#181221]">
-                  {t(view.labelKey)}
-                </h3>
-
-                <p className="mt-2 font-[family-name:var(--font-inter)] text-sm leading-6 text-[#716A79]">
-                  {t(view.captionKey)}
-                </p>
               </div>
             </article>
           );

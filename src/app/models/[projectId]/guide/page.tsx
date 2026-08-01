@@ -203,6 +203,12 @@ export default function GuidePage() {
     (state) => state.assemblySteps,
   );
   const assetReferences = useGuideGenerationStore((state) => state.assetReferences);
+  const draftGuideReferences = useGuideGenerationStore((state) => state.guideReferences);
+  const draftGuideReferencesProjectId = useGuideGenerationStore((state) => state.guideReferencesProjectId);
+  const setDraftGuideReferences = useGuideGenerationStore((state) => state.setGuideReferences);
+  const overviewViews = useGuideGenerationStore((state) => state.overviewViews);
+  const setOverviewViews = useGuideGenerationStore((state) => state.setOverviewViews);
+  const requestOverviewCapture = useGuideGenerationStore((state) => state.requestOverviewCapture);
 
   useEffect(() => {
     if (!isAuthLoading && !user) {
@@ -217,10 +223,19 @@ export default function GuidePage() {
 
     let isActive = true;
 
+    if (draftGuideReferencesProjectId === projectId && draftGuideReferences !== null) {
+      void Promise.resolve().then(() => {
+        if (isActive) setGuideReferences(draftGuideReferences);
+      });
+      return () => {
+        isActive = false;
+      };
+    }
+
     void referencesToGuideImages(referencesQuery.data)
       .then((references) => {
         if (isActive) {
-          setGuideReferences(references);
+          setGuideReferences(guideSettings?.includeReferenceImages === false ? references.map((reference) => ({ ...reference, includedInGuide: false })) : references);
         }
       })
       .catch(() => {
@@ -232,7 +247,7 @@ export default function GuidePage() {
     return () => {
       isActive = false;
     };
-  }, [referencesQuery.data]);
+  }, [draftGuideReferences, draftGuideReferencesProjectId, guideSettings?.includeReferenceImages, projectId, referencesQuery.data]);
 
   useEffect(() => {
     let active = true;
@@ -308,17 +323,15 @@ export default function GuidePage() {
         ? capturedImages
         : EMPTY_GUIDE_IMAGES,
     author: user.displayName?.trim() || t("common.user"),
-    references:
-      guideSettings?.includeReferenceImages === false
-        ? []
-        : guideReferences,
+    references: guideReferences,
     locale,
     settings: guideSettings ?? undefined,
     explodedView,
     assemblySteps,
     templateId: guideTemplate.current.id,
+    overviewViews: overviewViews ?? undefined,
   });
   guide.assetReferences = capturedProjectId === projectId && assetReferences.length > 0 ? assetReferences : storedAssetReferences;
 
-  return <GuidePreview previewProject={project} guide={guide} template={guideTemplate.current} userTemplates={guideTemplate.templates} isSelectingTemplate={guideTemplate.isSelecting} onSelectTemplate={async id => { await guideTemplate.select(id); }} />;
+  return <GuidePreview previewProject={project} guide={guide} template={guideTemplate.current} userTemplates={guideTemplate.templates} isSelectingTemplate={guideTemplate.isSelecting} onSelectTemplate={async id => { await guideTemplate.select(id); }} onReferencesChange={(references) => { setGuideReferences(references); setDraftGuideReferences(projectId, references); }} onOverviewViewsChange={setOverviewViews} onCaptureOverview={(viewId,type)=>{requestOverviewCapture({projectId,viewId,type});}} />;
 }

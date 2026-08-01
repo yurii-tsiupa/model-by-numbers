@@ -4,10 +4,10 @@ import {
 } from "@/features/i18n/lib/i18n";
 import type { Locale } from "@/features/i18n/types/Locale";
 
-import type { ModelGuide } from "../types/ModelGuide";
+import type { GuideViewModel } from "../lib/getGuideViewModel";
 
 type GuideProjectOverviewProps = {
-  guide: ModelGuide;
+  viewModel: GuideViewModel;
   locale: Locale;
 };
 
@@ -16,9 +16,10 @@ function formatLabel(value: string): string {
 }
 
 export function GuideProjectOverview({
-  guide,
+  viewModel,
   locale,
 }: GuideProjectOverviewProps) {
+  const { guide, metrics, targetMode } = viewModel;
   const t = (
     key: Parameters<typeof translate>[1],
   ) => translate(locale, key);
@@ -30,19 +31,22 @@ export function GuideProjectOverview({
     },
     {
       label: t("guide.printer"),
-      value: formatLabel(guide.printerType),
+      value: [guide.printerType, guide.material]
+        .filter(Boolean)
+        .map(formatLabel)
+        .join(" · "),
     },
     {
-      label: t("guide.material"),
-      value: formatLabel(guide.material),
-    },
-    {
-      label: t("guide.visibleParts"),
-      value: String(guide.partsCount),
+      label: t("guide.metrics.steps"),
+      value: String(metrics.stepCount),
     },
     {
       label: t("guide.usedColors"),
-      value: String(guide.colorsCount),
+      value: String(metrics.usedColorCount),
+    },
+    {
+      label: t(targetMode === "markers" ? "guide.metrics.paintingTargets" : targetMode === "region" ? "guide.metrics.paintedAreas" : "guide.metrics.modelParts"),
+      value: String(metrics.targetCount),
     },
     {
       label: t("guide.generated"),

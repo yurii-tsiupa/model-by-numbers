@@ -27,6 +27,7 @@ import type { PaintingStageType } from "@/features/model-editor/types/PaintingWo
 
 import type { ModelGuide } from "../types/ModelGuide";
 import type {GuidePaintingStepViewModel} from "../types/GuidePaintingStep";
+import { getGuideScreenshotLayout } from "../lib/getGuideScreenshotLayout";
 
 const ICONS: Record<
   PaintingStageType,
@@ -61,17 +62,6 @@ export function GuidePaintingWorkflowPreview({
   const [collapsed, setCollapsed] = useState<
     Set<string>
   >(() => new Set());
-
-  const paletteById = useMemo(
-    () =>
-      new Map(
-        (guide.workflowPalette ?? []).map((color) => [
-          color.id,
-          color,
-        ]),
-      ),
-    [guide.workflowPalette],
-  );
 
   const summary = guide.paintingSummary;
   const stepsById=useMemo(()=>new Map(steps.map(step=>[step.id,step])),[steps]);
@@ -240,7 +230,7 @@ export function GuidePaintingWorkflowPreview({
           title={t("guide.workflow.instructions")}
         />
 
-        <div className="mt-7 space-y-6">
+        <div className="mt-7 divide-y divide-[var(--border)]">
           {guide.parts.map((part, index) => {
             const workflow = part.paintingWorkflow;
             const isCollapsed = collapsed.has(part.id);
@@ -248,9 +238,9 @@ export function GuidePaintingWorkflowPreview({
             return (
               <article
                 key={part.id}
-                className="overflow-hidden rounded-3xl border border-[#E3DEEC] bg-white"
+                className="bg-[var(--card)] py-6 first:pt-0 last:pb-0"
               >
-                <header className="p-5 sm:p-6">
+                <header>
                   <div className="flex items-start gap-4">
                     <span className="pt-1 font-[family-name:var(--font-jetbrains-mono)] text-xs font-semibold text-[#76558F]">
                       {String(index + 1).padStart(2, "0")}
@@ -312,7 +302,7 @@ export function GuidePaintingWorkflowPreview({
                       onClick={() => {
                         togglePart(part.id);
                       }}
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E3DEEC] bg-[#FAF9FC] text-[#716A79] transition-colors hover:bg-[#F3F0F6] hover:text-[#181221] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76558F]"
+                      className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-[#E3DEEC] bg-[#FAF9FC] text-[#716A79] transition-colors hover:bg-[#F3F0F6] hover:text-[#181221] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76558F]"
                     >
                       <ChevronDown
                         className={`h-4 w-4 transition-transform ${
@@ -328,7 +318,7 @@ export function GuidePaintingWorkflowPreview({
                 </header>
 
                 {!isCollapsed ? (
-                  <div className="border-t border-[#E3DEEC] bg-[#FAF9FC] p-5 sm:p-6">
+                  <div className="mt-5">
                     {workflow?.stages.length ? (
                       <div className="space-y-5">
                         {workflow.stages.map(
@@ -336,23 +326,14 @@ export function GuidePaintingWorkflowPreview({
                             const Icon =
                               ICONS[stage.type];
 
-                            const color =
-                              stage.paletteColorId
-                                ? paletteById.get(
-                                    stage.paletteColorId,
-                                  )
-                                : null;
-
-                            const missingColor =
-                              Boolean(
-                                stage.paletteColorId &&
-                                  !color,
-                              );
+                            const step = stepsById.get(stage.id);
+                            const color = step?.color ?? null;
+                            const missingColor = step?.colorStatus === "missing";
 
                             return (
                               <section
                                 key={stage.id}
-                                className="flex gap-4 border-b border-[#E3DEEC] pb-5 last:border-b-0 last:pb-0"
+                                className="flex break-inside-avoid-page gap-4 border-b border-[var(--border)] pb-5 last:border-b-0 last:pb-0"
                               >
                                 <span className="pt-1 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[#AAA2B1]">
                                   {String(
@@ -360,7 +341,7 @@ export function GuidePaintingWorkflowPreview({
                                   ).padStart(2, "0")}
                                 </span>
 
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E3DEEC] bg-white">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--card)]">
                                   <Icon
                                     className="h-4 w-4 text-[#76558F]"
                                     strokeWidth={1.8}
@@ -382,8 +363,6 @@ export function GuidePaintingWorkflowPreview({
                                     )}
                                   </h4>
 
-                                  {stepsById.get(stage.id) ? <GuideStepPreview step={stepsById.get(stage.id)!} t={t}/> : null}
-
                                   {color ? (
                                     <div className="mt-3 flex flex-wrap items-center gap-2">
                                       <span
@@ -398,11 +377,11 @@ export function GuidePaintingWorkflowPreview({
                                         {color.name}
                                         {" · "}
                                         <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs">
-                                          {color.hex}
+                                          C{String(color.number).padStart(2, "0")} · {color.hex.toUpperCase()}
                                         </span>
                                       </span>
                                     </div>
-                                  ) : stage.targetReferences?.some(reference=>reference.type==="part") ? <div className="mt-3 flex items-center gap-2"><span className="grid h-6 w-6 place-items-center rounded-lg border border-dashed border-[#D5CFDD] bg-white text-xs text-[#8A8291]">—</span><span className="font-[family-name:var(--font-inter)] text-sm text-[#716A79]">{t("painting.stage.noColor")}</span></div> : null}
+                                  ) : missingColor ? null : <div className="mt-3 flex items-center gap-2"><span className="grid h-6 w-6 place-items-center rounded-lg border border-dashed border-[#D5CFDD] bg-white text-xs text-[#8A8291]">—</span><span className="font-[family-name:var(--font-inter)] text-sm text-[#716A79]">{t("painting.stage.noColor")}</span></div>}
 
                                   {missingColor ? (
                                     <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#E5D3A5] bg-[#FFF9E8] px-2.5 py-1.5 font-[family-name:var(--font-inter)] text-xs font-medium text-[#755B17]">
@@ -435,6 +414,8 @@ export function GuidePaintingWorkflowPreview({
                                       {stage.notes}
                                     </p>
                                   ) : null}
+
+                                  {step ? <GuideStepPreview step={step} t={t}/> : null}
                                 </div>
                               </section>
                             );
@@ -468,7 +449,12 @@ export function GuidePaintingWorkflowPreview({
 }
 
 function GuideStepPreview({step,t}:{step:GuidePaintingStepViewModel;t:(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>string}){
- return <div className="mt-3 break-inside-avoid"><p className="text-xs font-medium text-[#716A79]">{step.targetSummary}</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{step.previews.map(preview=>preview.status==="ready"?<figure key={preview.id}><div className="relative aspect-[3/2] w-full overflow-hidden border border-[#E3DEEC] bg-[#F7F7F5]"><Image unoptimized fill sizes="(max-width: 640px) 100vw, 320px" src={preview.image.src} alt={preview.alt} className="object-contain"/></div><figcaption className="mt-1 text-[10px] text-[#716A79]">{preview.label}</figcaption></figure>:preview.status==="loading"?<div key={preview.id} role="status" aria-live="polite" className="grid aspect-[3/2] w-full place-items-center bg-[#F7F7F5] text-xs text-[#716A79]">{t("guide.steps.preview.generating")}</div>:preview.reason!=="general"?<div key={preview.id} className="grid aspect-[3/2] w-full place-items-center bg-[#F7F7F5] px-4 text-center text-xs text-[#716A79]">{t("guide.steps.preview.unavailable")}</div>:null)}</div></div>
+ const visible=step.previews.filter(preview=>preview.status==="ready").slice(0,6);
+ const layout=getGuideScreenshotLayout(visible.length);
+ if(!visible.length){
+  return step.previews.some(preview=>preview.status==="loading")?<div role="status" aria-live="polite" className="mt-3 grid aspect-[3/2] w-full place-items-center bg-[#F7F7F5] text-xs text-[#716A79]">{t("guide.steps.preview.generating")}</div>:null;
+ }
+ return <div className="mt-4 break-inside-avoid"><p className="text-xs font-medium text-[#716A79]">{step.targetSummary}</p><div className={`mt-3 grid gap-3 ${layout.columns===2?"sm:grid-cols-2":""}`}>{visible.map((preview,index)=>preview.status==="ready"?<figure key={preview.id} className={layout.primaryFirst&&index===0?"sm:col-span-2":""}><div className="relative aspect-[3/2] w-full overflow-hidden bg-[var(--card)]"><Image unoptimized fill sizes="(max-width: 640px) 100vw, 640px" src={preview.image.src} alt={preview.alt} className="object-contain"/></div></figure>:null)}</div></div>
 }
 
 type SummaryProps = {

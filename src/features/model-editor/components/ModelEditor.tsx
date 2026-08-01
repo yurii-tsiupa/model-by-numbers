@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { GuideCaptureOverlay } from "@/features/guides/components/GuideCaptureOverlay";
 import { useGuideGenerationStore } from "@/features/guides/store/guideGenerationStore";
-import type { GuideImages } from "@/features/guides/types/ModelGuide";
+import type { GuideImages, GuideOverviewView } from "@/features/guides/types/ModelGuide";
 import type { Project } from "@/features/models/types/Project";
 import { useProjectThumbnail } from "@/features/models/hooks/useProjectThumbnail";
 import { useSaveProjectThumbnail } from "@/features/models/hooks/useSaveProjectThumbnail";
@@ -71,6 +71,10 @@ export function ModelEditor({
   const previewCapture=captureSession?.request??null;
   const previewCaptureCloseTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
   const addManualPreview=useModelEditorStore(state=>state.addPaintingStageManualCapture);
+  const overviewCaptureRequest=useGuideGenerationStore(state=>state.overviewCaptureRequest);
+  const overviewViews=useGuideGenerationStore(state=>state.overviewViews);
+  const setOverviewViews=useGuideGenerationStore(state=>state.setOverviewViews);
+  const requestOverviewCapture=useGuideGenerationStore(state=>state.requestOverviewCapture);
   const openPreviewCapture=useCallback((partId:string,step:ManualStepPreviewCaptureRequest["step"])=>{
     const camera=viewerRef.current?.getCurrentPreviewCamera()??null;
     if(!camera)return;
@@ -97,6 +101,18 @@ export function ModelEditor({
     addManualPreview(previewCapture.partId,previewCapture.step.id,camera,previewCapture.displayMode);
     closePreviewCapture();
   },[addManualPreview,captureSession?.phase,closePreviewCapture,previewCapture]);
+  const captureGuideOverview=useCallback(async()=>{
+    const request=overviewCaptureRequest,viewer=viewerRef.current;
+    if(!request||request.projectId!==project.id||!viewer)return;
+    const camera=viewer.getCurrentPreviewCamera();
+    if(!camera)return;
+    const image=request.type==="marker-map"?await blobToDataUrl(await viewer.captureGuideMarkerMap(camera)):await viewer.captureView(request.type==="clean"?"base":"painted",{preserveCamera:true,whiteBackground:true,hideManualDetailPins:true});
+    const current=overviewViews??[];
+    const nextView:GuideOverviewView={id:request.viewId??`overview-${crypto.randomUUID()}`,type:request.type,image,camera,order:request.viewId?current.find(view=>view.id===request.viewId)?.order??current.length:current.length,source:"manual",included:true};
+    setOverviewViews(request.viewId?current.map(view=>view.id===request.viewId?nextView:view):[...current,nextView]);
+    requestOverviewCapture(null);
+    router.push(`/models/${project.id}/guide`);
+  },[overviewCaptureRequest,overviewViews,project.id,requestOverviewCapture,router,setOverviewViews]);
   useEffect(()=>{if(!previewCapture)return;const onKeyDown=(event:KeyboardEvent)=>{if(event.key==="Escape"){event.preventDefault();closePreviewCapture()}};window.addEventListener("keydown",onKeyDown);return()=>window.removeEventListener("keydown",onKeyDown)},[closePreviewCapture,previewCapture]);
   useEffect(()=>()=>{if(previewCaptureCloseTimerRef.current)clearTimeout(previewCaptureCloseTimerRef.current)},[]);
   const autoThumbnailAttemptedRef = useRef(false);
@@ -293,7 +309,7 @@ export function ModelEditor({
       let progress=0;
       for (const step of paintingSteps) {
         setCaptureStep(step, ++progress);
-        images[step] = await viewer.captureView(step);
+        images[step] = await viewer.captureView(step,{whiteBackground:true,hideManualDetailPins:true});
         const source = images[step];
         if (source) assetReferences.push(await saveGuideAsset({ projectId: project.id, kind: `model-${step}`, assetId: "current", blob: await imageSourceToBlob(source) }));
       }
@@ -304,6 +320,22 @@ export function ModelEditor({
       if(settings.includeAssemblyInstructions){if(settings.includeAssemblyStepImages)setCaptureStep("assembly-assets",++progress);const partById=new Map(editorState.parts.map(part=>[part.id,part]));for(const step of editorState.assemblySteps.slice().sort((a,b)=>a.order-b.order)){const resolved=step.partIds.map(id=>partById.get(id)).filter((part):part is NonNullable<typeof part>=>Boolean(part));if(!step.title.trim()||resolved.length===0)continue;let image:string|null=null;if(settings.includeAssemblyStepImages&&step.imageKey){try{const blob=await getAssemblyStepImage(project.id,step.id);if(blob)image=await blobToDataUrl(blob);}catch{image=null;}}assemblyGuideSteps.push({id:step.id,order:step.order,title:step.title.trim(),description:step.description.trim(),parts:resolved.map(part=>({id:part.id,number:part.index+1,name:part.name})),image});}}
       for(const step of assemblyGuideSteps){if(step.image)assetReferences.push(await saveGuideAsset({projectId:project.id,kind:"assembly",assetId:step.id,blob:await imageSourceToBlob(step.image)}));}
       if(targetedPaintingStages.length){setCaptureStep("step-images",++progress);for(const stage of targetedPaintingStages){for(const shot of [...(stage.overviewPreviewEnabled!==false?[undefined]:[]),...(stage.previewShots??[])]){const cacheKey=getStepPreviewCacheKey(project.id,stage,editorState.parts,editorState.manualDetails,editorState.palette,shot);try{const preview=await getOrGenerateStepPreview(project.id,stage.id,cacheKey,false,shot);assetReferences.push(await saveGuideAsset({projectId:project.id,kind:"step-preview",assetId:shot?`${stage.id}:${shot.id}`:stage.id,contentKey:cacheKey,blob:await imageSourceToBlob(preview.imageUrl)}))}catch{/* A single unavailable close-up must not block the guide. */}}}}
+      const simpleTargetMode=editorState.simpleTargetMode??inferSimpleTargetMode(editorState.manualDetails);
+      const overviewSourceRevision=JSON.stringify({mode:simpleTargetMode,stepOrder:editorState.simplePaintingStepOrder,steps:editorState.parts.flatMap(part=>part.paintingWorkflow.stages).map(stage=>({id:stage.id,color:stage.paletteColorId,targets:stage.targetReferences})),details:editorState.manualDetails.map(detail=>({id:detail.id,number:detail.markerNumber??detail.number,color:detail.colorId,pins:detail.pins.map(pin=>({id:pin.id,position:pin.position})),region:detail.region?.selections})),parts:editorState.parts.map(part=>({id:part.id,mesh:part.meshUuid,color:part.paletteColorId})),palette:editorState.palette.map(color=>({id:color.id,hex:color.hex}))});
+      const cleanOverview=images.base??images.original??await viewer.captureView("base",{whiteBackground:true,hideManualDetailPins:true});
+      let workflowOverview=simpleTargetMode==="markers"?null:images.painted??await viewer.captureView("painted",{whiteBackground:true,hideManualDetailPins:true});
+      if(simpleTargetMode==="markers"){
+        restoreManualDetailPins();
+        if(restoreManualDetailPinsRef.current===restoreManualDetailPins)restoreManualDetailPinsRef.current=null;
+        workflowOverview=await blobToDataUrl(await viewer.captureGuideMarkerMap());
+      }
+      const automaticOverviewViews:GuideOverviewView[]=[];
+      if(cleanOverview)automaticOverviewViews.push({id:"overview-clean",type:"clean",image:cleanOverview,order:0,source:"automatic",sourceRevision:overviewSourceRevision,included:true});
+      if(workflowOverview&&workflowOverview!==cleanOverview&&simpleTargetMode)automaticOverviewViews.push({id:"overview-workflow",type:simpleTargetMode==="markers"?"marker-map":simpleTargetMode==="region"?"painted-regions":"colored-parts",image:workflowOverview,order:automaticOverviewViews.length,source:"automatic",sourceRevision:overviewSourceRevision,included:true});
+      const previousOverviewViews=useGuideGenerationStore.getState().overviewViews??[];
+      const preserved=previousOverviewViews.filter(view=>view.source==="manual"||view.included===false);
+      const blockedTypes=new Set(preserved.filter(view=>view.included===false).map(view=>view.type));
+      setOverviewViews([...preserved,...automaticOverviewViews.filter(view=>!blockedTypes.has(view.type))].map((view,index)=>({...view,order:index})));
       setGuideExtras(settings,explodedView,assemblyGuideSteps,assetReferences);
       setImages(project.id, images);
       router.push(`/models/${project.id}/guide`);
@@ -377,7 +409,7 @@ export function ModelEditor({
   return <OnboardingProvider userId={userId} simpleMode={mode==="simple"} eligible={onboardingEligible}>
     <ManualStepPreviewCaptureContext.Provider value={{request:previewCapture,open:openPreviewCapture,setDisplayMode:displayMode=>setCaptureSession(current=>current?{...current,request:{...current.request,displayMode}}:current)}}>
     <main data-editor-ui className="flex h-dvh w-full min-w-0 flex-col overflow-hidden bg-[var(--bg)] text-[var(--text)]">
-      <div inert={Boolean(previewCapture)||undefined}><EditorHeader
+      <div inert={Boolean(previewCapture||overviewCaptureRequest)||undefined}><EditorHeader
         project={project}
         isGuideReady={isGuideReady}
         isGeneratingGuide={generationStatus === "capturing"}
@@ -390,12 +422,12 @@ export function ModelEditor({
         }}
       /></div>
 
-      <div inert={Boolean(previewCapture)||undefined}><EditorModeSwitch mode={mode} onChange={setMode} /></div>
+      <div inert={Boolean(previewCapture||overviewCaptureRequest)||undefined}><EditorModeSwitch mode={mode} onChange={setMode} /></div>
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         {mode === "advanced" ? <EditorSidebar key="advanced-sidebar" guideSettings={lastGuideSettings??defaultSettings} project={project} isUpdatingBaseColor={isUpdatingBaseColor} onUpdateBaseColor={updateProjectBaseColor} isGeneratingThumbnail={saveThumbnail.isPending} thumbnailError={thumbnailError} onRegenerateThumbnail={() => { void generateThumbnail(); }} onOpenReferenceMode={openReferenceMode} onReferenceDeleted={handleReferenceDeleted} onFocusAssemblyStep={focusAssemblyStep} onExitAssemblyFocus={exitAssemblyFocus} onCaptureAssemblyImage={captureAssemblyImage} onDeleteAssemblyImage={deleteAssemblyImage} onDeleteAssemblyStep={deleteAssemblyStepWithImage} /> : null}
 
-        {mode === "simple" ? <SimplePalettePanel captureHidden={Boolean(previewCapture)} /> : null}
+        {mode === "simple" ? <SimplePalettePanel captureHidden={Boolean(previewCapture||overviewCaptureRequest)} /> : null}
         <div key="viewer-area" data-onboarding-target={mode==="simple"?ONBOARDING_TARGETS.modelViewer:undefined} className={`relative flex min-w-0 flex-1 flex-col lg:flex-row ${mode==="simple"?"order-1 min-h-[45dvh] lg:order-2 lg:min-h-0":"min-h-0"}`}>
           <div className={`${mode === "advanced" && effectiveReferenceViewMode==="reference"?"hidden":"flex"} min-h-[18rem] min-w-0 flex-1`}><ModelViewer ref={viewerRef} project={project} userId={userId} simplified={mode === "simple"} hideManualDetailPins={showGuideSettings} previewCapture={previewCapture?{stepId:previewCapture.step.id,displayMode:previewCapture.displayMode}:null}/></div>
           {previewCapture?<div role="dialog" aria-modal="true" aria-label={t("editor.steps.manualCapture.title")} className={`absolute inset-x-3 top-3 z-40 mx-auto flex max-w-3xl flex-wrap items-end gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 text-[var(--text)] shadow-xl transition duration-250 ease-out starting:scale-[.99] starting:opacity-0 motion-reduce:transition-none ${captureSession?.phase==="closing"?"pointer-events-none scale-[.99] opacity-0":"scale-100 opacity-100"}`}>
@@ -405,11 +437,12 @@ export function ModelEditor({
             <button type="button" onClick={closePreviewCapture} className="h-9 cursor-pointer rounded-lg border border-[var(--border)] px-3 text-xs font-medium hover:bg-[var(--surface-hover)]">{t("common.cancel")}</button>
             <button type="button" onClick={captureManualPreview} className="h-9 cursor-pointer rounded-lg bg-[var(--accent)] px-4 text-xs font-semibold text-[var(--accent-foreground)] hover:brightness-110">{t("editor.steps.manualCapture.capture")}</button>
           </div>:null}
+          {overviewCaptureRequest?.projectId===project.id?<div role="dialog" aria-modal="true" aria-label={t("guide.overviewViews.captureTitle")} className="absolute inset-x-3 top-3 z-40 mx-auto flex max-w-3xl flex-wrap items-end gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 text-[var(--text)] shadow-xl"><div className="min-w-48 flex-1"><p className="text-sm font-semibold">{t("guide.overviewViews.captureTitle")}</p><p className="text-xs text-[var(--text-secondary)]">{t("editor.steps.manualCapture.cameraHelp")}</p></div><button type="button" onClick={()=>viewerRef.current?.fitView()} className="h-9 cursor-pointer rounded-lg border border-[var(--border)] px-3 text-xs font-medium hover:bg-[var(--surface-hover)]">{t("editor.steps.manualCapture.reset")}</button><button type="button" onClick={()=>{requestOverviewCapture(null);router.push(`/models/${project.id}/guide`)}} className="h-9 cursor-pointer rounded-lg border border-[var(--border)] px-3 text-xs font-medium hover:bg-[var(--surface-hover)]">{t("common.cancel")}</button><button type="button" onClick={()=>void captureGuideOverview()} className="h-9 cursor-pointer rounded-lg bg-[var(--accent)] px-4 text-xs font-semibold text-[var(--accent-foreground)] hover:brightness-110">{t("editor.steps.manualCapture.capture")}</button></div>:null}
           {mode === "advanced"&&selectedReference&&effectiveReferenceViewMode!=="viewer"?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={setSelectedReferenceId} onClose={()=>setReferenceViewMode("viewer")}/>:null}
           {mode==="simple"&&simpleReferenceOpen&&selectedReference&&isDesktopReferenceLayout?<ReferenceSplitPanel reference={selectedReference} references={references} onSelect={selectReference} onClose={closeSimpleReference}/>:null}
           {mode === "advanced" ? <div className="absolute right-3 top-3 z-20 flex rounded-full border border-white/10 bg-black/70 p-1 text-xs">{(["viewer","split","reference"] as const).map(viewMode=><button key={viewMode} type="button" disabled={viewMode!=="viewer"&&references.length===0} onClick={()=>{if(viewMode==="viewer")setReferenceViewMode("viewer");else openReferenceMode(viewMode);}} className={`rounded-full px-3 py-1.5 disabled:opacity-40 ${effectiveReferenceViewMode===viewMode?"bg-orange-400 text-black":"text-neutral-300"}`}>{viewMode==="viewer"?t("viewer.model"):viewMode==="split"?t("viewer.split"):t("viewer.reference")}</button>)}</div> : null}
         </div>
-        {mode === "simple" ? <GuideBuilderPanel captureHidden={Boolean(previewCapture)} projectId={project.id} activeReferenceId={selectedReference?.id??null} isReferenceVisible={simpleReferenceOpen&&Boolean(selectedReference)} onSelectReference={selectReference} onShowReference={showSimpleReference} onHideReference={closeSimpleReference} onReferenceDeleted={handleReferenceDeleted}/> : null}
+        {mode === "simple" ? <GuideBuilderPanel captureHidden={Boolean(previewCapture||overviewCaptureRequest)} projectId={project.id} activeReferenceId={selectedReference?.id??null} isReferenceVisible={simpleReferenceOpen&&Boolean(selectedReference)} onSelectReference={selectReference} onShowReference={showSimpleReference} onHideReference={closeSimpleReference} onReferenceDeleted={handleReferenceDeleted}/> : null}
 
         {mode === "advanced" ? <PropertiesPanel key="advanced-properties" /> : null}
       </div>

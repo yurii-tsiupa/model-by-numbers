@@ -6,7 +6,7 @@ import {
   StyleSheet,
 } from "@react-pdf/renderer";
 
-import type { ModelGuide } from "../types/ModelGuide";
+import type { GuideViewModel } from "../lib/getGuideViewModel";
 import {
   guidePdfStyles,
   pdfColors,
@@ -15,7 +15,7 @@ import { formatLocalizedDate,translate } from "@/features/i18n/lib/i18n";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
 type GuideCoverPageProps = {
-  guide: ModelGuide;
+  viewModel: GuideViewModel;
   exportDate: Date;
   templateSettings?: GuideTemplateSettings;
 };
@@ -71,18 +71,12 @@ const styles = StyleSheet.create({
   },
 });
 
-export function GuideCoverPage({ guide, exportDate, templateSettings }: GuideCoverPageProps) {
+export function GuideCoverPage({ viewModel, exportDate, templateSettings }: GuideCoverPageProps) {
+  const {guide,metrics,targetMode}=viewModel;
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
   const coverImage=guide.images.painted??guide.images.base??guide.images.original??guide.images.numbers;
-  const metadata = [
-    [t("guide.author"), guide.author],
-    [t("guide.parts"), String(guide.partsCount)],
-    [t("guide.usedColors"), String(guide.colorsCount)],
-    [t("guide.printer"), guide.printerType.toUpperCase()],
-    [t("guide.material"), guide.material.toUpperCase()],
-    [t("guide.generated"), formatLocalizedDate(exportDate,locale,{day:"numeric",month:"long",year:"numeric"})],
-    [t("language.label"), t(`language.${locale}`)],
-  ].filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
+  const targetLabel=targetMode==="markers"?t("guide.metrics.paintingTargets"):targetMode==="region"?t("guide.metrics.paintedAreas"):t("guide.metrics.modelParts");
+  const metadata = [[t("guide.metrics.steps"),String(metrics.stepCount)],[t("guide.usedColors"),String(metrics.usedColorCount)],[targetLabel,String(metrics.targetCount)]].filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
 
   return (
     <Page size="A4" orientation="portrait" style={[styles.page,{backgroundColor:templateSettings?.pageBackground??pdfColors.background,color:templateSettings?.textColor??pdfColors.text}]}>
@@ -111,7 +105,9 @@ export function GuideCoverPage({ guide, exportDate, templateSettings }: GuideCov
             </View>
           ))}
         </View>
+        <Text style={[styles.subtitle,{fontSize:9,marginTop:14}]}>{[guide.printerType,guide.material].filter(Boolean).join(" · ")}</Text>
       </View>
+      <Text style={guidePdfStyles.footer}>{[guide.author,formatLocalizedDate(exportDate,locale,{day:"numeric",month:"long",year:"numeric"}),t(`language.${locale}`)].filter(Boolean).join(" · ")}</Text>
     </Page>
   );
 }
