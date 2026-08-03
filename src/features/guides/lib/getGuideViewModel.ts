@@ -5,6 +5,7 @@ import type {
 } from "../types/ModelGuide";
 import {buildGuidePaintingStepViewModels} from "./buildGuidePaintingStepViewModels";
 import { paginateGuideSteps } from "./paginateGuideSteps";
+import { getGuideKitItems } from "./getGuideKitItems";
 import {
   resolveGuideContentsSections,
   resolveGuideSections,
@@ -165,6 +166,7 @@ export function getGuideViewModel(
       hex: color.hex,
       usageCount: usageByColor.get(color.id) ?? 0,
     }));
+  const kitItems = getGuideKitItems(usedPalette, guide.kitItems);
   const includedReferences = (guide.references ?? [])
     .filter((reference) => reference.includedInGuide !== false)
     .slice()
@@ -188,6 +190,7 @@ export function getGuideViewModel(
   const documentSections = resolveGuideSections({
     hasAssembly: settings.includeAssemblyInstructions && (guide.assemblySteps?.length ?? 0) > 0,
     hasExplodedView: settings.includeExplodedView && Boolean(guide.explodedView),
+    hasKit: kitItems.length > 0,
     hasModelViews: modelViews.length > 0,
     hasPaintingWorkflow,
     hasPalette: usedPalette.length > 0,
@@ -206,6 +209,7 @@ export function getGuideViewModel(
       parts: guide.workflowParts ?? guide.parts,
     },
     hasPaintingWorkflow,
+    kitItems,
     documentSections,
     sections,
     paintingSteps,

@@ -15,6 +15,7 @@ import {
   pdfColors,
 } from "./guidePdfStyles";
 import { formatCount, translate } from "@/features/i18n/lib/i18n";
+import { formatGuideColorCode } from "../lib/getGuideKitItems";
 
 type GuidePalettePageProps = {
   pageNumberStart: number;
@@ -79,10 +80,6 @@ const styles = StyleSheet.create({
   },
 });
 
-function formatColorNumber(number: number): string {
-  return `C${String(number).padStart(2, "0")}`;
-}
-
 export function GuidePalettePage({
   pageNumberStart,
   totalPages,
@@ -130,7 +127,7 @@ export function GuidePalettePage({
                     ]}
                   />
                   <View style={styles.content}>
-                    <Text style={styles.name}>{formatColorNumber(color.number)} · {color.name}</Text>
+                    <Text style={styles.name}>{formatGuideColorCode(color.number)} · {color.name}</Text>
                     <View style={styles.details}>
                       <Text style={styles.hex}>{color.hex.toUpperCase()}</Text>
                       <Text style={styles.usage}>{formatCount(locale,color.usageCount,"step")}</Text>

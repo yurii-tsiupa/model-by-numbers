@@ -3,6 +3,7 @@ import type { GuideViewModel } from "../lib/getGuideViewModel";
 
 export const GUIDE_PDF_PAGE_CAPACITY = {
   paletteColors: 8,
+  kitItems: 16,
   parts: 10,
   references: 4,
 } as const;
@@ -41,12 +42,13 @@ function sectionPageCount(viewModel: GuideViewModel, sectionId: GuideSectionId):
       return Math.max(1, Math.ceil(viewModel.referencedParts.length / GUIDE_PDF_PAGE_CAPACITY.parts));
     case "painting-workflow":
       return viewModel.paintingPages.length;
+    case "kit":
+      return Math.max(1, Math.ceil(viewModel.kitItems.length / GUIDE_PDF_PAGE_CAPACITY.kitItems));
     case "cover":
     case "legend":
     case "project-overview":
     case "exploded-view":
       return 1;
-    case "kit":
     case "finishing":
     case "troubleshooting":
     case "back-cover":

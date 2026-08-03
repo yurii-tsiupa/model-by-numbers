@@ -6,6 +6,7 @@ import { GuideProjectSection } from "../../components/GuidePreview/sections/Guid
 import { GuideCoverSection } from "../../components/GuidePreview/sections/GuideCoverSection";
 import { GuidePaintingWorkflowSection } from "../../components/GuidePreview/sections/GuidePaintingWorkflowSection";
 import { GuideLegendSection } from "../../components/GuidePreview/sections/GuideLegendSection";
+import { GuideKitSection } from "../../components/GuidePreview/sections/GuideKitSection";
 import { GuideSectionAnchor } from "../../components/GuideSectionAnchor";
 import { getGuideViewModel } from "../../lib/getGuideViewModel";
 import type { ModelGuide } from "../../types/ModelGuide";
@@ -41,6 +42,8 @@ export function ClassicGuidePreview({
         return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><GuideProjectSection viewModel={viewModel} locale={locale} /></GuideSectionAnchor>;
       case "legend":
         return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><GuideLegendSection locale={locale} targetMode={viewModel.targetMode} /></GuideSectionAnchor>;
+      case "kit":
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><GuideKitSection items={viewModel.kitItems} locale={locale} /></GuideSectionAnchor>;
       case "palette":
         return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><GuidePalettePreviewSection palette={viewModel.usedPalette} locale={locale} /></GuideSectionAnchor>;
       case "model-views":

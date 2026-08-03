@@ -36,6 +36,7 @@ export type GuidePdfSectionId = GuideContentSectionId | "toc";
 export type GuideSectionResolutionContext = {
   hasAssembly: boolean;
   hasExplodedView: boolean;
+  hasKit: boolean;
   hasModelViews: boolean;
   hasPaintingWorkflow: boolean;
   hasPalette: boolean;
@@ -60,9 +61,9 @@ export const GUIDE_SECTION_REGISTRY: readonly GuideSectionDefinition[] = [
   { id: "cover", contentSectionId: "projectOverview", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.overview", isAvailable: always },
   { id: "project-overview", contentSectionId: "projectOverview", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.overview", isAvailable: always },
   { id: "legend", contentSectionId: "legend", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.legend.title", isAvailable: always },
-  { id: "kit", contentSectionId: "kit", core: false, defaultEnabled: false, implemented: false, includeInContents: true, isAvailable: always },
-  { id: "palette", contentSectionId: "palette", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.palette", isAvailable: (context) => context.hasPalette },
+  { id: "kit", contentSectionId: "kit", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.kit.title", isAvailable: (context) => context.hasKit },
   { id: "model-views", contentSectionId: "modelOverview", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.modelOverview", isAvailable: (context) => context.hasModelViews },
+  { id: "palette", contentSectionId: "palette", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.palette", isAvailable: (context) => context.hasPalette },
   { id: "exploded-view", contentSectionId: "explodedView", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.exploded.title", isAvailable: (context) => context.hasExplodedView },
   { id: "assembly", contentSectionId: "assembly", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.assembly.title", isAvailable: (context) => context.hasAssembly },
   { id: "references", contentSectionId: "references", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.references", isAvailable: (context) => context.hasReferences },
