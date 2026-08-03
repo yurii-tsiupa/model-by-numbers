@@ -4,7 +4,8 @@ import type { ComponentProps, ReactNode } from "react";
 import type { Locale } from "@/features/i18n/types/Locale";
 import { GuidePageFooter } from "./GuidePageFooter";
 import { guidePdfStyles } from "./guidePdfStyles";
-import { PDF_PAGE_POINTS } from "./printPageConstants";
+import { DEFAULT_GUIDE_PAGE_FORMAT } from "../types/GuidePageFormat";
+import { getGuidePdfPageSize } from "./printPageConstants";
 import { GuidePageHeader } from "./GuidePageHeader";
 import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
 
@@ -33,7 +34,7 @@ export function GuidePage({children, locale, pageNumber, projectName, showFooter
   return (
     <Page
       {...props}
-      size={{width: PDF_PAGE_POINTS.width, height: PDF_PAGE_POINTS.height}}
+      size={getGuidePdfPageSize(template.pageFormat ?? DEFAULT_GUIDE_PAGE_FORMAT)}
       orientation="portrait"
       style={pageStyle}
       wrap={wrap}

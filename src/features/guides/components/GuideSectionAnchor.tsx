@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { GuideSectionId } from "../lib/getGuideViewModel";
+import type { GuideSectionId } from "../config/guideSectionRegistry";
 import { useGuideRenderMode } from "./GuideRenderModeProvider";
 
 type GuideSectionAnchorProps = {

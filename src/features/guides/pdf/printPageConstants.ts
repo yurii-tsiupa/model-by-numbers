@@ -1,3 +1,5 @@
+import { DEFAULT_GUIDE_PAGE_FORMAT, type GuidePageFormat } from "../types/GuidePageFormat";
+
 const POINTS_PER_MM = 72 / 25.4;
 
 export const PDF_PAGE = {
@@ -30,6 +32,7 @@ const GUIDE_CONTENT_PADDING_TOP = PDF_PAGE_POINTS.marginTop - GUIDE_HEADER_HEIGH
 const GUIDE_CONTENT_PADDING_BOTTOM = PDF_PAGE_POINTS.marginBottom - GUIDE_FOOTER_HEIGHT;
 
 export const PDF_PAGE_LAYOUT = {
+  pageFormat: DEFAULT_GUIDE_PAGE_FORMAT,
   pageWidth: PDF_PAGE_POINTS.width,
   pageHeight: PDF_PAGE_POINTS.height,
   paddingLeft: PDF_PAGE_POINTS.marginLeft,
@@ -47,5 +50,13 @@ export const PDF_PAGE_LAYOUT = {
     - GUIDE_CONTENT_PADDING_TOP
     - GUIDE_CONTENT_PADDING_BOTTOM,
 } as const;
+
+export function getGuidePdfPageSize(pageFormat: GuidePageFormat) {
+  if (pageFormat !== DEFAULT_GUIDE_PAGE_FORMAT) {
+    throw new Error(`Guide page format "${pageFormat}" is not implemented.`);
+  }
+
+  return { width: PDF_PAGE_POINTS.width, height: PDF_PAGE_POINTS.height };
+}
 
 export const PRINT_SECTION_FIRST_BLOCK_POINTS = 56;

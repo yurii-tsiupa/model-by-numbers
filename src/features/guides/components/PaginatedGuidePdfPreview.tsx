@@ -6,7 +6,8 @@ import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 import { translate } from "@/features/i18n/lib/i18n";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
-import type { GuideSectionId, GuideViewModel } from "../lib/getGuideViewModel";
+import type { GuideSectionId } from "../config/guideSectionRegistry";
+import type { GuideViewModel } from "../lib/getGuideViewModel";
 type PreviewPage = {
   pageNumber: number;
   sectionId?: GuideSectionId;

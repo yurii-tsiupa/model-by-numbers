@@ -1,5 +1,3 @@
-import type { TranslationKey } from "@/features/i18n/locales/en";
-
 import { getGuideSettings } from "./guideSettings";
 import type {
   GuideImages,
@@ -7,6 +5,13 @@ import type {
 } from "../types/ModelGuide";
 import {buildGuidePaintingStepViewModels} from "./buildGuidePaintingStepViewModels";
 import { paginateGuideSteps } from "./paginateGuideSteps";
+import {
+  resolveGuideContentsSections,
+  resolveGuideSections,
+  type GuideSectionMetadata,
+} from "../config/guideSectionRegistry";
+
+export type { GuideSectionId, GuideSectionMetadata } from "../config/guideSectionRegistry";
 
 export type GuideModelView = {
   id: string;
@@ -30,22 +35,6 @@ export type GuideModelView = {
     | "guide.paintedCaption"
     | "guide.numbersCaption";
   caption?:string;
-};
-
-export type GuideSectionId =
-  | "project-overview"
-  | "model-views"
-  | "exploded-view"
-  | "assembly"
-  | "references"
-  | "palette"
-  | "parts-overview"
-  | "painting-workflow";
-
-export type GuideSectionMetadata = {
-  id: GuideSectionId;
-  titleKey: TranslationKey;
-  order: number;
 };
 
 export type GuideTargetMode = "markers" | "region" | "parts";
@@ -196,82 +185,16 @@ export function getGuideViewModel(
   );
   const guideParts = targetMode === "parts" ? referencedParts : [];
 
-  const sections: GuideSectionMetadata[] = [
-    {
-      id: "project-overview",
-      titleKey: "guide.overview",
-      order: 0,
-    },
-
-    ...(usedPalette.length > 0
-      ? [{ id: "palette" as const, titleKey: "guide.palette" as const, order: 1 }]
-      : []),
-
-    ...(modelViews.length > 0
-      ? [
-          {
-            id: "model-views" as const,
-            titleKey: "guide.modelOverview" as const,
-            order: 2,
-          },
-        ]
-      : []),
-
-    ...(settings.includeExplodedView &&
-    guide.explodedView
-      ? [
-          {
-            id: "exploded-view" as const,
-            titleKey:
-              "guide.exploded.title" as const,
-            order: 2,
-          },
-        ]
-      : []),
-
-    ...(settings.includeAssemblyInstructions &&
-    (guide.assemblySteps?.length ?? 0) > 0
-      ? [
-          {
-            id: "assembly" as const,
-            titleKey:
-              "guide.assembly.title" as const,
-            order: 3,
-          },
-        ]
-      : []),
-
-    ...(includedReferences.length > 0
-      ? [
-          {
-            id: "references" as const,
-            titleKey: "guide.references" as const,
-            order: 4,
-          },
-        ]
-      : []),
-
-    ...(settings.includePartsTable && guideParts.length > 0
-      ? [
-          {
-            id: "parts-overview" as const,
-            titleKey: "guide.parts" as const,
-            order: 6,
-          },
-        ]
-      : []),
-
-    ...(hasPaintingWorkflow
-      ? [
-          {
-            id: "painting-workflow" as const,
-            titleKey:
-              "guide.workflow.instructions" as const,
-            order: 7,
-          },
-        ]
-      : []),
-  ];
+  const documentSections = resolveGuideSections({
+    hasAssembly: settings.includeAssemblyInstructions && (guide.assemblySteps?.length ?? 0) > 0,
+    hasExplodedView: settings.includeExplodedView && Boolean(guide.explodedView),
+    hasModelViews: modelViews.length > 0,
+    hasPaintingWorkflow,
+    hasPalette: usedPalette.length > 0,
+    hasPartsOverview: settings.includePartsTable && guideParts.length > 0,
+    hasReferences: includedReferences.length > 0,
+  });
+  const sections: GuideSectionMetadata[] = resolveGuideContentsSections(documentSections);
 
   return {
     guide,
@@ -283,6 +206,7 @@ export function getGuideViewModel(
       parts: guide.workflowParts ?? guide.parts,
     },
     hasPaintingWorkflow,
+    documentSections,
     sections,
     paintingSteps,
     paintingPages,

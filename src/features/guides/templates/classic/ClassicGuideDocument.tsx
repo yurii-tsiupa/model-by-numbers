@@ -41,6 +41,7 @@ import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibr
 import { GuidePdfTemplateProvider } from "../../pdf/GuidePdfTemplateContext";
 import { GuidePdfRenderModeProvider, type GuidePdfRenderMode } from "../../pdf/GuidePdfRenderModeContext";
 import { resolveGuidePdfPagePlan } from "../../pdf/resolveGuidePdfPagePlan";
+import { Fragment } from "react";
 
 type ClassicGuideDocumentProps = {
   guide: ModelGuide;
@@ -66,14 +67,18 @@ export function ClassicGuideDocument({
       {...metadata}
     >
       <GuidePdfRenderModeProvider value={renderMode}><GuidePdfTemplateProvider settings={templateSettings}>
-      <GuideCoverPage viewModel={model} exportDate={exportDate} pageNumber={pagePlan.cover} templateSettings={templateSettings} totalPages={pagePlan.totalPages} />
-
-      {pagePlan.tableOfContents ? <GuideTableOfContentsPage pageNumber={pagePlan.tableOfContents} totalPages={pagePlan.totalPages} viewModel={model} /> : null}
-
-      {model.sections.map((section) => {
+      {model.documentSections.map((section) => {
         const pageRange = pagePlan.sections[section.id];
         if (!pageRange) return null;
         switch (section.id) {
+          case "cover":
+            return (
+              <Fragment key={section.id}>
+                <GuideCoverPage viewModel={model} exportDate={exportDate} pageNumber={pageRange.start} templateSettings={templateSettings} totalPages={pagePlan.totalPages} />
+                {pagePlan.tableOfContents ? <GuideTableOfContentsPage pageNumber={pagePlan.tableOfContents} totalPages={pagePlan.totalPages} viewModel={model} /> : null}
+              </Fragment>
+            );
+
           case "project-overview":
             return (
               <GuideProjectPage

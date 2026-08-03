@@ -1,8 +1,11 @@
+import type { GuidePageFormat } from "@/features/guides/types/GuidePageFormat";
+
 export type GuideTemplateCategory = "minimal" | "technical" | "editorial" | "custom";
 export type PageNumberStyle = "numeric" | "numericWithTotal";
 export type PageNumberPosition = "bottomLeft" | "bottomCenter" | "bottomRight";
 
 export type GuideTemplateSettings = {
+  pageFormat: GuidePageFormat;
   pageBackground: string;
   textColor: string;
   accentColor: string;

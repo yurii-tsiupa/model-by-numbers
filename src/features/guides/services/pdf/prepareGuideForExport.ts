@@ -1,4 +1,4 @@
-import type {GuideSectionId} from "../../lib/getGuideViewModel";
+import type {GuideSectionId} from "../../config/guideSectionRegistry";
 import {PdfExportError} from "./pdfExportErrors";
 import {GUIDE_ASSET_TIMEOUT_MS} from "./waitForGuideImages";
 

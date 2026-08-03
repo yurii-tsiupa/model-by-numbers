@@ -1,8 +1,6 @@
 import type { GuideViewModel } from "../lib/getGuideViewModel";
 import { defaultGuideTemplate } from "../templates/registry/guideTemplates";
-import { GuidePaintingWorkflowSection } from "./GuidePreview/sections/GuidePaintingWorkflowSection";
 import { GuideRenderModeProvider } from "./GuideRenderModeProvider";
-import { GuideSectionAnchor } from "./GuideSectionAnchor";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
 type GuideExportDocumentProps = {
@@ -31,15 +29,6 @@ export function GuideExportDocument({
             templateSettings={templateSettings}
           />
 
-          {viewModel.sections.some((section) => section.id === "painting-workflow") ? (
-            <GuideSectionAnchor id="painting-workflow">
-              <GuidePaintingWorkflowSection
-                guide={viewModel.workflowGuide}
-                locale={viewModel.locale}
-                steps={viewModel.paintingSteps}
-              />
-            </GuideSectionAnchor>
-          ) : null}
         </article>
       </GuideRenderModeProvider>
     </div>

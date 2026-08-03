@@ -4,6 +4,7 @@ import { GuidePalettePreviewSection } from "../../components/GuidePreview/sectio
 import { GuidePartsPreviewSection } from "../../components/GuidePreview/sections/GuidePartsPreviewSection";
 import { GuideProjectSection } from "../../components/GuidePreview/sections/GuideProjectSection";
 import { GuideCoverSection } from "../../components/GuidePreview/sections/GuideCoverSection";
+import { GuidePaintingWorkflowSection } from "../../components/GuidePreview/sections/GuidePaintingWorkflowSection";
 import { GuideSectionAnchor } from "../../components/GuideSectionAnchor";
 import { getGuideViewModel } from "../../lib/getGuideViewModel";
 import type { ModelGuide } from "../../types/ModelGuide";
@@ -24,92 +25,46 @@ export function ClassicGuidePreview({
 }: ClassicGuidePreviewProps) {
   const viewModel = getGuideViewModel(guide);
 
-  const {
-    locale,
-    settings,
-    modelViews,
-  } = viewModel;
+  const { locale, settings } = viewModel;
 
   const t = (
     key: Parameters<typeof translate>[1],
     values?: Parameters<typeof translate>[2],
   ) => translate(locale, key, values);
 
-  const assemblySteps = guide.assemblySteps ?? [];
-  const references = viewModel.includedReferences;
+  const renderedSections = viewModel.documentSections.map((section) => {
+    switch (section.id) {
+      case "cover":
+        return <GuideCoverSection key={section.id} viewModel={viewModel} locale={locale} />;
+      case "project-overview":
+        return <GuideSectionAnchor key={section.id} id={section.id}><GuideProjectSection viewModel={viewModel} locale={locale} /></GuideSectionAnchor>;
+      case "palette":
+        return <GuideSectionAnchor key={section.id} id={section.id}><GuidePalettePreviewSection palette={viewModel.usedPalette} locale={locale} /></GuideSectionAnchor>;
+      case "model-views":
+        return <GuideSectionAnchor key={section.id} id={section.id}><ClassicModelViewsSection views={viewModel.modelViews} t={t} /></GuideSectionAnchor>;
+      case "exploded-view":
+        return <GuideSectionAnchor key={section.id} id={section.id}><ClassicExplodedSection view={guide.explodedView!} t={t} /></GuideSectionAnchor>;
+      case "assembly":
+        return <GuideSectionAnchor key={section.id} id={section.id}><ClassicAssemblySection steps={guide.assemblySteps ?? []} showImages={settings.includeAssemblyStepImages} t={t} /></GuideSectionAnchor>;
+      case "references":
+        return <GuideSectionAnchor key={section.id} id={section.id}><ClassicReferencesSection references={viewModel.includedReferences} t={t} /></GuideSectionAnchor>;
+      case "parts-overview":
+        return <GuideSectionAnchor key={section.id} id={section.id}><GuidePartsPreviewSection parts={viewModel.referencedParts} locale={locale} /></GuideSectionAnchor>;
+      case "painting-workflow":
+        return <GuideSectionAnchor key={section.id} id={section.id}><GuidePaintingWorkflowSection guide={viewModel.workflowGuide} locale={locale} steps={viewModel.paintingSteps} /></GuideSectionAnchor>;
+      default:
+        return null;
+    }
+  });
+  const paintingWorkflowIndex = viewModel.documentSections.findIndex((section) => section.id === "painting-workflow");
+  const primarySectionCount = paintingWorkflowIndex < 0 ? renderedSections.length : paintingWorkflowIndex;
 
   return (
-    <div className="space-y-6" style={{color:templateSettings?.textColor}}>
-      <GuideCoverSection
-        viewModel={viewModel}
-        locale={locale}
-      />
-
-      <GuideSectionAnchor id="project-overview">
-        <GuideProjectSection
-          viewModel={viewModel}
-          locale={locale}
-        />
-      </GuideSectionAnchor>
-
-      {viewModel.usedPalette.length > 0 ? (
-        <GuideSectionAnchor id="palette">
-          <GuidePalettePreviewSection
-            palette={viewModel.usedPalette}
-            locale={locale}
-          />
-        </GuideSectionAnchor>
-      ) : null}
-
-      {modelViews.length > 0 ? (
-        <GuideSectionAnchor id="model-views">
-          <ClassicModelViewsSection
-            views={modelViews}
-            t={t}
-          />
-        </GuideSectionAnchor>
-      ) : null}
-
-      {settings.includeExplodedView &&
-      guide.explodedView ? (
-        <GuideSectionAnchor id="exploded-view">
-          <ClassicExplodedSection
-            view={guide.explodedView}
-            t={t}
-          />
-        </GuideSectionAnchor>
-      ) : null}
-
-      {settings.includeAssemblyInstructions &&
-      assemblySteps.length > 0 ? (
-        <GuideSectionAnchor id="assembly">
-          <ClassicAssemblySection
-            steps={assemblySteps}
-            showImages={
-              settings.includeAssemblyStepImages
-            }
-            t={t}
-          />
-        </GuideSectionAnchor>
-      ) : null}
-
-      {references.length > 0 ? (
-        <GuideSectionAnchor id="references">
-          <ClassicReferencesSection
-            references={references}
-            t={t}
-          />
-        </GuideSectionAnchor>
-      ) : null}
-
-      {viewModel.sections.some((section) => section.id === "parts-overview") ? (
-        <GuideSectionAnchor id="parts-overview">
-          <GuidePartsPreviewSection
-            parts={viewModel.referencedParts}
-            locale={locale}
-          />
-        </GuideSectionAnchor>
-      ) : null}
-    </div>
+    <>
+      <div className="space-y-6" style={{color:templateSettings?.textColor}}>
+        {renderedSections.slice(0, primarySectionCount)}
+      </div>
+      {renderedSections.slice(primarySectionCount)}
+    </>
   );
 }

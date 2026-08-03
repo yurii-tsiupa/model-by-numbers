@@ -13,7 +13,7 @@ import type { Locale } from "@/features/i18n/types/Locale";
 import type {
   GuideSectionId,
   GuideSectionMetadata,
-} from "../lib/getGuideViewModel";
+} from "../config/guideSectionRegistry";
 
 type GuideNavigationProps = {
   sections: readonly GuideSectionMetadata[];
