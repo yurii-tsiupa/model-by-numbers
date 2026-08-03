@@ -6,6 +6,7 @@ import type {
 import {buildGuidePaintingStepViewModels} from "./buildGuidePaintingStepViewModels";
 import { paginateGuideSteps } from "./paginateGuideSteps";
 import { getGuideKitItems } from "./getGuideKitItems";
+import { resolveGuideAssemblyData } from "./resolveGuideAssemblyData";
 import {
   resolveGuideContentsSections,
   resolveGuideSections,
@@ -186,9 +187,10 @@ export function getGuideViewModel(
     (part) => referencedPartIds.has(part.id),
   );
   const guideParts = targetMode === "parts" ? referencedParts : [];
+  const assemblyData = resolveGuideAssemblyData(guide, settings);
 
   const documentSections = resolveGuideSections({
-    hasAssembly: settings.includeAssemblyInstructions && (guide.assemblySteps?.length ?? 0) > 0,
+    hasAssembly: Boolean(assemblyData),
     hasExplodedView: settings.includeExplodedView && Boolean(guide.explodedView),
     hasKit: kitItems.length > 0,
     hasModelViews: modelViews.length > 0,
@@ -209,6 +211,7 @@ export function getGuideViewModel(
       parts: guide.workflowParts ?? guide.parts,
     },
     hasPaintingWorkflow,
+    assemblyData,
     kitItems,
     documentSections,
     sections,

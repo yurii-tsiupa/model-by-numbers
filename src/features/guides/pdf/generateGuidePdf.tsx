@@ -8,6 +8,7 @@ import type { PdfExportProgress } from "../services/pdf/types";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 import {prepareGuideStepPreviewsForPdf} from "./prepareGuideStepPreviewsForPdf";
 import type { GuidePdfRenderMode } from "./GuidePdfRenderModeContext";
+import { resolveGuideAssemblyData } from "../lib/resolveGuideAssemblyData";
 
 function diagnoseInvalidPreviewDimensions(viewModel: GuideViewModel): void {
   if (process.env.NODE_ENV === "production") return;
@@ -54,7 +55,7 @@ export async function generateGuidePdf(
   });
   diagnoseInvalidPreviewDimensions(preparedSteps.viewModel);
   let renderer;
-  try{renderer=pdf(<ModelGuideDocument renderMode={renderMode} templateSettings={templateSettings} viewModel={{...preparedSteps.viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts},modelViews:preparedModelViews}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
+  try{renderer=pdf(<ModelGuideDocument renderMode={renderMode} templateSettings={templateSettings} viewModel={{...preparedSteps.viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts},modelViews:preparedModelViews,assemblyData:resolveGuideAssemblyData(prepared.guide,preparedSteps.viewModel.settings)}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
   onProgress?.({status:"generating",progress:85});
   let blob:Blob;try{blob=await renderer.toBlob();}catch(error){throw new PdfExportError("PDF_GENERATION_FAILED",error);}
 

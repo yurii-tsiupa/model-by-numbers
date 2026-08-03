@@ -29,7 +29,7 @@ export type GuideExportValidation = {
 };
 
 export function validateGuideExport(viewModel: GuideViewModel): GuideExportValidation {
-  const {guide,settings,modelViews,workflowGuide}=viewModel;
+  const {assemblyData,guide,settings,modelViews,workflowGuide}=viewModel;
   const errors:ExportValidationError[]=[];
   const warnings:ExportValidationWarning[]=[];
 
@@ -42,7 +42,7 @@ export function validateGuideExport(viewModel: GuideViewModel): GuideExportValid
   if (missingGuideImages) warnings.push({code:"MISSING_IMAGES",count:missingGuideImages});
 
   if (settings.includeExplodedView&&!guide.explodedView?.image) warnings.push({code:"MISSING_EXPLODED_VIEW"});
-  if (settings.includeAssemblyInstructions&&!(guide.assemblySteps?.length)) warnings.push({code:"EMPTY_ASSEMBLY"});
+  if (settings.includeAssemblyInstructions&&!assemblyData) warnings.push({code:"EMPTY_ASSEMBLY"});
 
   const missingPainting=workflowGuide.parts.filter(part=>!part.paintingWorkflow?.stages.length).length;
   if (viewModel.hasPaintingWorkflow&&missingPainting) warnings.push({code:"MISSING_PAINTING",count:missingPainting});

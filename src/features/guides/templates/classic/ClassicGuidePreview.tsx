@@ -51,7 +51,7 @@ export function ClassicGuidePreview({
       case "exploded-view":
         return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicExplodedSection view={guide.explodedView!} t={t} /></GuideSectionAnchor>;
       case "assembly":
-        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicAssemblySection steps={guide.assemblySteps ?? []} showImages={settings.includeAssemblyStepImages} t={t} /></GuideSectionAnchor>;
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicAssemblySection data={viewModel.assemblyData!} showImages={settings.includeAssemblyStepImages} t={t} /></GuideSectionAnchor>;
       case "references":
         return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicReferencesSection references={viewModel.includedReferences} t={t} /></GuideSectionAnchor>;
       case "parts-overview":

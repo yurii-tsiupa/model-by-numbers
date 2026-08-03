@@ -121,9 +121,9 @@ export function ClassicGuideDocument({
             return (
               <GuideAssemblyPages
                 key={section.id}
-                guide={guide}
                 pageNumberStart={pageRange.start}
                 totalPages={pagePlan.totalPages}
+                viewModel={model}
               />
             );
 

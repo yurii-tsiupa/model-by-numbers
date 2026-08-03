@@ -2,12 +2,12 @@
 
 import type { TranslationKey } from "@/features/i18n/locales/en";
 
-import type { GuideAssemblyStep } from "../../../types/ModelGuide";
+import type { GuideAssemblyData } from "../../../types/GuideAssembly";
 import { ClassicSectionHeading } from "../ClassicSectionHeading";
 import { classicPreviewInlineStyles as inlineStyles, classicPreviewStyles as styles } from "../classic.styles";
 
 type ClassicAssemblySectionProps = {
-  steps: readonly GuideAssemblyStep[];
+  data: GuideAssemblyData;
   showImages: boolean;
   t: (
     key: TranslationKey,
@@ -16,20 +16,33 @@ type ClassicAssemblySectionProps = {
 };
 
 export function ClassicAssemblySection({
-  steps,
+  data,
   showImages,
   t,
 }: ClassicAssemblySectionProps) {
+  if (data.mode === "overview") {
+    return (
+      <section className={styles.section}>
+        <ClassicSectionHeading eyebrow={t("guide.assembly.sectionEyebrow")} title={t("guide.assembly.sectionTitle")} description={t("guide.assembly.overviewDescription")} />
+        <h3 className="mt-7 font-[family-name:var(--font-display)] text-sm font-medium text-[var(--accent)]">{t("guide.assembly.modelParts")}</h3>
+        <ul className="mt-2 grid border-t border-[var(--border)] sm:grid-cols-2">
+          {data.parts.map((part) => <li key={part.id} className="flex min-h-10 items-center border-b border-[var(--border)] py-2 text-sm"><span className="w-10 font-[family-name:var(--font-mono)] text-xs text-[var(--accent)]">{String(part.number).padStart(2, "0")}</span><span className="text-[var(--text)]">{part.name}</span></li>)}
+        </ul>
+        {data.views.length ? <div className={`mt-7 grid gap-4 ${data.views.length > 1 ? "sm:grid-cols-2" : ""}`}>{data.views.map((view) => <figure key={view.id}><div className="flex aspect-[4/3] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--card)] p-3"><img src={view.image} alt={t(view.labelKey)} className="h-full w-full object-contain" /></div><figcaption className="mt-2 text-center text-xs text-[var(--text-secondary)]">{t(view.labelKey)}</figcaption></figure>)}</div> : null}
+      </section>
+    );
+  }
+
   return (
     <section className={styles.section}>
       <ClassicSectionHeading
-        eyebrow={t("guide.assembly.eyebrow")}
-        title={t("guide.assembly.title")}
+        eyebrow={t("guide.assembly.sectionEyebrow")}
+        title={t("guide.assembly.sectionTitle")}
         description={t("guide.assembly.description")}
       />
 
       <div className="mt-8 grid gap-5 lg:grid-cols-2">
-        {steps.map((step) => (
+        {data.steps.map((step) => (
           <article
             key={step.id}
             className={`${styles.card} overflow-hidden`}

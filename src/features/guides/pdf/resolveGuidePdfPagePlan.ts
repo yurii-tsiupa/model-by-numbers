@@ -1,5 +1,6 @@
 import type { GuideContentSectionId, GuidePdfSectionId, GuideSectionId } from "../config/guideSectionRegistry";
 import type { GuideViewModel } from "../lib/getGuideViewModel";
+import { getGuideAssemblyPageCount } from "../lib/resolveGuideAssemblyData";
 
 export const GUIDE_PDF_PAGE_CAPACITY = {
   paletteColors: 8,
@@ -33,7 +34,7 @@ function sectionPageCount(viewModel: GuideViewModel, sectionId: GuideSectionId):
     case "model-views":
       return viewModel.modelViews.length;
     case "assembly":
-      return viewModel.guide.assemblySteps?.length ?? 0;
+      return getGuideAssemblyPageCount(viewModel.assemblyData);
     case "references":
       return Math.max(1, Math.ceil(viewModel.includedReferences.length / GUIDE_PDF_PAGE_CAPACITY.references));
     case "palette":

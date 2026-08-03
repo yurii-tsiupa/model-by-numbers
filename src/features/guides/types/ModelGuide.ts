@@ -30,7 +30,7 @@ export type GuideOverviewView={id:string;type:GuideOverviewViewType;image:string
 export type GuideSettings={includeOriginalView:boolean;includeBaseView:boolean;includePaintedView:boolean;includeNumbersView:boolean;includePartsTable:boolean;includeProjectDescription:boolean;includeReferenceImages:boolean;includeExplodedView:boolean;includeAssemblyInstructions:boolean;includeAssemblyStepImages:boolean};
 export type GuideExplodedView={image:string|null;labelsMode:"none"|"numbers"|"numbers-and-names";partsCount:number};
 export type GuideAssemblyPart={id:string;number:number;name:string};
-export type GuideAssemblyStep={id:string;order:number;title:string;description:string;parts:GuideAssemblyPart[];image:string|null};
+export type GuideAssemblyStep={id:string;order:number;title:string;description:string;parts:GuideAssemblyPart[];image:string|null;partIds?:string[];imageId?:string|null;};
 import type { ReferenceImageType } from "@/features/references/types/ReferenceImage";
 export type GuideReferenceImage = { id:string; name:string; type:ReferenceImageType; dataUrl:string; width:number; height:number; source?:"project"|"guide"; includedInGuide?:boolean; order?:number; caption?:string; };
 
