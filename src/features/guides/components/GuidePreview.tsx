@@ -26,6 +26,7 @@ import { GuideSectionManager } from "./GuideSectionManager";
 import { GuidePdfDesignPanel } from "./GuidePdfDesignPanel";
 import { GuideSidebarPanelSwitcher, type GuideSidebarPanel } from "./GuideSidebarPanelSwitcher";
 import { normalizeGuideAccentColor } from "../design/guideDesignTokens";
+import type { GuideFontId } from "../design/guideFontRegistry";
 
 type GuidePreviewProps = {
   previewProject?: Project;
@@ -95,6 +96,7 @@ export function GuidePreview({
     coverStyle: template.settings.coverStyle,
     dividerStyle: template.settings.dividerStyle,
     headingFont: template.settings.headingFont,
+    monoFont: template.settings.monoFont,
     pageBackground: template.settings.pageBackground,
     pageFormat: template.settings.pageFormat,
     pageNumberPosition: template.settings.pageNumberPosition,
@@ -109,6 +111,7 @@ export function GuidePreview({
     template.settings.headingFont,
     template.settings.pageBackground,
     template.settings.pageFormat,
+    template.settings.monoFont,
     template.settings.pageNumberPosition,
     template.settings.pageNumberStyle,
     template.settings.spacing,
@@ -192,6 +195,21 @@ export function GuidePreview({
     void onTemplateSettingsChange({ accentColor }).catch(() => setSaveWarning(text("guide.pdfDesign.saveFailed")));
   }
 
+  function handleDisplayFontChange(fontId: GuideFontId) {
+    if (!onTemplateSettingsChange || fontId === template.settings.headingFont) return;
+    void onTemplateSettingsChange({ headingFont: fontId }).catch(() => setSaveWarning(text("guide.pdfDesign.saveFailed")));
+  }
+
+  function handleBodyFontChange(fontId: GuideFontId) {
+    if (!onTemplateSettingsChange || fontId === template.settings.bodyFont) return;
+    void onTemplateSettingsChange({ bodyFont: fontId }).catch(() => setSaveWarning(text("guide.pdfDesign.saveFailed")));
+  }
+
+  function handleMonoFontChange(fontId: GuideFontId) {
+    if (!onTemplateSettingsChange || fontId === template.settings.monoFont) return;
+    void onTemplateSettingsChange({ monoFont: fontId }).catch(() => setSaveWarning(text("guide.pdfDesign.saveFailed")));
+  }
+
   return (
     <main className="min-h-0 flex-1 bg-[var(--bg)] text-[var(--text)]">
       <GuidePreviewHeader
@@ -266,7 +284,7 @@ export function GuidePreview({
                   {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
                 </div>
                 {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
-              </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} disabled={isUpdatingTemplateSettings} pageFormat={template.settings.pageFormat} onAccentColorChange={handleAccentColorChange} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
+              </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} bodyFontId={template.settings.bodyFont} disabled={isUpdatingTemplateSettings} displayFontId={template.settings.headingFont} monoFontId={template.settings.monoFont} pageFormat={template.settings.pageFormat} onAccentColorChange={handleAccentColorChange} onBodyFontChange={handleBodyFontChange} onDisplayFontChange={handleDisplayFontChange} onMonoFontChange={handleMonoFontChange} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
             </div>
           </div>
         </details> : null}
@@ -303,7 +321,7 @@ export function GuidePreview({
                 {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
               </div>
               {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
-            </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} disabled={isUpdatingTemplateSettings} pageFormat={template.settings.pageFormat} onAccentColorChange={handleAccentColorChange} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
+            </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} bodyFontId={template.settings.bodyFont} disabled={isUpdatingTemplateSettings} displayFontId={template.settings.headingFont} monoFontId={template.settings.monoFont} pageFormat={template.settings.pageFormat} onAccentColorChange={handleAccentColorChange} onBodyFontChange={handleBodyFontChange} onDisplayFontChange={handleDisplayFontChange} onMonoFontChange={handleMonoFontChange} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
           </div>
         </aside> : null}
       </div>

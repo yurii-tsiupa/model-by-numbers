@@ -14,6 +14,7 @@ import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import { GuidePage } from "./GuidePage";
 import { formatLocalizedDate,translate } from "@/features/i18n/lib/i18n";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
+import { useGuidePdfDesignTokens } from "./GuidePdfTemplateContext";
 
 type GuideCoverPageProps = {
   viewModel: GuideViewModel;
@@ -73,6 +74,7 @@ const styles = StyleSheet.create({
 export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSettings, totalPages }: GuideCoverPageProps) {
   const {guide,metrics,targetMode}=viewModel;
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
+  const design = useGuidePdfDesignTokens();
   const coverImage=guide.images.painted??guide.images.base??guide.images.original??guide.images.numbers;
   const targetLabel=targetMode==="markers"?t("guide.metrics.paintingTargets"):targetMode==="region"?t("guide.metrics.paintedAreas"):t("guide.metrics.modelParts");
   const metadata = [[t("guide.metrics.steps"),String(metrics.stepCount)],[t("guide.usedColors"),String(metrics.usedColorCount)],[targetLabel,String(metrics.targetCount)]].filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
@@ -90,8 +92,8 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
       <View>
         <GuidePdfEyebrow>{t("pdf.brand")}</GuidePdfEyebrow>
         <View style={styles.titleBlock}>
-          <Text style={styles.title}>{guide.title}</Text>
-          <Text style={styles.subtitle}>{t("guide.paintingGuide")}</Text>
+          <Text style={[styles.title, { fontFamily: design.headingFont }]}>{guide.title}</Text>
+          <Text style={[styles.subtitle, { fontFamily: design.bodyFont }]}>{t("guide.paintingGuide")}</Text>
         </View>
 
         <View style={styles.imageContainer}>
@@ -112,7 +114,7 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
             </View>
           ))}
         </View>
-        <Text style={[styles.subtitle,{fontSize:9,marginTop:14}]}>{[guide.printerType,guide.material].filter(Boolean).join(" · ")}</Text>
+        <Text style={[styles.subtitle,{fontSize:9,marginTop:14,fontFamily:design.bodyFont}]}>{[guide.printerType,guide.material].filter(Boolean).join(" · ")}</Text>
       </View>
       <Text style={styles.coverMeta}>{[guide.author,formatLocalizedDate(exportDate,locale,{day:"numeric",month:"long",year:"numeric"}),t(`language.${locale}`)].filter(Boolean).join(" · ")}</Text>
     </GuidePage>

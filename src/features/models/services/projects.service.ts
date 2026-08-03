@@ -36,6 +36,7 @@ import { initializeDefaultPaintingStep } from "@/features/model-editor/lib/initi
 import { normalizeGuideSectionSettings, type GuideSectionSettings } from "@/features/guides/types/GuideSectionSettings";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 import { normalizeGuideAccentColor } from "@/features/guides/design/guideDesignTokens";
+import { normalizeGuideFontId } from "@/features/guides/design/guideFontRegistry";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -51,7 +52,17 @@ function normalizeGuideTemplateSettings(value: unknown): Partial<GuideTemplateSe
   if (!isRecord(value)) return undefined;
   const pageFormat = value.pageFormat === "a4" || value.pageFormat === "letter" ? value.pageFormat : undefined;
   const accentColor = typeof value.accentColor === "string" ? normalizeGuideAccentColor(value.accentColor) ?? undefined : undefined;
-  return pageFormat || accentColor ? { ...(pageFormat ? { pageFormat } : {}), ...(accentColor ? { accentColor } : {}) } : undefined;
+  const headingFont = value.headingFont === undefined ? undefined : normalizeGuideFontId(typeof value.headingFont === "string" ? value.headingFont : undefined);
+  const bodyFont = value.bodyFont === undefined ? undefined : normalizeGuideFontId(typeof value.bodyFont === "string" ? value.bodyFont : undefined);
+  const monoFont = value.monoFont === undefined ? undefined : normalizeGuideFontId(typeof value.monoFont === "string" ? value.monoFont : undefined);
+  const nextSettings: Partial<GuideTemplateSettings> = {
+    ...(pageFormat ? { pageFormat } : {}),
+    ...(accentColor ? { accentColor } : {}),
+    ...(headingFont ? { headingFont } : {}),
+    ...(bodyFont ? { bodyFont } : {}),
+    ...(monoFont ? { monoFont } : {}),
+  };
+  return Object.keys(nextSettings).length ? nextSettings : undefined;
 }
 function isVector3Like(value: unknown): value is Vector3Like { return isRecord(value) && [value.x, value.y, value.z].every((item) => typeof item === "number" && Number.isFinite(item)); }
 function parsePaintMarker(value: unknown, index: number): PaintMarker | null {

@@ -12,6 +12,7 @@ import {
   pdfColors,
 } from "./guidePdfStyles";
 import { translate } from "@/features/i18n/lib/i18n";
+import { useGuidePdfDesignTokens } from "./GuidePdfTemplateContext";
 
 type GuideProjectPageProps = {
   pageNumber: number;
@@ -58,6 +59,7 @@ export function GuideProjectPage({
 }: GuideProjectPageProps) {
   const {guide,metrics,targetMode}=viewModel;
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
+  const design = useGuidePdfDesignTokens();
   const details = [
     [t("guide.author"), guide.author],
     [t("guide.printer"), [guide.printerType,guide.material].filter(Boolean).join(" · ").toUpperCase()],
@@ -69,22 +71,22 @@ export function GuideProjectPage({
   return (
     <GuidePage locale={locale} pageNumber={pageNumber} projectName={guide.title} totalPages={totalPages}>
       <GuidePdfEyebrow>{t("guide.projectReference")}</GuidePdfEyebrow>
-      <Text style={guidePdfStyles.pageTitle}>{guide.title}</Text>
+      <Text style={[guidePdfStyles.pageTitle, { fontFamily: design.headingFont }]}> {guide.title}</Text>
 
       {guide.description ? (
-        <Text style={styles.description}>{guide.description}</Text>
+        <Text style={[styles.description, { fontFamily: design.bodyFont }]}>{guide.description}</Text>
       ) : null}
 
       <View style={styles.details}>
         {details.map(([label, value]) => (
           <View key={label} style={styles.detail}>
-            <Text style={guidePdfStyles.label}>{label}</Text>
-            <Text style={guidePdfStyles.value}>{value}</Text>
+            <Text style={[guidePdfStyles.label, { fontFamily: design.bodyFont }]}>{label}</Text>
+            <Text style={[guidePdfStyles.value, { fontFamily: design.bodyFont }]}>{value}</Text>
           </View>
         ))}
 
         <View style={styles.detail}>
-          <Text style={guidePdfStyles.label}>{t("guide.baseColor")}</Text>
+          <Text style={[guidePdfStyles.label, { fontFamily: design.bodyFont }]}>{t("guide.baseColor")}</Text>
           <View style={styles.colorValue}>
             <View
               style={[
@@ -92,7 +94,7 @@ export function GuideProjectPage({
                 { backgroundColor: guide.baseColor },
               ]}
             />
-            <Text style={guidePdfStyles.value}>
+            <Text style={[guidePdfStyles.value, { fontFamily: design.bodyFont }]}> 
               {guide.baseColor.toUpperCase()}
             </Text>
           </View>

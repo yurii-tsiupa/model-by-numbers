@@ -14,7 +14,7 @@ export function GuideTableOfContentsPage({ pageNumber, totalPages, viewModel }: 
   const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
   return <GuidePage id="toc" locale={locale} pageNumber={pageNumber} projectName={guide.title} totalPages={totalPages}>
     <GuidePdfEyebrow>{t("guide.cover.document")}</GuidePdfEyebrow>
-    <Text style={guidePdfStyles.pageTitle}>{t("guide.navigation.contents")}</Text>
-    <View style={styles.list}>{sections.map((section, index) => <View key={section.id} style={styles.row} wrap={false}><Text style={styles.link}><Text style={[styles.number, { color: design.accentText }]}>{String(index + 1).padStart(2, "0")}</Text>{t(section.titleKey)}</Text></View>)}</View>
+    <Text style={[guidePdfStyles.pageTitle, { fontFamily: design.headingFont }]}>{t("guide.navigation.contents")}</Text>
+    <View style={styles.list}>{sections.map((section, index) => <View key={section.id} style={styles.row} wrap={false}><Text style={[styles.link, { fontFamily: design.bodyFont }]}><Text style={[styles.number, { color: design.accentText, fontFamily: design.monoFont }]}>{String(index + 1).padStart(2, "0")}</Text>{t(section.titleKey)}</Text></View>)}</View>
   </GuidePage>;
 }

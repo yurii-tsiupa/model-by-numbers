@@ -90,10 +90,10 @@ function KitRow({ item, name, design }: { item: GuideKitItem; name: string; desi
   return (
     <View style={styles.row} wrap={false}>
       {item.colorHex ? <View style={[styles.swatch, { backgroundColor: item.colorHex }]} /> : <View style={[styles.bullet, { backgroundColor: design.accentColor }]} />}
-      {item.code ? <Text style={styles.code}>{item.code}</Text> : null}
-      <Text style={styles.name}>{name}</Text>
-      {item.colorHex ? <Text style={styles.hex}>{item.colorHex.toUpperCase()}</Text> : null}
-      {item.quantity ? <Text style={styles.quantity}>{item.quantity}</Text> : null}
+      {item.code ? <Text style={[styles.code, { fontFamily: design.monoFont }]}>{item.code}</Text> : null}
+      <Text style={[styles.name, { fontFamily: design.bodyFont }]}>{name}</Text>
+      {item.colorHex ? <Text style={[styles.hex, { fontFamily: design.monoFont }]}>{item.colorHex.toUpperCase()}</Text> : null}
+      {item.quantity ? <Text style={[styles.quantity, { fontFamily: design.bodyFont }]}>{item.quantity}</Text> : null}
     </View>
   );
 }
@@ -117,7 +117,7 @@ export function GuideKitPages({ pageNumberStart, totalPages, viewModel }: GuideK
             {GUIDE_KIT_CATEGORY_ORDER.map((category) => {
               const categoryItems = pageItems.filter((item) => item.category === category);
               if (!categoryItems.length) return null;
-              return <View key={category} style={styles.category}><Text style={[styles.categoryTitle, { color: design.accentText }]}>{t(categoryTitleKeys[category])}</Text>{categoryItems.map((item) => <KitRow key={item.id} item={item} name={resolveGuideKitItemName(item, t)} design={design} />)}</View>;
+              return <View key={category} style={styles.category}><Text style={[styles.categoryTitle, { color: design.accentText, fontFamily: design.headingFont }]}>{t(categoryTitleKeys[category])}</Text>{categoryItems.map((item) => <KitRow key={item.id} item={item} name={resolveGuideKitItemName(item, t)} design={design} />)}</View>;
             })}
           </GuidePage>
         );

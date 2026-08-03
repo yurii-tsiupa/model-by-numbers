@@ -126,10 +126,10 @@ export function GuidePalettePage({
                     ]}
                   />
                   <View style={styles.content}>
-                    <Text style={styles.name}>{formatGuideColorCode(color.number)} · {color.name}</Text>
+                    <Text style={[styles.name, { fontFamily: design.bodyFont }]}>{formatGuideColorCode(color.number)} · {color.name}</Text>
                     <View style={styles.details}>
-                      <Text style={styles.hex}>{color.hex.toUpperCase()}</Text>
-                      <Text style={[styles.usage, { backgroundColor: design.accentSoft, color: design.accentText }]}>{formatCount(locale,color.usageCount,"step")}</Text>
+                      <Text style={[styles.hex, { fontFamily: design.monoFont }]}>{color.hex.toUpperCase()}</Text>
+                      <Text style={[styles.usage, { backgroundColor: design.accentSoft, color: design.accentText, fontFamily: design.monoFont }]}>{formatCount(locale,color.usageCount,"step")}</Text>
                     </View>
                   </View>
                 </View>

@@ -6,4 +6,4 @@ import { resolveGuideDesignTokens } from "../design/guideDesignTokens";
 const GuidePdfTemplateContext=createContext<GuideTemplateSettings>(BUILT_IN_GUIDE_TEMPLATES[0].settings);
 export function GuidePdfTemplateProvider({settings,children}:{settings?:GuideTemplateSettings;children:ReactNode}){return <GuidePdfTemplateContext.Provider value={settings??BUILT_IN_GUIDE_TEMPLATES[0].settings}>{children}</GuidePdfTemplateContext.Provider>}
 export const useGuidePdfTemplate=()=>useContext(GuidePdfTemplateContext);
-export const useGuidePdfDesignTokens=()=>{const settings=useGuidePdfTemplate();return resolveGuideDesignTokens({accentColor:settings.accentColor,pageBackground:settings.pageBackground});};
+export const useGuidePdfDesignTokens=()=>{const settings=useGuidePdfTemplate();return resolveGuideDesignTokens({accentColor:settings.accentColor,pageBackground:settings.pageBackground,headingFont:settings.headingFont,bodyFont:settings.bodyFont,monoFont:settings.monoFont});};

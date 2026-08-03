@@ -53,6 +53,7 @@ function addTemplate(builder: SignatureBuilder, settings: GuideTemplateSettings)
   builder.add(settings.accentColor);
   builder.add(settings.headingFont);
   builder.add(settings.bodyFont);
+  builder.add(settings.monoFont);
   builder.add(settings.dividerStyle);
   builder.add(settings.coverStyle);
   builder.add(settings.spacing);

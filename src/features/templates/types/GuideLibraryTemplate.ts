@@ -4,13 +4,16 @@ export type GuideTemplateCategory = "minimal" | "technical" | "editorial" | "cus
 export type PageNumberStyle = "numeric" | "numericWithTotal";
 export type PageNumberPosition = "bottomLeft" | "bottomCenter" | "bottomRight";
 
+import type { GuideFontId } from "@/features/guides/design/guideFontRegistry";
+
 export type GuideTemplateSettings = {
   pageFormat: GuidePageFormat;
   pageBackground: string;
   textColor: string;
   accentColor: string;
-  headingFont: "unbounded";
-  bodyFont: "inter";
+  headingFont: GuideFontId;
+  bodyFont: GuideFontId;
+  monoFont: GuideFontId;
   pageNumberStyle: PageNumberStyle;
   pageNumberPosition: PageNumberPosition;
   dividerStyle: "none" | "line" | "accent";

@@ -65,6 +65,7 @@ export const guidePdfStyles = StyleSheet.create({
   },
   sectionDescription: {
     color: pdfColors.muted,
+    fontFamily: tokens.bodyFont,
     fontSize: tokens.sizeBody,
     marginBottom: tokens.spacingLg,
   },
@@ -78,10 +79,12 @@ export const guidePdfStyles = StyleSheet.create({
   },
   label: {
     color: pdfColors.muted,
+    fontFamily: tokens.bodyFont,
     fontSize: tokens.sizeCaption,
     marginBottom: tokens.spacingXs,
   },
   value: {
+    fontFamily: tokens.bodyFont,
     fontSize: tokens.sizeBody,
     fontWeight: tokens.weightBold,
   },

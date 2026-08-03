@@ -1,11 +1,15 @@
+import type { GuideFontId } from "./guideFontRegistry";
+import { resolveGuideFontFamily } from "./guideFontRegistry";
+
 export type GuideCustomization = {
   accentColor?: string;
   pageBackground?: string;
   coverBackground?: string;
   pageBackgroundImage?: string;
   perPageBackgrounds?: Record<string, string>;
-  headingFont?: string;
-  bodyFont?: string;
+  headingFont?: GuideFontId | string;
+  bodyFont?: GuideFontId | string;
+  monoFont?: GuideFontId | string;
   pageNumberColor?: string;
   pageNumberFont?: string;
   dividerStyle?: "solid" | "dashed" | "underline";
@@ -170,12 +174,16 @@ export function resolveGuideAccentPalette(value: string | null | undefined): Gui
 
 export function resolveGuideDesignTokens(customization?: GuideCustomization): GuideDesignTokens {
   const accent = resolveGuideAccentPalette(customization?.accentColor);
+  const headingFont = resolveGuideFontFamily(customization?.headingFont);
+  const bodyFont = resolveGuideFontFamily(customization?.bodyFont);
+  const monoFont = resolveGuideFontFamily(customization?.monoFont);
   return {
     ...defaultGuideDesignTokens,
     ...accent,
     paperBackground: customization?.pageBackground ?? defaultGuideDesignTokens.paperBackground,
-    headingFont: customization?.headingFont ?? defaultGuideDesignTokens.headingFont,
-    bodyFont: customization?.bodyFont ?? defaultGuideDesignTokens.bodyFont,
-    eyebrowFont: customization?.bodyFont ?? defaultGuideDesignTokens.eyebrowFont,
+    headingFont,
+    bodyFont,
+    monoFont,
+    eyebrowFont: bodyFont,
   };
 }
