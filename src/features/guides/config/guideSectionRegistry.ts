@@ -43,6 +43,7 @@ export type GuideSectionResolutionContext = {
   hasPalette: boolean;
   hasPartsOverview: boolean;
   hasReferences: boolean;
+  hasTroubleshooting: boolean;
 };
 
 export type GuideSectionDefinition = {
@@ -71,7 +72,7 @@ export const GUIDE_SECTION_REGISTRY: readonly GuideSectionDefinition[] = [
   { id: "painting-workflow", contentSectionId: "paintingInstructions", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.workflow.instructions", isAvailable: (context) => context.hasPaintingWorkflow },
   { id: "assembly", contentSectionId: "assembly", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.assembly.sectionTitle", isAvailable: (context) => context.hasAssembly },
   { id: "finishing", contentSectionId: "finishing", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.finishing.title", isAvailable: (context) => context.hasFinishing },
-  { id: "troubleshooting", contentSectionId: "troubleshooting", core: false, defaultEnabled: false, implemented: false, includeInContents: true, isAvailable: always },
+  { id: "troubleshooting", contentSectionId: "troubleshooting", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.troubleshooting.title", isAvailable: (context) => context.hasTroubleshooting },
   { id: "back-cover", contentSectionId: "backCover", core: false, defaultEnabled: false, implemented: false, includeInContents: false, isAvailable: always },
 ] as const;
 

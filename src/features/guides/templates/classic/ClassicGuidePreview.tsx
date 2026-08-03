@@ -13,6 +13,7 @@ import type { ModelGuide } from "../../types/ModelGuide";
 import { ClassicAssemblySection } from "./sections/ClassicAssemblySection";
 import { ClassicExplodedSection } from "./sections/ClassicExplodedSection";
 import { ClassicFinishingSection } from "./sections/ClassicFinishingSection";
+import { ClassicTroubleshootingSection } from "./sections/ClassicTroubleshootingSection";
 import { ClassicModelViewsSection } from "./sections/ClassicModelViewsSection";
 import { ClassicReferencesSection } from "./sections/ClassicReferencesSection";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
@@ -61,6 +62,8 @@ export function ClassicGuidePreview({
         return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><GuidePaintingWorkflowSection guide={viewModel.workflowGuide} locale={locale} steps={viewModel.paintingSteps} /></GuideSectionAnchor>;
       case "finishing":
         return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicFinishingSection data={viewModel.finishingData!} t={t} /></GuideSectionAnchor>;
+      case "troubleshooting":
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicTroubleshootingSection data={viewModel.troubleshootingData!} t={t} /></GuideSectionAnchor>;
       default:
         return null;
     }

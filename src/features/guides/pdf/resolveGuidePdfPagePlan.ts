@@ -46,6 +46,8 @@ function sectionPageCount(viewModel: GuideViewModel, sectionId: GuideSectionId):
       return viewModel.paintingPages.length;
     case "finishing":
       return getGuideFinishingPageCount(viewModel.finishingData);
+    case "troubleshooting":
+      return viewModel.troubleshootingData ? 1 : 0;
     case "kit":
       return Math.max(1, Math.ceil(viewModel.kitItems.length / GUIDE_PDF_PAGE_CAPACITY.kitItems));
     case "cover":
@@ -53,7 +55,6 @@ function sectionPageCount(viewModel: GuideViewModel, sectionId: GuideSectionId):
     case "project-overview":
     case "exploded-view":
       return 1;
-    case "troubleshooting":
     case "back-cover":
       return 0;
   }

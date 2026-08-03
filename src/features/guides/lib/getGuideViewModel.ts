@@ -8,6 +8,7 @@ import { paginateGuideSteps } from "./paginateGuideSteps";
 import { getGuideKitItems } from "./getGuideKitItems";
 import { resolveGuideAssemblyData } from "./resolveGuideAssemblyData";
 import { resolveGuideFinishingData } from "./resolveGuideFinishingData";
+import { resolveGuideTroubleshootingData } from "./resolveGuideTroubleshootingData";
 import {
   resolveGuideContentsSections,
   resolveGuideSections,
@@ -191,6 +192,11 @@ export function getGuideViewModel(
   );
   const guideParts = targetMode === "parts" ? referencedParts : [];
   const assemblyData = resolveGuideAssemblyData(guide, settings);
+  const troubleshootingData = resolveGuideTroubleshootingData(
+    guide,
+    targetMode,
+    Boolean(finishingData),
+  );
 
   const documentSections = resolveGuideSections({
     hasAssembly: Boolean(assemblyData),
@@ -202,6 +208,7 @@ export function getGuideViewModel(
     hasPalette: usedPalette.length > 0,
     hasPartsOverview: settings.includePartsTable && guideParts.length > 0,
     hasReferences: includedReferences.length > 0,
+    hasTroubleshooting: Boolean(troubleshootingData),
   });
   const sections: GuideSectionMetadata[] = resolveGuideContentsSections(documentSections);
 
@@ -217,6 +224,7 @@ export function getGuideViewModel(
     hasPaintingWorkflow,
     assemblyData,
     finishingData,
+    troubleshootingData,
     kitItems,
     documentSections,
     sections,
