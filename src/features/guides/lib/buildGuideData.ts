@@ -15,6 +15,7 @@ import type {
 import { getGuidePalette } from "./getGuidePalette";
 import { isPartIncludedInGuide } from "./isPartIncludedInGuide";
 import type { Locale } from "@/features/i18n/types/Locale";
+import type { GuideBackCover } from "../types/GuideBackCover";
 import { getPartsInPaintingOrder } from "@/features/model-editor/lib/paintingOrder";
 import { getPaintingPreviewSummary, getWorkflowPalette } from "./getPaintingGuidePreviewData";
 import {getOrderedSimplePaintingSteps,withResolvedSimpleMarkerNumbers} from "@/features/model-editor/lib/markerNumbering";
@@ -32,6 +33,7 @@ type BuildGuideDataParams = {
   assemblySteps?: readonly GuideAssemblyStep[];
   templateId?: string;
   overviewViews?: readonly GuideOverviewView[];
+  backCover?: GuideBackCover;
 };
 
 export function buildGuideData({
@@ -47,6 +49,7 @@ export function buildGuideData({
   assemblySteps = [],
   templateId,
   overviewViews,
+  backCover,
 }: BuildGuideDataParams): ModelGuide {
   const paletteById = new Map(
     palette.map((color) => [color.id, color]),
@@ -106,6 +109,7 @@ export function buildGuideData({
     settings,
     explodedView: explodedView ? { ...explodedView } : null,
     assemblySteps: assemblySteps.map(step=>({...step,parts:step.parts.map(part=>({...part}))})).sort((a,b)=>a.order-b.order),
+    backCover: backCover ? { ...backCover } : undefined,
     workflowPalette:getWorkflowPalette(orderedParts,palette,project.manualDetails),
     previewPalette:palette.map(color=>({...color})),
     workflowParts,

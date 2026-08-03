@@ -14,6 +14,7 @@ import { ClassicAssemblySection } from "./sections/ClassicAssemblySection";
 import { ClassicExplodedSection } from "./sections/ClassicExplodedSection";
 import { ClassicFinishingSection } from "./sections/ClassicFinishingSection";
 import { ClassicTroubleshootingSection } from "./sections/ClassicTroubleshootingSection";
+import { ClassicBackCoverSection } from "./sections/ClassicBackCoverSection";
 import { ClassicModelViewsSection } from "./sections/ClassicModelViewsSection";
 import { ClassicReferencesSection } from "./sections/ClassicReferencesSection";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
@@ -64,6 +65,8 @@ export function ClassicGuidePreview({
         return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicFinishingSection data={viewModel.finishingData!} t={t} /></GuideSectionAnchor>;
       case "troubleshooting":
         return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicTroubleshootingSection data={viewModel.troubleshootingData!} t={t} /></GuideSectionAnchor>;
+      case "back-cover":
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicBackCoverSection data={viewModel.backCoverData!} /></GuideSectionAnchor>;
       default:
         return null;
     }

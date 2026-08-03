@@ -9,6 +9,7 @@ import { getGuideKitItems } from "./getGuideKitItems";
 import { resolveGuideAssemblyData } from "./resolveGuideAssemblyData";
 import { resolveGuideFinishingData } from "./resolveGuideFinishingData";
 import { resolveGuideTroubleshootingData } from "./resolveGuideTroubleshootingData";
+import { resolveGuideBackCoverData } from "./resolveGuideBackCoverData";
 import {
   resolveGuideContentsSections,
   resolveGuideSections,
@@ -192,6 +193,7 @@ export function getGuideViewModel(
   );
   const guideParts = targetMode === "parts" ? referencedParts : [];
   const assemblyData = resolveGuideAssemblyData(guide, settings);
+  const backCoverData = resolveGuideBackCoverData(guide);
   const troubleshootingData = resolveGuideTroubleshootingData(
     guide,
     targetMode,
@@ -200,6 +202,7 @@ export function getGuideViewModel(
 
   const documentSections = resolveGuideSections({
     hasAssembly: Boolean(assemblyData),
+    hasBackCover: Boolean(backCoverData),
     hasExplodedView: settings.includeExplodedView && Boolean(guide.explodedView),
     hasFinishing: Boolean(finishingData),
     hasKit: kitItems.length > 0,
@@ -223,6 +226,7 @@ export function getGuideViewModel(
     },
     hasPaintingWorkflow,
     assemblyData,
+    backCoverData,
     finishingData,
     troubleshootingData,
     kitItems,

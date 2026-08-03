@@ -35,6 +35,7 @@ export type GuidePdfSectionId = GuideContentSectionId | "toc";
 
 export type GuideSectionResolutionContext = {
   hasAssembly: boolean;
+  hasBackCover: boolean;
   hasExplodedView: boolean;
   hasFinishing: boolean;
   hasKit: boolean;
@@ -73,7 +74,7 @@ export const GUIDE_SECTION_REGISTRY: readonly GuideSectionDefinition[] = [
   { id: "assembly", contentSectionId: "assembly", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.assembly.sectionTitle", isAvailable: (context) => context.hasAssembly },
   { id: "finishing", contentSectionId: "finishing", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.finishing.title", isAvailable: (context) => context.hasFinishing },
   { id: "troubleshooting", contentSectionId: "troubleshooting", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.troubleshooting.title", isAvailable: (context) => context.hasTroubleshooting },
-  { id: "back-cover", contentSectionId: "backCover", core: false, defaultEnabled: false, implemented: false, includeInContents: false, isAvailable: always },
+  { id: "back-cover", contentSectionId: "backCover", core: false, defaultEnabled: true, implemented: true, includeInContents: false, isAvailable: (context) => context.hasBackCover },
 ] as const;
 
 export type ResolvedGuideSection = GuideSectionDefinition & {

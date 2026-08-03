@@ -330,6 +330,9 @@ export default function GuidePage() {
     assemblySteps,
     templateId: guideTemplate.current.id,
     overviewViews: overviewViews ?? undefined,
+    backCover: user.displayName?.trim()
+      ? { enabled: true, brandName: user.displayName.trim() }
+      : undefined,
   });
   guide.assetReferences = capturedProjectId === projectId && assetReferences.length > 0 ? assetReferences : storedAssetReferences;
 

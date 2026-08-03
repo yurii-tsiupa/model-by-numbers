@@ -21,6 +21,7 @@ import { GuideLegendPage } from "../../pdf/GuideLegendPage";
 import { GuideKitPages } from "../../pdf/GuideKitPages";
 import { GuideFinishingPages } from "../../pdf/GuideFinishingPages";
 import { GuideTroubleshootingPage } from "../../pdf/GuideTroubleshootingPage";
+import { GuideBackCoverPage } from "../../pdf/GuideBackCoverPage";
 import {
   GuidePaintingWorkflowPages,
 } from "../../pdf/GuidePaintingWorkflowPages";
@@ -187,6 +188,16 @@ export function ClassicGuideDocument({
           case "troubleshooting":
             return (
               <GuideTroubleshootingPage
+                key={section.id}
+                pageNumber={pageRange.start}
+                totalPages={pagePlan.totalPages}
+                viewModel={model}
+              />
+            );
+
+          case "back-cover":
+            return (
+              <GuideBackCoverPage
                 key={section.id}
                 pageNumber={pageRange.start}
                 totalPages={pagePlan.totalPages}
