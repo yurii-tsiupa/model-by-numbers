@@ -1,13 +1,12 @@
 import {
-  Page,
   StyleSheet,
   Text,
   View,
 } from "@react-pdf/renderer";
 
 import type { GuideViewModel } from "../lib/getGuideViewModel";
-import { GuidePageFooter } from "./GuidePageFooter";
-import { GuidePageHeader } from "./GuidePageHeader";
+import { GuidePage } from "./GuidePage";
+import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import {
   guidePdfStyles,
   pdfColors,
@@ -15,6 +14,8 @@ import {
 import { translate } from "@/features/i18n/lib/i18n";
 
 type GuideProjectPageProps = {
+  pageNumber: number;
+  totalPages: number;
   viewModel: GuideViewModel;
 };
 
@@ -51,6 +52,8 @@ const styles = StyleSheet.create({
 });
 
 export function GuideProjectPage({
+  pageNumber,
+  totalPages,
   viewModel,
 }: GuideProjectPageProps) {
   const {guide,metrics,targetMode}=viewModel;
@@ -64,9 +67,8 @@ export function GuideProjectPage({
   ];
 
   return (
-    <Page id="project-overview" size="A4" orientation="portrait" style={guidePdfStyles.page}>
-      <GuidePageHeader projectName={guide.title}/>
-      <Text style={guidePdfStyles.eyebrow}>{t("guide.projectReference")}</Text>
+    <GuidePage id="project-overview" locale={locale} pageNumber={pageNumber} projectName={guide.title} totalPages={totalPages}>
+      <GuidePdfEyebrow>{t("guide.projectReference")}</GuidePdfEyebrow>
       <Text style={guidePdfStyles.pageTitle}>{guide.title}</Text>
 
       {guide.description ? (
@@ -96,7 +98,6 @@ export function GuideProjectPage({
           </View>
         </View>
       </View>
-      <GuidePageFooter locale={locale}/>
-    </Page>
+    </GuidePage>
   );
 }

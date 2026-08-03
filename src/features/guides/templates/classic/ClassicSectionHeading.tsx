@@ -1,4 +1,5 @@
-import { classicPreviewStyles as styles } from "./classic.styles";
+import { ClassicEyebrow } from "./ClassicEyebrow";
+import { classicPreviewInlineStyles as inlineStyles, classicPreviewStyles as styles } from "./classic.styles";
 
 type ClassicSectionHeadingProps = {
   eyebrow: string;
@@ -13,15 +14,13 @@ export function ClassicSectionHeading({
 }: ClassicSectionHeadingProps) {
   return (
     <header>
-      <p className={styles.eyebrow}>
-        {eyebrow}
-      </p>
+      <ClassicEyebrow>{eyebrow}</ClassicEyebrow>
 
-      <h2 className={styles.title}>
+      <h2 className={styles.title} style={inlineStyles.title}>
         {title}
       </h2>
 
-      <p className={styles.description}>
+      <p className={styles.description} style={inlineStyles.description}>
         {description}
       </p>
     </header>

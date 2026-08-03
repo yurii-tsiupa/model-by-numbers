@@ -1,15 +1,60 @@
+import type { CSSProperties } from "react";
+
+import { defaultGuideDesignTokens as tokens } from "../../design/guideDesignTokens";
+
 export const classicPreviewStyles = {
   section: "scroll-mt-24",
-
-  eyebrow:
-    "font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]",
-
-  title:
-    "mt-5 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-[-0.04em] text-[#181221] sm:text-4xl",
-
-  description:
-    "mt-3 max-w-3xl font-[family-name:var(--font-body)] text-sm leading-6 text-[#716A79]",
-
-  card:
-    "overflow-hidden rounded-2xl border border-[#E3DEEC] bg-white",
+  eyebrow: "inline-flex items-center",
+  eyebrowDot: "shrink-0",
+  title: "mt-5",
+  description: "mt-3 max-w-3xl leading-6",
+  card: "overflow-hidden border",
 } as const;
+
+export const classicPreviewInlineStyles = {
+  eyebrow: {
+    backgroundColor: tokens.accentSoft,
+    borderRadius: tokens.radiusPill,
+    color: tokens.accentColor,
+    fontFamily: tokens.eyebrowFont,
+    fontSize: tokens.sizeEyebrow,
+    fontWeight: tokens.weightSemibold,
+    gap: tokens.spacingXs,
+    letterSpacing: 0,
+    padding: `${tokens.spacingXs}px ${tokens.spacingSm}px`,
+    textTransform: "none",
+  },
+  eyebrowDot: {
+    backgroundColor: tokens.accentColor,
+    borderRadius: tokens.radiusPill,
+    height: tokens.spacingXs,
+    width: tokens.spacingXs,
+  },
+  title: {
+    color: tokens.inkPrimary,
+    fontFamily: tokens.headingFont,
+    fontSize: tokens.sizeH1,
+    fontWeight: tokens.weightSemibold,
+    lineHeight: tokens.lineHeightHeading,
+  },
+  description: {
+    color: tokens.inkMuted,
+    fontFamily: tokens.bodyFont,
+    fontSize: tokens.sizeBody,
+    lineHeight: tokens.lineHeightBody,
+  },
+  card: {
+    backgroundColor: tokens.paperBackground,
+    borderColor: tokens.borderColor,
+    borderRadius: tokens.radiusCard,
+    borderWidth: tokens.borderWidth,
+  },
+  paintingPreviewFrame: {
+    borderColor: tokens.borderColor,
+    borderRadius: tokens.radiusCard,
+    borderStyle: "solid",
+    borderWidth: tokens.borderWidth,
+    overflow: "hidden",
+    position: "relative",
+  },
+} satisfies Record<string, CSSProperties>;

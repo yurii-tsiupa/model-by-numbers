@@ -2,6 +2,9 @@ import { formatCount, translate } from "@/features/i18n/lib/i18n";
 import type { Locale } from "@/features/i18n/types/Locale";
 
 import type { GuidePaletteColor } from "../types/ModelGuide";
+import { ClassicEyebrow } from "../templates/classic/ClassicEyebrow";
+import { defaultGuideDesignTokens as tokens } from "../design/guideDesignTokens";
+import { isLightGuideColor } from "../design/isLightGuideColor";
 
 type GuidePaletteSectionProps = {
   palette: GuidePaletteColor[];
@@ -23,53 +26,42 @@ export function GuidePaletteSection({
 
   return (
     <section className="scroll-mt-24">
-      <div className="flex items-center gap-3">
-        <span className="h-px w-10 bg-[#76558F]" />
+      <ClassicEyebrow>{t("guide.paintReference")}</ClassicEyebrow>
 
-        <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
-          {t("guide.paintReference")}
-        </p>
-      </div>
-
-      <h2 className="mt-5 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-[-0.04em] text-[#181221] sm:text-4xl">
+      <h2 className="mt-5 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl" style={{color:tokens.inkPrimary,fontFamily:tokens.headingFont}}>
         {t("guide.palette")}
       </h2>
 
-      <p className="mt-3 max-w-3xl font-[family-name:var(--font-body)] text-sm leading-6 text-[#716A79]">
-        {t("guide.paletteDescription")}
+      <p className="mt-3 max-w-3xl leading-6" style={{color:tokens.inkMuted,fontFamily:tokens.bodyFont,fontSize:tokens.sizeBody}}>
+        {t("pdf.paletteHelp", { count: palette.length })}
       </p>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2" style={{gap:tokens.spacingMd}}>
         {palette.map((color) => (
           <article
             key={color.id}
-            className="flex min-w-0 items-center gap-4 rounded-2xl border border-[#E3DEEC] bg-white p-4"
+            className="min-w-0 overflow-hidden border"
+            style={{backgroundColor:tokens.paperBackground,borderColor:tokens.borderColor,borderRadius:tokens.radiusCard}}
           >
             <span
-              className="h-16 w-16 shrink-0 rounded-2xl border border-[#D5CFDD]"
+              className="block h-[60px] w-full"
               style={{
                 backgroundColor: color.hex,
+                border: isLightGuideColor(color.hex) ? `${tokens.borderWidth}px solid ${tokens.borderColor}` : undefined,
               }}
             />
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-3">
-                <span className="inline-flex min-h-7 items-center rounded-full border border-[#D6CAE0] bg-[#F7F3FA] px-2.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold tracking-[0.08em] text-[#76558F]">
-                  {formatColorNumber(color.number)}
-                </span>
+            <div className="min-w-0" style={{padding:tokens.spacingSm}}>
+              <p className="truncate font-semibold" style={{color:tokens.inkPrimary,fontFamily:tokens.bodyFont,fontSize:tokens.sizeBody}}>
+                {formatColorNumber(color.number)} · {color.name}
+              </p>
 
-                <span className="inline-flex min-h-7 items-center rounded-full border border-[#E3DEEC] bg-[#FAF9FC] px-2.5 font-[family-name:var(--font-body)] text-xs text-[#716A79]">
+              <div className="flex items-center justify-between" style={{gap:tokens.spacingSm,marginTop:tokens.spacingXs}}>
+                <span style={{color:tokens.inkMuted,fontFamily:tokens.monoFont,fontSize:tokens.sizeCaption}}>{color.hex.toUpperCase()}</span>
+                <span className="inline-flex items-center" style={{backgroundColor:tokens.accentSoft,borderRadius:tokens.radiusPill,color:tokens.accentColor,fontFamily:tokens.monoFont,fontSize:tokens.sizeCaption,padding:`${tokens.spacingXs}px ${tokens.spacingSm}px`}}>
                   {formatCount(locale, color.usageCount, "step")}
                 </span>
               </div>
-
-              <p className="mt-3 truncate font-[family-name:var(--font-body)] text-sm font-semibold text-[#181221]">
-                {color.name}
-              </p>
-
-              <p className="mt-1 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-[#8A8291]">
-                {color.hex.toUpperCase()}
-              </p>
             </div>
           </article>
         ))}

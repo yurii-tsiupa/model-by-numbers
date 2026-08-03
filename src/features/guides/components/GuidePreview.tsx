@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronDown, CircleAlert, FileText, Minus, Plus, SlidersHorizontal } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ChevronDown, CircleAlert, FileText, SlidersHorizontal } from "lucide-react";
+import { useRef, useState } from "react";
 
 import { translate } from "@/features/i18n/lib/i18n";
 
@@ -10,16 +10,14 @@ import { useResolvedGuideAssets } from "../hooks/useResolvedGuideAssets";
 import type { Project } from "@/features/models/types/Project";
 import { useGuideViewModel } from "../hooks/useGuideViewModel";
 import { useSaveGeneratedGuide } from "../hooks/useSaveGeneratedGuide";
-import { defaultGuideTemplate } from "../templates/registry/guideTemplates";
 import type { GuideOverviewView, GuideReferenceImage, ModelGuide } from "../types/ModelGuide";
 import { GuideExportDocument } from "./GuideExportDocument";
 import { GuideExportWarningDialog } from "./GuideExportWarningDialog";
 import { GuideNavigation } from "./GuideNavigation";
 import { GuideReferencesManager } from "./GuideReferencesManager";
 import { GuideModelOverviewManager } from "./GuideModelOverviewManager";
-import { GuidePaintingWorkflowSection } from "./GuidePreview/sections/GuidePaintingWorkflowSection";
 import { GuidePreviewHeader } from "./GuidePreviewHeader";
-import { GuideSectionAnchor } from "./GuideSectionAnchor";
+import { PaginatedGuidePdfPreview } from "./PaginatedGuidePdfPreview";
 import { GuideTemplateSection } from "./GuideTemplateSection";
 import type { GuideLibraryTemplate, UserGuideTemplate } from "@/features/templates/types/GuideLibraryTemplate";
 
@@ -59,7 +57,6 @@ export function GuidePreview({
 
   const {
     locale,
-    workflowGuide,
     sections,
   } = viewModel;
 
@@ -77,35 +74,6 @@ export function GuidePreview({
   const [saveWarning, setSaveWarning] = useState<string | null>(
     null,
   );
-  const previewRef = useRef<HTMLDivElement>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageCount, setPageCount] = useState(1);
-  const [previewZoom, setPreviewZoom] = useState(100);
-  const previewPageSignature = sections.map((section) => section.id).join("|");
-
-  useEffect(() => {
-    const preview = previewRef.current;
-    if (!preview) return;
-    const pages = Array.from(preview.querySelectorAll<HTMLElement>(".guide-cover, .guide-chapter"));
-    if (!pages.length) return;
-    setPageCount(pages.length);
-    const visibility = new Map<Element, number>();
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => visibility.set(entry.target, entry.intersectionRatio));
-      let nextIndex = 0;
-      let bestRatio = -1;
-      pages.forEach((page, index) => {
-        const ratio = visibility.get(page) ?? 0;
-        if (ratio > bestRatio) {
-          bestRatio = ratio;
-          nextIndex = index;
-        }
-      });
-      if (bestRatio > 0) setCurrentPage(nextIndex + 1);
-    }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
-    pages.forEach((page) => observer.observe(page));
-    return () => observer.disconnect();
-  }, [previewPageSignature]);
 
   const pdfExport = useGuidePdfExport({
     viewModel,
@@ -134,8 +102,6 @@ export function GuidePreview({
       }
     },
   });
-
-  const TemplatePreview = defaultGuideTemplate.Preview;
 
   function handleDownload() {
     void pdfExport.exportPdf();
@@ -229,39 +195,18 @@ export function GuidePreview({
             {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
           </div>
         </details> : null}
-        <section data-guide-controls className="mb-3 flex min-h-10 flex-wrap items-center justify-between gap-3 px-1 print:hidden" aria-label={text("guide.preview.pdfTitle")}>
+        <section data-guide-controls className="mb-3 flex min-h-10 items-center px-1 print:hidden" aria-label={text("guide.preview.pdfTitle")}>
           <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)]">
             <FileText className="size-4" aria-hidden="true" />
             <h2>{text("guide.preview.pdfTitle")}</h2>
           </div>
-          <div className="flex items-center gap-2">
-            <p aria-live="polite" className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-2.5 py-1.5 text-xs text-[var(--text-secondary)]">{text("guide.preview.pageCount", { current: currentPage, total: pageCount })}</p>
-            <div className="flex h-8 items-center overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)]">
-              <button type="button" disabled={previewZoom <= 70} onClick={() => setPreviewZoom((zoom) => Math.max(70, zoom - 10))} aria-label={text("guide.preview.zoomOut")} className="grid h-full w-8 cursor-pointer place-items-center text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40"><Minus className="size-3.5" aria-hidden="true" /></button>
-              <output className="grid h-full min-w-12 place-items-center border-x border-[var(--border)] px-1 text-[11px] font-medium text-[var(--text)]">{previewZoom}%</output>
-              <button type="button" disabled={previewZoom >= 140} onClick={() => setPreviewZoom((zoom) => Math.min(140, zoom + 10))} aria-label={text("guide.preview.zoomIn")} className="grid h-full w-8 cursor-pointer place-items-center text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40"><Plus className="size-3.5" aria-hidden="true" /></button>
-            </div>
-          </div>
         </section>
-        <div ref={previewRef} className="guide-preview-surface min-w-0 overflow-x-auto rounded-xl bg-[var(--surface)] p-4 sm:p-6 print:overflow-visible print:bg-transparent print:p-0">
-          <div className="mx-auto w-full max-w-[52rem]" style={{ zoom: `${previewZoom}%` }}>
-            <article
-              data-guide-render-mode="preview"
-              className="guide-document min-w-0 w-full"
-              style={{ color: template.settings.textColor }}
-            >
-              <TemplatePreview guide={resolvedGuide} templateSettings={template.settings} />
-
-          {sections.some((section) => section.id === "painting-workflow") ? (
-            <GuideSectionAnchor id="painting-workflow">
-              <GuidePaintingWorkflowSection
-                guide={workflowGuide}
-                locale={locale}
-                steps={viewModel.paintingSteps}
-              />
-            </GuideSectionAnchor>
-          ) : null}
-            </article>
+        <div className="guide-preview-surface min-w-0 overflow-x-auto rounded-xl bg-[var(--surface)] p-4 sm:p-6 print:overflow-visible print:bg-transparent print:p-0">
+          <div className="mx-auto w-full max-w-[52rem]">
+            <PaginatedGuidePdfPreview
+              viewModel={viewModel}
+              templateSettings={template.settings}
+            />
           </div>
         </div>
         </div>

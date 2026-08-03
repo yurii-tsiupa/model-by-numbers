@@ -3,7 +3,7 @@
 import type { TranslationKey } from "@/features/i18n/locales/en";
 
 import type { GuideReferenceImage } from "../../../types/ModelGuide";
-import { classicPreviewStyles as styles } from "../classic.styles";
+import { classicPreviewInlineStyles as inlineStyles, classicPreviewStyles as styles } from "../classic.styles";
 import { ClassicSectionHeading } from "../ClassicSectionHeading";
 
 type ClassicReferencesSectionProps = {
@@ -31,6 +31,7 @@ export function ClassicReferencesSection({
           <article
             key={reference.id}
             className={`${styles.card} overflow-hidden ${references.length === 1 || (references.length === 3 && index === 0) ? "sm:col-span-2" : ""}`}
+            style={inlineStyles.card}
           >
             <div className="flex aspect-[4/3] items-center justify-center bg-[#FAF9FC] p-4">
               <img

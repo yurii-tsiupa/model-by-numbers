@@ -8,8 +8,8 @@ const CONFIG:Record<MarkerRenderContext,MarkerVisualConfig>={
  "step-preview":{diameter:28,fontSize:15,outlineWidth:2,shadowBlur:3,leaderLineWidth:1},
  "step-custom-view":{diameter:28,fontSize:15,outlineWidth:2,shadowBlur:3,leaderLineWidth:1},
  "overview-clean":{diameter:28,fontSize:15,outlineWidth:2,shadowBlur:3,leaderLineWidth:1},
- "overview-marker-map":{diameter:22,fontSize:12,outlineWidth:1.75,shadowBlur:2,leaderLineWidth:1},
- "overview-custom-marker-map":{diameter:22,fontSize:12,outlineWidth:1.75,shadowBlur:2,leaderLineWidth:1},
+ "overview-marker-map":{diameter:22,fontSize:12,outlineWidth:2,shadowBlur:2,leaderLineWidth:1},
+ "overview-custom-marker-map":{diameter:22,fontSize:12,outlineWidth:2,shadowBlur:2,leaderLineWidth:1},
 };
 
 export function usesCompactMarkerVisuals(context:MarkerRenderContext):boolean{

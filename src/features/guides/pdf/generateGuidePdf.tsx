@@ -7,12 +7,33 @@ import { PdfExportError } from "../services/pdf/pdfExportErrors";
 import type { PdfExportProgress } from "../services/pdf/types";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 import {prepareGuideStepPreviewsForPdf} from "./prepareGuideStepPreviewsForPdf";
+import type { GuidePdfRenderMode } from "./GuidePdfRenderModeContext";
+
+function diagnoseInvalidPreviewDimensions(viewModel: GuideViewModel): void {
+  if (process.env.NODE_ENV === "production") return;
+  for (const step of viewModel.paintingSteps) {
+    for (const preview of step.previews) {
+      if (preview.status !== "ready") continue;
+      const { width, height } = preview.image;
+      if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+        console.error("Invalid PDF layout number", {
+          stepId: step.id,
+          previewId: preview.id,
+          field: "imageDimensions",
+          width,
+          height,
+        });
+      }
+    }
+  }
+}
 
 export async function generateGuidePdf(
   viewModel: GuideViewModel,
   templateSettings: GuideTemplateSettings,
   onImageWarning?: (warning: { code: "IMAGE_LOAD_FAILED" | "LOW_RESOLUTION_IMAGE"; count: number }) => void,
   onProgress?: (progress:PdfExportProgress)=>void,
+  renderMode: GuidePdfRenderMode = "export",
 ): Promise<Blob> {
   const {guide}=viewModel;
   if (!guide.projectId || !guide.title || guide.partsCount < 0) {
@@ -26,8 +47,14 @@ export async function generateGuidePdf(
   if (prepared.hasFailures||preparedSteps.hasFailures) onImageWarning?.({ code: "IMAGE_LOAD_FAILED", count: 1 });
   if (prepared.lowResolutionCount > 0) onImageWarning?.({ code: "LOW_RESOLUTION_IMAGE", count: prepared.lowResolutionCount });
   onProgress?.({status:"rendering",progress:65});
+  const preparedOverviewImages = new Map((prepared.guide.overviewViews ?? []).map((view) => [view.id, view.image]));
+  const preparedModelViews = viewModel.modelViews.flatMap((view) => {
+    const image = view.key ? prepared.guide.images[view.key] : preparedOverviewImages.get(view.id);
+    return image ? [{ ...view, image }] : [];
+  });
+  diagnoseInvalidPreviewDimensions(preparedSteps.viewModel);
   let renderer;
-  try{renderer=pdf(<ModelGuideDocument templateSettings={templateSettings} viewModel={{...preparedSteps.viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts}}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
+  try{renderer=pdf(<ModelGuideDocument renderMode={renderMode} templateSettings={templateSettings} viewModel={{...preparedSteps.viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts},modelViews:preparedModelViews}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
   onProgress?.({status:"generating",progress:85});
   let blob:Blob;try{blob=await renderer.toBlob();}catch(error){throw new PdfExportError("PDF_GENERATION_FAILED",error);}
 

@@ -25,11 +25,12 @@ export async function prepareGuideImagesForPdf(guide: ModelGuide): Promise<PdfIm
   };
   const captureOptions = { applyWhiteBackground: true } as const;
   const referenceOptions = { preserveTransparency: true } as const;
-  const [original, base, painted, numbers, explodedImage, assemblyImages, referenceImages] = await Promise.all([
+  const [original, base, painted, numbers, explodedImage, assemblyImages, referenceImages, overviewImages] = await Promise.all([
     normalize(guide.images.original, { type: "original" }, captureOptions), normalize(guide.images.base, { type: "base" }, captureOptions), normalize(guide.images.painted, { type: "painted" }, captureOptions), normalize(guide.images.numbers, { type: "numbers" }, captureOptions),
     normalize(guide.explodedView?.image, { type: "exploded" }, captureOptions),
     Promise.all((guide.assemblySteps ?? []).map(step => normalize(step.image, { type: "assembly", id: step.id }, captureOptions))),
     Promise.all((guide.references ?? []).map(reference => normalize(reference.dataUrl, { type: "reference", id: reference.id }, referenceOptions))),
+    Promise.all((guide.overviewViews ?? []).map(view => normalize(view.image, { type: "overview", id: view.id }, captureOptions))),
   ]);
-  return { hasFailures, lowResolutionCount, guide: { ...guide, images: { original, base, painted, numbers }, explodedView: guide.explodedView ? { ...guide.explodedView, image: explodedImage } : guide.explodedView, assemblySteps: guide.assemblySteps?.map((step, index) => ({ ...step, parts: step.parts.map(part => ({ ...part })), image: assemblyImages[index] })), references: guide.references?.map((reference, index) => ({ ...reference, dataUrl: referenceImages[index] ?? "" })) } };
+  return { hasFailures, lowResolutionCount, guide: { ...guide, images: { original, base, painted, numbers }, overviewViews: guide.overviewViews?.map((view, index) => ({ ...view, image: overviewImages[index] ?? "" })), explodedView: guide.explodedView ? { ...guide.explodedView, image: explodedImage } : guide.explodedView, assemblySteps: guide.assemblySteps?.map((step, index) => ({ ...step, parts: step.parts.map(part => ({ ...part })), image: assemblyImages[index] })), references: guide.references?.map((reference, index) => ({ ...reference, dataUrl: referenceImages[index] ?? "" })) } };
 }

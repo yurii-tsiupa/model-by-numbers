@@ -6,6 +6,7 @@ import type {
   ModelGuide,
 } from "../types/ModelGuide";
 import {buildGuidePaintingStepViewModels} from "./buildGuidePaintingStepViewModels";
+import { paginateGuideSteps } from "./paginateGuideSteps";
 
 export type GuideModelView = {
   id: string;
@@ -104,6 +105,7 @@ export function getGuideViewModel(
     guide.paintingSummary,
   );
   const paintingSteps = buildGuidePaintingStepViewModels(guide);
+  const paintingPages = paginateGuideSteps(paintingSteps);
   const detailById = new Map(
     (guide.manualDetails ?? []).map((detail) => [detail.id, detail]),
   );
@@ -283,6 +285,7 @@ export function getGuideViewModel(
     hasPaintingWorkflow,
     sections,
     paintingSteps,
+    paintingPages,
     usedPalette,
     includedReferences,
     referencedParts: guideParts,

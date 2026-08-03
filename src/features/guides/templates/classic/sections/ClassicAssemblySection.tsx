@@ -4,7 +4,7 @@ import type { TranslationKey } from "@/features/i18n/locales/en";
 
 import type { GuideAssemblyStep } from "../../../types/ModelGuide";
 import { ClassicSectionHeading } from "../ClassicSectionHeading";
-import { classicPreviewStyles as styles } from "../classic.styles";
+import { classicPreviewInlineStyles as inlineStyles, classicPreviewStyles as styles } from "../classic.styles";
 
 type ClassicAssemblySectionProps = {
   steps: readonly GuideAssemblyStep[];
@@ -33,20 +33,15 @@ export function ClassicAssemblySection({
           <article
             key={step.id}
             className={`${styles.card} overflow-hidden`}
+            style={inlineStyles.card}
           >
-            {showImages ? (
+            {showImages && step.image ? (
               <div className="flex aspect-[4/3] items-center justify-center border-b border-[#E3DEEC] bg-[#FAF9FC] p-4">
-                {step.image ? (
-                  <img
-                    src={step.image}
-                    alt={step.title}
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  <p className="font-[family-name:var(--font-body)] text-sm text-[#716A79]">
-                    {t("guide.assembly.imageMissing")}
-                  </p>
-                )}
+                <img
+                  src={step.image}
+                  alt={step.title}
+                  className="h-full w-full object-contain"
+                />
               </div>
             ) : null}
 

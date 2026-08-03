@@ -2,6 +2,7 @@ import { translate } from "@/features/i18n/lib/i18n";
 import type { Locale } from "@/features/i18n/types/Locale";
 
 import type { GuidePart } from "../types/ModelGuide";
+import { ClassicEyebrow } from "../templates/classic/ClassicEyebrow";
 
 type GuidePartsSectionProps = {
   parts: GuidePart[];
@@ -22,13 +23,7 @@ export function GuidePartsSection({
 
   return (
     <section className="scroll-mt-24">
-      <div className="flex items-center gap-3">
-        <span className="h-px w-10 bg-[#76558F]" />
-
-        <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
-          {t("guide.stepReference")}
-        </p>
-      </div>
+      <ClassicEyebrow>{t("guide.stepReference")}</ClassicEyebrow>
 
       <h2 className="mt-5 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-[-0.04em] text-[#181221]">
         {t("guide.parts")}

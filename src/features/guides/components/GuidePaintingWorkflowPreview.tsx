@@ -28,6 +28,9 @@ import type { PaintingStageType } from "@/features/model-editor/types/PaintingWo
 import type { ModelGuide } from "../types/ModelGuide";
 import type {GuidePaintingStepViewModel} from "../types/GuidePaintingStep";
 import { getGuideScreenshotLayout } from "../lib/getGuideScreenshotLayout";
+import { ClassicEyebrow } from "../templates/classic/ClassicEyebrow";
+import { defaultGuideDesignTokens as guideTokens } from "../design/guideDesignTokens";
+import { classicPreviewInlineStyles } from "../templates/classic/classic.styles";
 
 const ICONS: Record<
   PaintingStageType,
@@ -85,9 +88,7 @@ export function GuidePaintingWorkflowPreview({
       <section className="rounded-3xl border border-[#E3DEEC] bg-[#FAF9FC] p-5 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="min-w-0">
-            <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.16em] text-[#76558F]">
-              {t("guide.workflow.projectSummary")}
-            </p>
+            <ClassicEyebrow>{t("guide.workflow.projectSummary")}</ClassicEyebrow>
 
             <h1 className="mt-3 break-words font-[family-name:var(--font-display)] text-3xl font-semibold tracking-[-0.035em] text-[#181221] sm:text-4xl">
               {guide.title}
@@ -225,12 +226,34 @@ export function GuidePaintingWorkflowPreview({
       </section>
 
       <section>
-        <SectionHeading
-          index="02"
-          title={t("guide.workflow.instructions")}
-        />
+        <ClassicEyebrow>{t("guide.paintingGuide")}</ClassicEyebrow>
 
-        <div className="mt-7 divide-y divide-[var(--border)]">
+        <h2
+          className="break-words"
+          style={{
+            color: guideTokens.inkPrimary,
+            fontFamily: guideTokens.headingFont,
+            fontSize: guideTokens.sizeH1,
+            fontWeight: guideTokens.weightBold,
+            lineHeight: guideTokens.lineHeightHeading,
+            marginTop: guideTokens.spacingSm,
+          }}
+        >
+          {t("guide.workflow.instructions")}
+        </h2>
+
+        <p
+          style={{
+            color: guideTokens.inkMuted,
+            fontFamily: guideTokens.bodyFont,
+            fontSize: guideTokens.sizeBody,
+            marginTop: guideTokens.spacingSm,
+          }}
+        >
+          {steps.length} · {new Set(steps.flatMap((step) => step.color ? [step.color.number] : [])).size} · {summary?.estimatedTimeMinutes ? formatPaintingTime(summary.estimatedTimeMinutes, locale) : ""}
+        </p>
+
+        <div className="divide-y divide-[var(--border)]" style={{marginTop:guideTokens.spacingLg}}>
           {guide.parts.map((part, index) => {
             const workflow = part.paintingWorkflow;
             const isCollapsed = collapsed.has(part.id);
@@ -415,7 +438,7 @@ export function GuidePaintingWorkflowPreview({
                                     </p>
                                   ) : null}
 
-                                  {step ? <GuideStepPreview step={step} t={t}/> : null}
+                                  {step ? <GuideStepPreview step={step}/> : null}
                                 </div>
                               </section>
                             );
@@ -448,13 +471,34 @@ export function GuidePaintingWorkflowPreview({
   );
 }
 
-function GuideStepPreview({step,t}:{step:GuidePaintingStepViewModel;t:(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>string}){
- const visible=step.previews.filter(preview=>preview.status==="ready").slice(0,6);
- const layout=getGuideScreenshotLayout(visible.length);
- if(!visible.length){
-  return step.previews.some(preview=>preview.status==="loading")?<div role="status" aria-live="polite" className="mt-3 grid aspect-[3/2] w-full place-items-center bg-[#F7F7F5] text-xs text-[#716A79]">{t("guide.steps.preview.generating")}</div>:null;
- }
- return <div className="mt-4 break-inside-avoid"><p className="text-xs font-medium text-[#716A79]">{step.targetSummary}</p><div className={`mt-3 grid gap-3 ${layout.columns===2?"sm:grid-cols-2":""}`}>{visible.map((preview,index)=>preview.status==="ready"?<figure key={preview.id} className={layout.primaryFirst&&index===0?"sm:col-span-2":""}><div className="relative aspect-[3/2] w-full overflow-hidden bg-[var(--card)]"><Image unoptimized fill sizes="(max-width: 640px) 100vw, 640px" src={preview.image.src} alt={preview.alt} className="object-contain"/></div></figure>:null)}</div></div>
+function getMeaningfulPreviewLabel(label:string):string|null{
+ const trimmed=label.trim();if(!trimmed)return null;const normalized=trimmed.toLocaleLowerCase();
+ return normalized==="custom view"||normalized==="власний ракурс"||/^custom\s+\d+$/i.test(trimmed)?null:trimmed;
+}
+
+function getPreviewAspectRatio(width:number,height:number):number{
+ return Number.isFinite(width)&&Number.isFinite(height)&&width>0&&height>0?width/height:3/2;
+}
+
+function GuideStepPreview({step}:{step:GuidePaintingStepViewModel}){
+ const ready=step.previews.filter(preview=>preview.status==="ready");
+ const layout=getGuideScreenshotLayout(ready.length);
+ const visible=ready.slice(0,layout.visibleCount);
+ if(!visible.length)return null;
+ return <div className="mt-4 break-inside-avoid">
+  <p className="text-xs font-medium" style={{color:guideTokens.inkMuted}}>{step.targetSummary}</p>
+  <div className="mt-3 flex flex-wrap justify-center gap-3">
+   {visible.map((preview)=>{
+    const caption=getMeaningfulPreviewLabel(preview.label);
+    return preview.status==="ready"?<figure key={preview.id} style={{width:layout.columns===1?"68%":"48%"}}>
+     <div style={{...classicPreviewInlineStyles.paintingPreviewFrame,aspectRatio:getPreviewAspectRatio(preview.image.width,preview.image.height)}}>
+      <Image unoptimized fill sizes="(max-width: 640px) 68vw, 48vw" src={preview.image.src} alt={preview.alt} className="object-contain"/>
+      {caption?<span className="absolute bottom-1.5 left-1.5 font-semibold" style={{backgroundColor:guideTokens.accentSoft,borderRadius:guideTokens.radiusPill,color:guideTokens.accentColor,fontFamily:guideTokens.bodyFont,fontSize:guideTokens.sizeCaption,padding:`${guideTokens.spacingXs}px ${guideTokens.spacingSm}px`}}>{caption}</span>:null}
+     </div>
+    </figure>:null;
+   })}
+  </div>
+ </div>
 }
 
 type SummaryProps = {

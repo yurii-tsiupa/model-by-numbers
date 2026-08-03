@@ -1,13 +1,15 @@
 import {
-  Page,
   StyleSheet,
   Text,
   View,
 } from "@react-pdf/renderer";
 
 import type { GuideViewModel } from "../lib/getGuideViewModel";
-import { GuidePageFooter } from "./GuidePageFooter";
-import { GuidePageHeader } from "./GuidePageHeader";
+import { defaultGuideDesignTokens as tokens } from "../design/guideDesignTokens";
+import { isLightGuideColor } from "../design/isLightGuideColor";
+import { GuidePage } from "./GuidePage";
+import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
+import { GUIDE_PDF_PAGE_CAPACITY } from "./resolveGuidePdfPagePlan";
 import {
   guidePdfStyles,
   pdfColors,
@@ -15,56 +17,65 @@ import {
 import { formatCount, translate } from "@/features/i18n/lib/i18n";
 
 type GuidePalettePageProps = {
+  pageNumberStart: number;
+  totalPages: number;
   viewModel: GuideViewModel;
 };
 
-const COLORS_PER_PAGE = 12;
+const COLORS_PER_PAGE = GUIDE_PDF_PAGE_CAPACITY.paletteColors;
 
 const styles = StyleSheet.create({
-  list: {
-    gap: 8,
-  },
-  row: {
-    alignItems: "center",
-    backgroundColor: pdfColors.surface,
-    borderColor: pdfColors.border,
-    borderRadius: 7,
-    borderStyle: "solid",
-    borderWidth: 1,
+  grid: {
     flexDirection: "row",
-    minHeight: 48,
-    padding: 9,
+    flexWrap: "wrap",
+    gap: tokens.spacingSm,
+  },
+  card: {
+    backgroundColor: pdfColors.background,
+    borderColor: pdfColors.border,
+    borderRadius: tokens.radiusCard,
+    borderStyle: "solid",
+    borderWidth: tokens.borderWidth,
+    overflow: "hidden",
+    width: "48%",
   },
   swatch: {
-    borderColor: "#d4d4d4",
-    borderRadius: 5,
-    borderStyle: "solid",
-    borderWidth: 1,
-    height: 30,
-    marginRight: 11,
-    width: 30,
+    height: 60,
+    width: "100%",
   },
-  number: {
-    color: pdfColors.accent,
-    fontSize: 10,
-    fontWeight: 700,
-    width: 44,
+  lightSwatch: {
+    borderColor: pdfColors.border,
+    borderStyle: "solid",
+    borderWidth: tokens.borderWidth,
+  },
+  content: {
+    padding: tokens.spacingSm,
   },
   name: {
-    flexGrow: 1,
-    fontSize: 10,
-    fontWeight: 700,
+    color: pdfColors.text,
+    fontFamily: tokens.bodyFont,
+    fontSize: tokens.sizeBody,
+    fontWeight: tokens.weightSemibold,
+  },
+  details: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: tokens.spacingXs,
   },
   hex: {
     color: pdfColors.muted,
-    fontSize: 9,
-    width: 70,
+    fontFamily: tokens.monoFont,
+    fontSize: tokens.sizeCaption,
   },
   usage: {
-    color: pdfColors.muted,
-    fontSize: 9,
-    textAlign: "right",
-    width: 55,
+    backgroundColor: pdfColors.accentLight,
+    borderRadius: tokens.radiusPill,
+    color: pdfColors.accent,
+    fontFamily: tokens.monoFont,
+    fontSize: tokens.sizeCaption,
+    paddingHorizontal: tokens.spacingSm,
+    paddingVertical: tokens.spacingXs,
   },
 });
 
@@ -73,6 +84,8 @@ function formatColorNumber(number: number): string {
 }
 
 export function GuidePalettePage({
+  pageNumberStart,
+  totalPages,
   viewModel,
 }: GuidePalettePageProps) {
   const {guide,usedPalette}=viewModel;
@@ -85,15 +98,15 @@ export function GuidePalettePage({
   return (
     <>
       {Array.from({ length: pageCount }, (_, pageIndex) => (
-        <Page
+        <GuidePage
           key={pageIndex}
           id={pageIndex===0?"palette":undefined}
-          size="A4"
-          orientation="portrait"
-          style={guidePdfStyles.page}
+          locale={locale}
+          pageNumber={pageNumberStart + pageIndex}
+          projectName={guide.title}
+          totalPages={totalPages}
         >
-          <GuidePageHeader projectName={guide.title}/>
-          <Text style={guidePdfStyles.eyebrow}>{t("guide.paintReference")}</Text>
+          <GuidePdfEyebrow>{t("guide.paintReference")}</GuidePdfEyebrow>
           <Text style={guidePdfStyles.pageTitle}>
             {t("guide.palette")}{pageIndex > 0 ? ` (${t("guide.continued")})` : ""}
           </Text>
@@ -101,33 +114,32 @@ export function GuidePalettePage({
             {t("pdf.paletteHelp",{count:usedPalette.length})}
           </Text>
 
-          <View style={styles.list}>
+          <View style={styles.grid}>
             {usedPalette
               .slice(
                 pageIndex * COLORS_PER_PAGE,
                 (pageIndex + 1) * COLORS_PER_PAGE,
               )
               .map((color) => (
-                <View key={color.id} style={styles.row}>
+                <View key={color.id} style={styles.card} wrap={false}>
                   <View
                     style={[
                       styles.swatch,
+                      isLightGuideColor(color.hex) ? styles.lightSwatch : {},
                       { backgroundColor: color.hex },
                     ]}
                   />
-                  <Text style={styles.number}>
-                    {formatColorNumber(color.number)}
-                  </Text>
-                  <Text style={styles.name}>{color.name}</Text>
-                  <Text style={styles.hex}>{color.hex.toUpperCase()}</Text>
-                  <Text style={styles.usage}>
-                    {formatCount(locale,color.usageCount,"step")}
-                  </Text>
+                  <View style={styles.content}>
+                    <Text style={styles.name}>{formatColorNumber(color.number)} · {color.name}</Text>
+                    <View style={styles.details}>
+                      <Text style={styles.hex}>{color.hex.toUpperCase()}</Text>
+                      <Text style={styles.usage}>{formatCount(locale,color.usageCount,"step")}</Text>
+                    </View>
+                  </View>
                 </View>
               ))}
           </View>
-          <GuidePageFooter locale={locale}/>
-        </Page>
+        </GuidePage>
       ))}
     </>
   );

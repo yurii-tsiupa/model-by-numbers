@@ -4,11 +4,12 @@ import { Image, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { translate } from "@/features/i18n/lib/i18n";
 import { formatPaintingTime } from "@/features/model-editor/lib/paintingWorkflow";
 
-import { getGuideScreenshotLayout } from "../lib/getGuideScreenshotLayout";
+import { defaultGuideDesignTokens as tokens } from "../design/guideDesignTokens";
+import { GUIDE_STEP_LAYOUT } from "../lib/getGuideScreenshotLayout";
 import type { GuideViewModel } from "../lib/getGuideViewModel";
-import type { GuidePaintingStepViewModel } from "../types/GuidePaintingStep";
+import type { ResolvedGuideStepLayout } from "../lib/paginateGuideSteps";
 import { GuidePage } from "./GuidePage";
-import { PrintKeepTogether } from "./PrintKeepTogether";
+import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import { PrintSectionStart } from "./PrintSectionStart";
 import { guidePdfStyles, pdfColors } from "./guidePdfStyles";
 
@@ -20,6 +21,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     marginBottom: 13,
     paddingBottom: 13,
+    flexShrink: 0,
   },
   header: { alignItems: "flex-start", flexDirection: "row" },
   number: { color: pdfColors.accent, fontSize: 13, fontWeight: 700, width: 34 },
@@ -38,19 +40,50 @@ const styles = StyleSheet.create({
   },
   colorText: { color: pdfColors.muted, fontSize: 8, maxWidth: 105 },
   instruction: { fontSize: 9, lineHeight: 1.55, marginLeft: 34, marginTop: 8 },
-  previews: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginLeft: 34, marginTop: 9 },
-  preview: { backgroundColor: pdfColors.surface, height: 126, objectFit: "contain", width: "100%" },
-  warning: { color: pdfColors.muted, fontSize: 8, marginLeft: 34, marginTop: 7 },
+  previews: { flexDirection: "row", flexWrap: "wrap", marginLeft: 34, marginTop: tokens.spacingSm },
+  previewFrame: {
+    borderColor: pdfColors.border,
+    borderRadius: tokens.radiusCard,
+    borderStyle: "solid",
+    borderWidth: tokens.borderWidth,
+    overflow: "hidden",
+    position: "relative",
+  },
+  preview: { objectFit: "contain" },
+  caption: {
+    alignItems: "center",
+    backgroundColor: pdfColors.accentLight,
+    borderRadius: tokens.radiusPill,
+    bottom: tokens.spacingXs,
+    height: 14,
+    justifyContent: "center",
+    left: tokens.spacingXs,
+    paddingHorizontal: tokens.spacingXs,
+    position: "absolute",
+  },
+  captionText: {
+    color: pdfColors.accent,
+    fontFamily: tokens.bodyFont,
+    fontSize: 8,
+    fontWeight: 500,
+    lineHeight: 1,
+  },
 });
 
-function StepBlock({ step, noColor, missingColor }: { step: GuidePaintingStepViewModel; noColor: string; missingColor: string }) {
-  const ready = step.previews.filter((preview) => preview.status === "ready");
-  const layout = getGuideScreenshotLayout(ready.length);
-  const visible = ready.slice(0, layout.visibleCount);
+function getMeaningfulPreviewLabel(label: string): string | null {
+  const trimmed=label.trim();
+  if(!trimmed)return null;
+  const normalized=trimmed.toLocaleLowerCase();
+  if(normalized==="custom view"||normalized==="власний ракурс"||/^custom\s+\d+$/i.test(trimmed))return null;
+  return trimmed.length>28?`${trimmed.slice(0,27).trimEnd()}…`:trimmed;
+}
+
+function StepBlock({ resolved, noColor, missingColor }: { resolved: ResolvedGuideStepLayout; noColor: string; missingColor: string }) {
+  const { step, rows } = resolved;
 
   return (
-    <View style={styles.step}>
-      <PrintKeepTogether>
+    <View style={styles.step} wrap={false}>
+      <View>
         <View style={styles.header}>
           <Text style={styles.number}>{String(step.order).padStart(2, "0")}</Text>
           <View style={styles.heading}>
@@ -67,50 +100,46 @@ function StepBlock({ step, noColor, missingColor }: { step: GuidePaintingStepVie
           </View>
         </View>
         {step.instruction ? <Text style={styles.instruction}>{step.instruction}</Text> : null}
-      </PrintKeepTogether>
+      </View>
 
-      {visible.length ? (
-        <View style={styles.previews}>
-          {visible.map((preview, index) =>
-            preview.status === "ready" ? (
-              <View
-                key={preview.id}
-                wrap={false}
-                style={{
-                  width:
-                    layout.columns === 1 || (layout.primaryFirst && index === 0)
-                      ? "100%"
-                      : "48.8%",
-                }}
-              >
-                <Image src={preview.image.src} style={styles.preview} />
-              </View>
-            ) : null,
-          )}
+      {rows.length ? (
+        <View style={[styles.previews,{marginLeft:resolved.imageIndent}]}>
+          {rows.map((row, rowIndex) => <View key={rowIndex} style={{alignItems:"flex-start",flexDirection:"row",justifyContent:"center",marginBottom:rowIndex<rows.length-1?GUIDE_STEP_LAYOUT.imageGap:0}}>
+            {row.images.map((image, imageIndex) => {
+              const label=getMeaningfulPreviewLabel(image.preview.label);
+              return <View key={image.preview.id} wrap={false} style={{width:image.width,marginRight:imageIndex<row.images.length-1?GUIDE_STEP_LAYOUT.imageGap:0}}>
+                <View style={[styles.previewFrame,{height:image.height}]}>
+                  <Image src={image.preview.image.src} style={[styles.preview,{height:image.height,width:image.width}]}/>
+                  {label?<View style={styles.caption}><Text style={styles.captionText}>{label}</Text></View>:null}
+                </View>
+              </View>;
+            })}
+          </View>)}
         </View>
-      ) : step.previews.some((preview) => preview.status === "unavailable" && preview.reason !== "general") ? (
-        <Text style={styles.warning}>—</Text>
       ) : null}
     </View>
   );
 }
 
-export function GuidePaintingWorkflowPages({ viewModel }: { viewModel: GuideViewModel }) {
-  const { workflowGuide: guide, locale, metrics, paintingSteps } = viewModel;
+export function GuidePaintingWorkflowPages({ pageNumberStart, totalPages, viewModel }: { pageNumberStart: number; totalPages: number; viewModel: GuideViewModel }) {
+  const { workflowGuide: guide, locale, metrics, paintingPages } = viewModel;
   const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
-
   return (
-    <GuidePage id="painting-workflow" locale={locale} projectName={guide.title}>
-      <PrintSectionStart>
-        <Text style={guidePdfStyles.eyebrow}>{t("guide.paintingGuide")}</Text>
-        <Text style={guidePdfStyles.pageTitle}>{t("guide.workflow.instructions")}</Text>
-        <Text style={styles.intro}>
-          {metrics.stepCount} · {metrics.usedColorCount} · {metrics.estimatedTotalTime ? formatPaintingTime(metrics.estimatedTotalTime, locale) : ""}
-        </Text>
-      </PrintSectionStart>
-      {paintingSteps.map((step) => (
-        <StepBlock key={step.id} step={step} noColor={t("painting.stage.noColor")} missingColor={t("guide.workflow.missingColor")} />
+    <>
+      {paintingPages.map((page) => (
+        <GuidePage key={page.steps[0]?.step.id ?? "painting-empty"} id={page.pageIndex === 0 ? "painting-workflow" : undefined} locale={locale} pageNumber={pageNumberStart+page.pageIndex} projectName={guide.title} totalPages={totalPages} wrap={false}>
+          {page.pageIndex === 0 ? (
+            <PrintSectionStart>
+              <GuidePdfEyebrow>{t("guide.paintingGuide")}</GuidePdfEyebrow>
+              <Text style={guidePdfStyles.pageTitle}>{t("guide.workflow.instructions")}</Text>
+              <Text style={styles.intro}>
+                {metrics.stepCount} · {metrics.usedColorCount} · {metrics.estimatedTotalTime ? formatPaintingTime(metrics.estimatedTotalTime, locale) : ""}
+              </Text>
+            </PrintSectionStart>
+          ) : <Text style={{ color: pdfColors.secondary, fontSize: tokens.sizeBody, fontWeight: tokens.weightSemibold, marginBottom: tokens.spacingMd }}>{t("guide.workflow.instructions")}</Text>}
+          {page.steps.map((resolved) => <StepBlock key={resolved.step.id} resolved={resolved} noColor={t("painting.stage.noColor")} missingColor={t("guide.workflow.missingColor")} />)}
+        </GuidePage>
       ))}
-    </GuidePage>
+    </>
   );
 }

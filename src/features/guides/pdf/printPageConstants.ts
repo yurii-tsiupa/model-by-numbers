@@ -24,4 +24,28 @@ export const PDF_PAGE_POINTS = {
     POINTS_PER_MM,
 } as const;
 
+const GUIDE_HEADER_HEIGHT = 34;
+const GUIDE_FOOTER_HEIGHT = 40;
+const GUIDE_CONTENT_PADDING_TOP = PDF_PAGE_POINTS.marginTop - GUIDE_HEADER_HEIGHT;
+const GUIDE_CONTENT_PADDING_BOTTOM = PDF_PAGE_POINTS.marginBottom - GUIDE_FOOTER_HEIGHT;
+
+export const PDF_PAGE_LAYOUT = {
+  pageWidth: PDF_PAGE_POINTS.width,
+  pageHeight: PDF_PAGE_POINTS.height,
+  paddingLeft: PDF_PAGE_POINTS.marginLeft,
+  paddingRight: PDF_PAGE_POINTS.marginRight,
+  headerHeight: GUIDE_HEADER_HEIGHT,
+  footerHeight: GUIDE_FOOTER_HEIGHT,
+  contentPaddingTop: GUIDE_CONTENT_PADDING_TOP,
+  contentPaddingBottom: GUIDE_CONTENT_PADDING_BOTTOM,
+  contentWidth: PDF_PAGE_POINTS.printableWidth,
+  contentRegionHeight: PDF_PAGE_POINTS.height - GUIDE_HEADER_HEIGHT - GUIDE_FOOTER_HEIGHT,
+  contentHeight:
+    PDF_PAGE_POINTS.height
+    - GUIDE_HEADER_HEIGHT
+    - GUIDE_FOOTER_HEIGHT
+    - GUIDE_CONTENT_PADDING_TOP
+    - GUIDE_CONTENT_PADDING_BOTTOM,
+} as const;
+
 export const PRINT_SECTION_FIRST_BLOCK_POINTS = 56;

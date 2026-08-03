@@ -180,14 +180,20 @@ export async function createStepPreviewBlob({
     const context = label.getContext("2d");
     if (!context) continue;
     const textureScale=256/markerVisual.diameter;
-    if(compactMarkers){context.shadowColor="rgba(24, 18, 33, 0.38)";context.shadowBlur=markerVisual.shadowBlur*textureScale;context.fillStyle="#FFFFFF";context.beginPath();context.arc(128,128,128-markerVisual.shadowBlur*textureScale,0,Math.PI*2);context.fill();context.shadowColor="transparent";}
+    context.shadowColor=STEP_PREVIEW_THEME.markerShadow;
+    context.shadowBlur=markerVisual.shadowBlur*textureScale;
+    context.fillStyle=STEP_PREVIEW_THEME.markerForeground;
+    context.beginPath();
+    context.arc(128,128,128-markerVisual.shadowBlur*textureScale,0,Math.PI*2);
+    context.fill();
+    context.shadowColor="transparent";
     context.fillStyle = STEP_PREVIEW_THEME.markerBackground;
     context.beginPath();
-    context.arc(128,128,compactMarkers?128-(markerVisual.shadowBlur+markerVisual.outlineWidth)*textureScale:108,0,Math.PI*2);
+    context.arc(128,128,128-(markerVisual.shadowBlur+markerVisual.outlineWidth)*textureScale,0,Math.PI*2);
     context.fill();
     context.fillStyle = STEP_PREVIEW_THEME.markerForeground;
     const fittedFont=markerVisual.fontSize*(String(number).length>2?.78:String(number).length>1?.9:1);
-    context.font = compactMarkers?`600 ${fittedFont*textureScale}px sans-serif`:"bold 128px sans-serif";
+    context.font = `500 ${fittedFont*textureScale}px "${STEP_PREVIEW_THEME.markerFont}", monospace`;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(String(number), 128, 136);
@@ -207,7 +213,7 @@ export async function createStepPreviewBlob({
     }
     const display=projected.clone();display.x+=offsetX*2/STEP_PREVIEW_WIDTH;display.y-=offsetY*2/STEP_PREVIEW_HEIGHT;sprite.position.copy(display.unproject(camera));
     occupiedLabels.push({x:screen.x+offsetX,y:screen.y+offsetY});
-    if(offsetX||offsetY){const geometry=new BufferGeometry().setFromPoints([anchor,sprite.position]);const lineMaterial=new LineBasicMaterial({color:0x6d28d9,transparent:true,opacity:.55,linewidth:markerVisual.leaderLineWidth});materials.push(lineMaterial);scene.add(new ThreeLine(geometry,lineMaterial));}
+    if(offsetX||offsetY){const geometry=new BufferGeometry().setFromPoints([anchor,sprite.position]);const lineMaterial=new LineBasicMaterial({color:STEP_PREVIEW_THEME.markerBackground,transparent:true,opacity:.55,linewidth:markerVisual.leaderLineWidth});materials.push(lineMaterial);scene.add(new ThreeLine(geometry,lineMaterial));}
     const size=compactMarkers?markerWorldDiameter(camera,sprite.position,markerVisual.diameter,STEP_PREVIEW_HEIGHT):Math.max(framing.targetRadius*.18,modelSize*.015);
     sprite.scale.set(size, size, size);
     sprite.renderOrder = 10;

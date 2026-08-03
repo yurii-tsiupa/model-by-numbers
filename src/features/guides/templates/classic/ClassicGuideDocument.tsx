@@ -39,38 +39,47 @@ import type { ModelGuide } from "../../types/ModelGuide";
 import { createPdfDocumentMetadata } from "../../pdf/pdfDocumentMetadata";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 import { GuidePdfTemplateProvider } from "../../pdf/GuidePdfTemplateContext";
+import { GuidePdfRenderModeProvider, type GuidePdfRenderMode } from "../../pdf/GuidePdfRenderModeContext";
+import { resolveGuidePdfPagePlan } from "../../pdf/resolveGuidePdfPagePlan";
 
 type ClassicGuideDocumentProps = {
   guide: ModelGuide;
   viewModel?: GuideViewModel;
   templateSettings?: GuideTemplateSettings;
+  renderMode?: GuidePdfRenderMode;
 };
 
 export function ClassicGuideDocument({
   guide,
   viewModel,
   templateSettings,
+  renderMode = "export",
 }: ClassicGuideDocumentProps) {
   const model =
     viewModel ?? getGuideViewModel(guide);
   const exportDate = new Date();
   const metadata = createPdfDocumentMetadata(guide, exportDate);
+  const pagePlan = resolveGuidePdfPagePlan(model);
 
   return (
     <GuideDocument
       {...metadata}
     >
-      <GuidePdfTemplateProvider settings={templateSettings}>
-      <GuideCoverPage viewModel={model} exportDate={exportDate} templateSettings={templateSettings} />
+      <GuidePdfRenderModeProvider value={renderMode}><GuidePdfTemplateProvider settings={templateSettings}>
+      <GuideCoverPage viewModel={model} exportDate={exportDate} pageNumber={pagePlan.cover} templateSettings={templateSettings} totalPages={pagePlan.totalPages} />
 
-      {model.sections.length > 4 ? <GuideTableOfContentsPage viewModel={model} /> : null}
+      {pagePlan.tableOfContents ? <GuideTableOfContentsPage pageNumber={pagePlan.tableOfContents} totalPages={pagePlan.totalPages} viewModel={model} /> : null}
 
       {model.sections.map((section) => {
+        const pageRange = pagePlan.sections[section.id];
+        if (!pageRange) return null;
         switch (section.id) {
           case "project-overview":
             return (
               <GuideProjectPage
                 key={section.id}
+                pageNumber={pageRange.start}
+                totalPages={pagePlan.totalPages}
                 viewModel={model}
               />
             );
@@ -79,6 +88,8 @@ export function ClassicGuideDocument({
             return (
               <GuideModelViewsPage
                 key={section.id}
+                pageNumberStart={pageRange.start}
+                totalPages={pagePlan.totalPages}
                 viewModel={model}
               />
             );
@@ -88,6 +99,8 @@ export function ClassicGuideDocument({
               <GuideExplodedPage
                 key={section.id}
                 guide={guide}
+                pageNumber={pageRange.start}
+                totalPages={pagePlan.totalPages}
               />
             );
 
@@ -96,6 +109,8 @@ export function ClassicGuideDocument({
               <GuideAssemblyPages
                 key={section.id}
                 guide={guide}
+                pageNumberStart={pageRange.start}
+                totalPages={pagePlan.totalPages}
               />
             );
 
@@ -107,7 +122,9 @@ export function ClassicGuideDocument({
                   model.includedReferences
                 }
                 locale={model.locale}
+                pageNumberStart={pageRange.start}
                 projectName={guide.title}
+                totalPages={pagePlan.totalPages}
               />
             );
 
@@ -115,6 +132,8 @@ export function ClassicGuideDocument({
             return (
               <GuidePalettePage
                 key={section.id}
+                pageNumberStart={pageRange.start}
+                totalPages={pagePlan.totalPages}
                 viewModel={model}
               />
             );
@@ -124,7 +143,9 @@ export function ClassicGuideDocument({
               <GuidePartsPage
                 key={section.id}
                 guide={guide}
+                pageNumberStart={pageRange.start}
                 parts={model.referencedParts}
+                totalPages={pagePlan.totalPages}
               />
             );
 
@@ -132,6 +153,8 @@ export function ClassicGuideDocument({
             return (
               <GuidePaintingWorkflowPages
                 key={section.id}
+                pageNumberStart={pageRange.start}
+                totalPages={pagePlan.totalPages}
                 viewModel={model}
               />
             );
@@ -140,7 +163,7 @@ export function ClassicGuideDocument({
             return null;
         }
       })}
-      </GuidePdfTemplateProvider>
+      </GuidePdfTemplateProvider></GuidePdfRenderModeProvider>
     </GuideDocument>
   );
 }

@@ -1,4 +1,4 @@
-import { Page } from "@react-pdf/renderer";
+import { Page, View } from "@react-pdf/renderer";
 import type { ComponentProps, ReactNode } from "react";
 
 import type { Locale } from "@/features/i18n/types/Locale";
@@ -11,17 +11,25 @@ import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
 type GuidePageProps = Omit<ComponentProps<typeof Page>, "children" | "size"> & {
   children: ReactNode;
   locale: Locale;
+  pageNumber: number;
   projectName: string;
   showFooter?: boolean;
+  totalPages: number;
+  contentStyle?: ComponentProps<typeof View>["style"];
 };
 
-export function GuidePage({children, locale, projectName, showFooter = true, style, wrap = true, ...props}: GuidePageProps) {
+export function GuidePage({children, locale, pageNumber, projectName, showFooter = true, totalPages, contentStyle, style, wrap = false, ...props}: GuidePageProps) {
   const template=useGuidePdfTemplate();
   const pageStyle = Array.isArray(style)
     ? [guidePdfStyles.page, {backgroundColor:template.pageBackground,color:template.textColor}, ...style]
     : style
       ? [guidePdfStyles.page, {backgroundColor:template.pageBackground,color:template.textColor}, style]
       : [guidePdfStyles.page, {backgroundColor:template.pageBackground,color:template.textColor}];
+  const contentStyles = Array.isArray(contentStyle)
+    ? [guidePdfStyles.pageContent, ...contentStyle]
+    : contentStyle
+      ? [guidePdfStyles.pageContent, contentStyle]
+      : guidePdfStyles.pageContent;
   return (
     <Page
       {...props}
@@ -30,9 +38,9 @@ export function GuidePage({children, locale, projectName, showFooter = true, sty
       style={pageStyle}
       wrap={wrap}
     >
-      <GuidePageHeader projectName={projectName}/>
-      {children}
-      {showFooter ? <GuidePageFooter locale={locale}/> : null}
+      <View style={guidePdfStyles.pageHeader}><GuidePageHeader projectName={projectName}/></View>
+      <View style={contentStyles}>{children}</View>
+      {showFooter ? <GuidePageFooter locale={locale} pageNumber={pageNumber} totalPages={totalPages}/> : <View style={guidePdfStyles.pageFooter}/>}
     </Page>
   );
 }

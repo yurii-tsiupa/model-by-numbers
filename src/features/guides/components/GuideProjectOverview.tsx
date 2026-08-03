@@ -5,6 +5,7 @@ import {
 import type { Locale } from "@/features/i18n/types/Locale";
 
 import type { GuideViewModel } from "../lib/getGuideViewModel";
+import { ClassicEyebrow } from "../templates/classic/ClassicEyebrow";
 
 type GuideProjectOverviewProps = {
   viewModel: GuideViewModel;
@@ -59,13 +60,7 @@ export function GuideProjectOverview({
 
   return (
     <section className="relative overflow-hidden">
-      <div className="flex items-center gap-3">
-        <span className="h-px w-10 bg-[#76558F]" />
-
-        <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
-          {t("guide.classic")}
-        </p>
-      </div>
+      <ClassicEyebrow>{t("guide.classic")}</ClassicEyebrow>
 
       <h2 className="mt-5 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-[-0.04em] text-[#181221] sm:text-4xl">
         {t("guide.overview")}

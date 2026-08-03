@@ -49,18 +49,15 @@ export function GuideNavigation({
   const progress = sections.length ? ((activeIndex + 1) / sections.length) * 100 : 0;
 
   useEffect(() => {
-    const elements = sections
-      .map((section) => document.getElementById(section.id))
-      .filter(
-        (element): element is HTMLElement =>
-          Boolean(element),
-      );
+    const sectionIds = new Set(sections.map((section) => section.id));
+    const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-guide-section]"))
+      .filter((element) => sectionIds.has(element.dataset.guideSection as GuideSectionId));
 
     if (!elements.length) {
       return;
     }
 
-    const intersectionRatios = new Map<string, number>();
+    const intersectionRatios = new Map<Element, number>();
     const lastSectionId = sections.at(-1)?.id;
 
     let animationFrame: number | null = null;
@@ -84,7 +81,7 @@ export function GuideNavigation({
       (entries) => {
         for (const entry of entries) {
           intersectionRatios.set(
-            entry.target.id,
+            entry.target,
             entry.isIntersecting
               ? entry.intersectionRatio
               : 0,
@@ -100,8 +97,7 @@ export function GuideNavigation({
 
         if (navigationTarget) {
           if (
-            (intersectionRatios.get(navigationTarget) ??
-              0) > 0
+            elements.some((element) => element.dataset.guideSection === navigationTarget && (intersectionRatios.get(element) ?? 0) > 0)
           ) {
             navigationTargetRef.current = null;
             setActiveId(navigationTarget);
@@ -114,14 +110,14 @@ export function GuideNavigation({
           .map((element) => ({
             element,
             ratio:
-              intersectionRatios.get(element.id) ?? 0,
+              intersectionRatios.get(element) ?? 0,
           }))
           .filter((item) => item.ratio > 0)
           .sort((a, b) => b.ratio - a.ratio)[0];
 
         if (visibleSection) {
           setActiveId(
-            visibleSection.element.id as GuideSectionId,
+            visibleSection.element.dataset.guideSection as GuideSectionId,
           );
         }
       },

@@ -8,6 +8,7 @@ import type { Locale } from "@/features/i18n/types/Locale";
 import { formatPaintingTime } from "@/features/model-editor/lib/paintingWorkflow";
 
 import type { GuideViewModel } from "../../../lib/getGuideViewModel";
+import { ClassicEyebrow } from "../../../templates/classic/ClassicEyebrow";
 
 type GuideCoverSectionProps = {
   viewModel: GuideViewModel;
@@ -48,13 +49,7 @@ export function GuideCoverSection({
   return (
     <section className="guide-cover flex min-h-[38rem] flex-col justify-between overflow-hidden bg-white p-6 text-[#181221] sm:p-10">
       <header>
-        <div className="flex items-center gap-3">
-          <span className="h-px w-10 bg-[#76558F]" />
-
-          <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76558F]">
-            {t("guide.cover.document")}
-          </p>
-        </div>
+        <ClassicEyebrow>{t("guide.cover.document")}</ClassicEyebrow>
 
         <h1 className="mt-5 max-w-3xl break-words font-[family-name:var(--font-display)] text-4xl font-semibold leading-[1.05] tracking-[-0.045em] text-[#181221] sm:text-5xl">
           {guide.title}

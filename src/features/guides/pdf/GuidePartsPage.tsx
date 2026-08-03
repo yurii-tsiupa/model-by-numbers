@@ -1,13 +1,13 @@
 import {
-  Page,
   StyleSheet,
   Text,
   View,
 } from "@react-pdf/renderer";
 
 import type { GuidePart, ModelGuide } from "../types/ModelGuide";
-import { GuidePageFooter } from "./GuidePageFooter";
-import { GuidePageHeader } from "./GuidePageHeader";
+import { GuidePage } from "./GuidePage";
+import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
+import { GUIDE_PDF_PAGE_CAPACITY } from "./resolveGuidePdfPagePlan";
 import {
   guidePdfStyles,
   pdfColors,
@@ -16,10 +16,12 @@ import { translate } from "@/features/i18n/lib/i18n";
 
 type GuidePartsPageProps = {
   guide: ModelGuide;
+  pageNumberStart: number;
   parts: readonly GuidePart[];
+  totalPages: number;
 };
 
-const PARTS_PER_PAGE = 10;
+const PARTS_PER_PAGE = GUIDE_PDF_PAGE_CAPACITY.parts;
 
 const styles = StyleSheet.create({
   list: {
@@ -86,7 +88,9 @@ function formatColorNumber(number: number): string {
 
 export function GuidePartsPage({
   guide,
+  pageNumberStart,
   parts,
+  totalPages,
 }: GuidePartsPageProps) {
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
   const pageCount = Math.max(
@@ -97,15 +101,15 @@ export function GuidePartsPage({
   return (
     <>
       {Array.from({ length: pageCount }, (_, pageIndex) => (
-        <Page
+        <GuidePage
           key={pageIndex}
           id={pageIndex===0?"parts-overview":undefined}
-          size="A4"
-          orientation="portrait"
-          style={guidePdfStyles.page}
+          locale={locale}
+          pageNumber={pageNumberStart + pageIndex}
+          projectName={guide.title}
+          totalPages={totalPages}
         >
-          <GuidePageHeader projectName={guide.title}/>
-          <Text style={guidePdfStyles.eyebrow}>{t("guide.stepReference")}</Text>
+          <GuidePdfEyebrow>{t("guide.stepReference")}</GuidePdfEyebrow>
           <Text style={guidePdfStyles.pageTitle}>
             {t("guide.parts")}{pageIndex > 0 ? ` (${t("guide.continued")})` : ""}
           </Text>
@@ -159,8 +163,7 @@ export function GuidePartsPage({
                 );
               })}
           </View>
-          <GuidePageFooter locale={locale}/>
-        </Page>
+        </GuidePage>
       ))}
     </>
   );

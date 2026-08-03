@@ -4,7 +4,7 @@ import type { GuideViewModel } from "../../lib/getGuideViewModel";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
 export type GuideTemplateComponentProps = { guide: ModelGuide; templateSettings?: GuideTemplateSettings };
-export type GuidePdfTemplateComponentProps = { guide: ModelGuide; viewModel?: GuideViewModel; templateSettings?: GuideTemplateSettings };
+export type GuidePdfTemplateComponentProps = { guide: ModelGuide; viewModel?: GuideViewModel; templateSettings?: GuideTemplateSettings; renderMode?: import("../../pdf/GuidePdfRenderModeContext").GuidePdfRenderMode };
 
 /** A presentation pair for the same immutable guide data. */
 export type GuideTemplate = {
