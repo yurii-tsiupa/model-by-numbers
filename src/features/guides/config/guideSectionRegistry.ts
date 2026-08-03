@@ -36,6 +36,7 @@ export type GuidePdfSectionId = GuideContentSectionId | "toc";
 export type GuideSectionResolutionContext = {
   hasAssembly: boolean;
   hasExplodedView: boolean;
+  hasFinishing: boolean;
   hasKit: boolean;
   hasModelViews: boolean;
   hasPaintingWorkflow: boolean;
@@ -69,7 +70,7 @@ export const GUIDE_SECTION_REGISTRY: readonly GuideSectionDefinition[] = [
   { id: "parts-overview", contentSectionId: "partsOverview", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.parts", isAvailable: (context) => context.hasPartsOverview },
   { id: "painting-workflow", contentSectionId: "paintingInstructions", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.workflow.instructions", isAvailable: (context) => context.hasPaintingWorkflow },
   { id: "assembly", contentSectionId: "assembly", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.assembly.sectionTitle", isAvailable: (context) => context.hasAssembly },
-  { id: "finishing", contentSectionId: "finishing", core: false, defaultEnabled: false, implemented: false, includeInContents: true, isAvailable: always },
+  { id: "finishing", contentSectionId: "finishing", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.finishing.title", isAvailable: (context) => context.hasFinishing },
   { id: "troubleshooting", contentSectionId: "troubleshooting", core: false, defaultEnabled: false, implemented: false, includeInContents: true, isAvailable: always },
   { id: "back-cover", contentSectionId: "backCover", core: false, defaultEnabled: false, implemented: false, includeInContents: false, isAvailable: always },
 ] as const;

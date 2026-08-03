@@ -12,6 +12,7 @@ import { getGuideViewModel } from "../../lib/getGuideViewModel";
 import type { ModelGuide } from "../../types/ModelGuide";
 import { ClassicAssemblySection } from "./sections/ClassicAssemblySection";
 import { ClassicExplodedSection } from "./sections/ClassicExplodedSection";
+import { ClassicFinishingSection } from "./sections/ClassicFinishingSection";
 import { ClassicModelViewsSection } from "./sections/ClassicModelViewsSection";
 import { ClassicReferencesSection } from "./sections/ClassicReferencesSection";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
@@ -58,6 +59,8 @@ export function ClassicGuidePreview({
         return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><GuidePartsPreviewSection parts={viewModel.referencedParts} locale={locale} /></GuideSectionAnchor>;
       case "painting-workflow":
         return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><GuidePaintingWorkflowSection guide={viewModel.workflowGuide} locale={locale} steps={viewModel.paintingSteps} /></GuideSectionAnchor>;
+      case "finishing":
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicFinishingSection data={viewModel.finishingData!} t={t} /></GuideSectionAnchor>;
       default:
         return null;
     }

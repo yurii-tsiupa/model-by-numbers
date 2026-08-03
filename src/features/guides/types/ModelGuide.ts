@@ -63,5 +63,7 @@ export type ModelGuide = {
   manualDetails?: import("@/features/models/types/ManualDetail").ManualDetail[];
   kitItems?: import("./GuideKit").GuideManualKitItem[];
   includedKitItemIds?: string[];
+  finishingItems?: import("./GuideFinishing").GuideFinishingItemInput[];
+  includedFinishingItemIds?: string[];
   paintingSummary?: { modelName:string; createdAt:Date; stagesCount:number; estimatedTimeMinutes:number; difficulties:import("@/features/model-editor/types/PaintingWorkflow").PaintingDifficulty[]; isReady:boolean };
 };

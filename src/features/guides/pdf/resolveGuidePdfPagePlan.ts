@@ -1,6 +1,7 @@
 import type { GuideContentSectionId, GuidePdfSectionId, GuideSectionId } from "../config/guideSectionRegistry";
 import type { GuideViewModel } from "../lib/getGuideViewModel";
 import { getGuideAssemblyPageCount } from "../lib/resolveGuideAssemblyData";
+import { getGuideFinishingPageCount } from "../lib/resolveGuideFinishingData";
 
 export const GUIDE_PDF_PAGE_CAPACITY = {
   paletteColors: 8,
@@ -43,6 +44,8 @@ function sectionPageCount(viewModel: GuideViewModel, sectionId: GuideSectionId):
       return Math.max(1, Math.ceil(viewModel.referencedParts.length / GUIDE_PDF_PAGE_CAPACITY.parts));
     case "painting-workflow":
       return viewModel.paintingPages.length;
+    case "finishing":
+      return getGuideFinishingPageCount(viewModel.finishingData);
     case "kit":
       return Math.max(1, Math.ceil(viewModel.kitItems.length / GUIDE_PDF_PAGE_CAPACITY.kitItems));
     case "cover":
@@ -50,7 +53,6 @@ function sectionPageCount(viewModel: GuideViewModel, sectionId: GuideSectionId):
     case "project-overview":
     case "exploded-view":
       return 1;
-    case "finishing":
     case "troubleshooting":
     case "back-cover":
       return 0;

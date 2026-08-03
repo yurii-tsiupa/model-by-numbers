@@ -19,6 +19,7 @@ import {
 } from "../../pdf/GuideModelViewsPage";
 import { GuideLegendPage } from "../../pdf/GuideLegendPage";
 import { GuideKitPages } from "../../pdf/GuideKitPages";
+import { GuideFinishingPages } from "../../pdf/GuideFinishingPages";
 import {
   GuidePaintingWorkflowPages,
 } from "../../pdf/GuidePaintingWorkflowPages";
@@ -165,6 +166,16 @@ export function ClassicGuideDocument({
           case "painting-workflow":
             return (
               <GuidePaintingWorkflowPages
+                key={section.id}
+                pageNumberStart={pageRange.start}
+                totalPages={pagePlan.totalPages}
+                viewModel={model}
+              />
+            );
+
+          case "finishing":
+            return (
+              <GuideFinishingPages
                 key={section.id}
                 pageNumberStart={pageRange.start}
                 totalPages={pagePlan.totalPages}

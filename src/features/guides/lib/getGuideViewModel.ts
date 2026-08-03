@@ -7,6 +7,7 @@ import {buildGuidePaintingStepViewModels} from "./buildGuidePaintingStepViewMode
 import { paginateGuideSteps } from "./paginateGuideSteps";
 import { getGuideKitItems } from "./getGuideKitItems";
 import { resolveGuideAssemblyData } from "./resolveGuideAssemblyData";
+import { resolveGuideFinishingData } from "./resolveGuideFinishingData";
 import {
   resolveGuideContentsSections,
   resolveGuideSections,
@@ -92,16 +93,18 @@ export function getGuideViewModel(
     return true;
   }).map((view)=>({ ...view, id:`legacy-${view.key}`, image:guide.images[view.key!]! }));
 
-  const hasPaintingWorkflow = Boolean(
-    guide.paintingSummary,
-  );
-  const paintingSteps = buildGuidePaintingStepViewModels(guide);
+  const allPaintingSteps = buildGuidePaintingStepViewModels(guide);
+  const finishingData = resolveGuideFinishingData(guide, allPaintingSteps);
+  const paintingSteps = finishingData
+    ? allPaintingSteps.filter((step) => !finishingData.sourcePaintingStepIds.has(step.id))
+    : allPaintingSteps;
+  const hasPaintingWorkflow = paintingSteps.length > 0;
   const paintingPages = paginateGuideSteps(paintingSteps);
   const detailById = new Map(
     (guide.manualDetails ?? []).map((detail) => [detail.id, detail]),
   );
   const usedColorIds = new Set(
-    paintingSteps.flatMap((step) => step.color ? [step.color.id] : []),
+    allPaintingSteps.flatMap((step) => step.color ? [step.color.id] : []),
   );
   let hasMarkers = false;
   let hasRegions = false;
@@ -150,7 +153,7 @@ export function getGuideViewModel(
   const paletteSource =
     guide.previewPalette ?? guide.workflowPalette ?? guide.palette;
   const usageByColor = new Map<string, number>();
-  for (const step of paintingSteps) {
+  for (const step of allPaintingSteps) {
     if (step.color) {
       usageByColor.set(
         step.color.id,
@@ -192,6 +195,7 @@ export function getGuideViewModel(
   const documentSections = resolveGuideSections({
     hasAssembly: Boolean(assemblyData),
     hasExplodedView: settings.includeExplodedView && Boolean(guide.explodedView),
+    hasFinishing: Boolean(finishingData),
     hasKit: kitItems.length > 0,
     hasModelViews: modelViews.length > 0,
     hasPaintingWorkflow,
@@ -212,6 +216,7 @@ export function getGuideViewModel(
     },
     hasPaintingWorkflow,
     assemblyData,
+    finishingData,
     kitItems,
     documentSections,
     sections,
