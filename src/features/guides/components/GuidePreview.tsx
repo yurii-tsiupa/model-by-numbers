@@ -60,7 +60,7 @@ export function GuidePreview({
   isUpdatingSectionSettings = false,
 }: GuidePreviewProps) {
   const resolvedGuide = useResolvedGuideAssets(guide, previewProject);
-  const viewModel = useGuideViewModel(resolvedGuide);
+  const viewModel = useGuideViewModel(resolvedGuide, template.settings.pageFormat);
 
   const {
     locale,

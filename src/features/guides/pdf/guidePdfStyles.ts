@@ -1,6 +1,5 @@
 import { StyleSheet } from "@react-pdf/renderer";
 import { defaultGuideDesignTokens as tokens } from "../design/guideDesignTokens";
-import { PDF_PAGE_LAYOUT } from "./printPageConstants";
 
 export const pdfColors = {
   accent: tokens.accentColor,
@@ -27,26 +26,18 @@ export const guidePdfStyles = StyleSheet.create({
   },
   pageHeader: {
     flexShrink: 0,
-    height: PDF_PAGE_LAYOUT.headerHeight,
     justifyContent: "flex-end",
     overflow: "hidden",
-    paddingHorizontal: PDF_PAGE_LAYOUT.paddingLeft,
   },
   pageContent: {
     flexShrink: 0,
-    height: PDF_PAGE_LAYOUT.contentRegionHeight,
     overflow: "hidden",
-    paddingBottom: PDF_PAGE_LAYOUT.contentPaddingBottom,
-    paddingHorizontal: PDF_PAGE_LAYOUT.paddingLeft,
-    paddingTop: PDF_PAGE_LAYOUT.contentPaddingTop,
   },
   pageFooter: {
     alignItems: "center",
     flexDirection: "row",
     flexShrink: 0,
-    height: PDF_PAGE_LAYOUT.footerHeight,
     justifyContent: "flex-end",
-    paddingHorizontal: PDF_PAGE_LAYOUT.paddingLeft,
   },
   pageTitle: {
     fontFamily: tokens.headingFont,

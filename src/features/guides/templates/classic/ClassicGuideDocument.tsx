@@ -48,6 +48,8 @@ import { GuidePdfRenderModeProvider, type GuidePdfRenderMode } from "../../pdf/G
 import { resolveGuidePdfPagePlan } from "../../pdf/resolveGuidePdfPagePlan";
 import { Fragment } from "react";
 import type { GuidePdfSectionSelection } from "../../pdf/ModelGuideDocument";
+import { DEFAULT_GUIDE_PAGE_FORMAT } from "../../types/GuidePageFormat";
+import { paginateGuideSteps } from "../../lib/paginateGuideSteps";
 
 type ClassicGuideDocumentProps = {
   guide: ModelGuide;
@@ -64,11 +66,14 @@ export function ClassicGuideDocument({
   renderMode = "export",
   sectionSelection,
 }: ClassicGuideDocumentProps) {
-  const model =
-    viewModel ?? getGuideViewModel(guide);
+  const pageFormat = templateSettings?.pageFormat ?? DEFAULT_GUIDE_PAGE_FORMAT;
+  const sourceModel = viewModel ?? getGuideViewModel(guide, pageFormat);
+  const model = sourceModel.pageFormat === pageFormat
+    ? sourceModel
+    : { ...sourceModel, pageFormat, paintingPages: paginateGuideSteps(sourceModel.paintingSteps, pageFormat) };
   const exportDate = new Date();
   const metadata = createPdfDocumentMetadata(guide, exportDate);
-  const pagePlan = resolveGuidePdfPagePlan(model);
+  const pagePlan = resolveGuidePdfPagePlan(model, pageFormat);
   const renderedSections = sectionSelection
     ? model.documentSections.filter((section) => sectionSelection.sectionIds.includes(section.id))
     : model.documentSections;

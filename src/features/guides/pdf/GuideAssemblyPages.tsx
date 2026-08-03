@@ -5,7 +5,8 @@ import { translate } from "@/features/i18n/lib/i18n";
 
 import { defaultGuideDesignTokens as tokens } from "../design/guideDesignTokens";
 import type { GuideViewModel } from "../lib/getGuideViewModel";
-import { GUIDE_ASSEMBLY_OVERVIEW_PARTS_PER_PAGE } from "../lib/resolveGuideAssemblyData";
+import { getGuidePdfPageCapacity } from "./resolveGuidePdfPagePlan";
+import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
 import { GuidePage } from "./GuidePage";
 import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import { guidePdfStyles, pdfColors } from "./guidePdfStyles";
@@ -37,6 +38,7 @@ const ASSEMBLY_IMAGE_PRESENCE_POINTS = 270;
 
 export function GuideAssemblyPages({ pageNumberStart, totalPages, viewModel }: { pageNumberStart: number; totalPages: number; viewModel: GuideViewModel }) {
   const { assemblyData, guide, locale, settings } = viewModel;
+  const partsPerPage = getGuidePdfPageCapacity(useGuidePdfTemplate().pageFormat).assemblyParts;
   const t = (key: Parameters<typeof translate>[1], values?: Parameters<typeof translate>[2]) => translate(locale, key, values);
   if (!assemblyData) return null;
 
@@ -54,9 +56,9 @@ export function GuideAssemblyPages({ pageNumberStart, totalPages, viewModel }: {
     </GuidePage>)}</>;
   }
 
-  const pageCount = Math.max(1, Math.ceil(assemblyData.parts.length / GUIDE_ASSEMBLY_OVERVIEW_PARTS_PER_PAGE));
+  const pageCount = Math.max(1, Math.ceil(assemblyData.parts.length / partsPerPage));
   return <>{Array.from({ length: pageCount }, (_, pageIndex) => {
-    const pageParts = assemblyData.parts.slice(pageIndex * GUIDE_ASSEMBLY_OVERVIEW_PARTS_PER_PAGE, (pageIndex + 1) * GUIDE_ASSEMBLY_OVERVIEW_PARTS_PER_PAGE);
+    const pageParts = assemblyData.parts.slice(pageIndex * partsPerPage, (pageIndex + 1) * partsPerPage);
     return <GuidePage key={pageIndex} id={pageIndex === 0 ? "assembly" : undefined} locale={locale} pageNumber={pageNumberStart + pageIndex} projectName={guide.title} totalPages={totalPages}>
       <GuidePdfEyebrow>{t("guide.assembly.sectionEyebrow")}</GuidePdfEyebrow>
       <Text style={guidePdfStyles.pageTitle}>{t("guide.assembly.sectionTitle")}{pageIndex > 0 ? ` (${t("guide.continued")})` : ""}</Text>

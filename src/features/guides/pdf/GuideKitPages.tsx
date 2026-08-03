@@ -9,7 +9,8 @@ import type { GuideKitCategory, GuideKitItem } from "../types/GuideKit";
 import { GuidePage } from "./GuidePage";
 import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import { guidePdfStyles, pdfColors } from "./guidePdfStyles";
-import { GUIDE_PDF_PAGE_CAPACITY } from "./resolveGuidePdfPagePlan";
+import { getGuidePdfPageCapacity } from "./resolveGuidePdfPagePlan";
+import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
 
 type GuideKitPagesProps = {
   pageNumberStart: number;
@@ -100,13 +101,14 @@ function KitRow({ item, name }: { item: GuideKitItem; name: string }) {
 
 export function GuideKitPages({ pageNumberStart, totalPages, viewModel }: GuideKitPagesProps) {
   const { guide, kitItems, locale } = viewModel;
+  const itemsPerPage = getGuidePdfPageCapacity(useGuidePdfTemplate().pageFormat).kitItems;
   const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
-  const pageCount = Math.max(1, Math.ceil(kitItems.length / GUIDE_PDF_PAGE_CAPACITY.kitItems));
+  const pageCount = Math.max(1, Math.ceil(kitItems.length / itemsPerPage));
 
   return (
     <>
       {Array.from({ length: pageCount }, (_, pageIndex) => {
-        const pageItems = kitItems.slice(pageIndex * GUIDE_PDF_PAGE_CAPACITY.kitItems, (pageIndex + 1) * GUIDE_PDF_PAGE_CAPACITY.kitItems);
+        const pageItems = kitItems.slice(pageIndex * itemsPerPage, (pageIndex + 1) * itemsPerPage);
         return (
           <GuidePage key={pageIndex} id={pageIndex === 0 ? "kit" : undefined} locale={locale} pageNumber={pageNumberStart + pageIndex} projectName={guide.title} totalPages={totalPages}>
             <GuidePdfEyebrow>{t("guide.kit.eyebrow")}</GuidePdfEyebrow>

@@ -56,7 +56,7 @@ export function GeneratedGuidesSection({
       const pdfBlob =
         guide.pdfBlob ??
         (await generateGuidePdf(
-          getGuideViewModel(guide.snapshot),
+          getGuideViewModel(guide.snapshot, template.settings.pageFormat),
           template.settings,
         ));
 

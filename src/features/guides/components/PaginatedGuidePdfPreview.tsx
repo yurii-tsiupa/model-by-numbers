@@ -10,7 +10,7 @@ import type { GuideContentSectionId, GuidePdfSectionId, GuideSectionId } from ".
 import { defaultGuideDesignTokens as tokens } from "../design/guideDesignTokens";
 import { getGuidePreviewSectionSignature } from "../lib/getGuidePreviewSectionSignature";
 import type { GuideViewModel } from "../lib/getGuideViewModel";
-import { PDF_PAGE_LAYOUT } from "../pdf/printPageConstants";
+import { getGuidePageGeometry } from "../pdf/printPageConstants";
 import { resolveGuidePdfPagePlan, type GuideResolvedPdfPage } from "../pdf/resolveGuidePdfPagePlan";
 
 type PreviewPage = {
@@ -70,7 +70,7 @@ function resolveSectionGroups(
   viewModel: GuideViewModel,
   templateSettings: GuideTemplateSettings,
 ): { groups: SectionPageGroup[]; totalPages: number } {
-  const pagePlan = resolveGuidePdfPagePlan(viewModel);
+  const pagePlan = resolveGuidePdfPagePlan(viewModel, templateSettings.pageFormat);
   const groups = viewModel.documentSections.flatMap((section) => {
     const metadata = pagePlan.pages.filter((page) => page.sourceSectionId === section.id || (section.id === "cover" && page.sectionId === "toc"));
     if (!metadata.length) return [];
@@ -106,6 +106,7 @@ export const PaginatedGuidePdfPreview = memo(function PaginatedGuidePdfPreview({
   const objectUrlsRef = useRef(new Set<string>());
   const hasRenderedRef = useRef(false);
   const t = (key: Parameters<typeof translate>[1], values?: Parameters<typeof translate>[2]) => translate(viewModel.locale, key, values);
+  const pageLayout = getGuidePageGeometry(templateSettings.pageFormat);
 
   useEffect(() => () => {
     for (const document of documentsRef.current) document.cleanup();
@@ -291,9 +292,9 @@ export const PaginatedGuidePdfPreview = memo(function PaginatedGuidePdfPreview({
               bottom: 0,
               color: tokens.inkMuted,
               fontSize: 7 * previewScale,
-              height: PDF_PAGE_LAYOUT.footerHeight * previewScale,
+              height: pageLayout.footerHeight * previewScale,
               lineHeight: 1,
-              paddingRight: PDF_PAGE_LAYOUT.paddingRight * previewScale,
+              paddingRight: pageLayout.paddingRight * previewScale,
               right: 0,
               width: pageGeometry.width * previewScale,
             }}

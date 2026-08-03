@@ -16,6 +16,7 @@ import {
   resolveGuideSections,
   type GuideSectionMetadata,
 } from "../config/guideSectionRegistry";
+import { DEFAULT_GUIDE_PAGE_FORMAT, type GuidePageFormat } from "../types/GuidePageFormat";
 
 export type { GuideSectionId, GuideSectionMetadata } from "../config/guideSectionRegistry";
 
@@ -70,6 +71,7 @@ const MODEL_VIEWS: readonly Omit<GuideModelView,"id"|"image">[] = [
 
 export function getGuideViewModel(
   guide: ModelGuide,
+  pageFormat: GuidePageFormat = DEFAULT_GUIDE_PAGE_FORMAT,
 ) {
   const locale = guide.locale ?? "en";
   const settings = getGuideSettings(guide);
@@ -102,7 +104,7 @@ export function getGuideViewModel(
     ? allPaintingSteps.filter((step) => !finishingData.sourcePaintingStepIds.has(step.id))
     : allPaintingSteps;
   const hasPaintingWorkflow = paintingSteps.length > 0;
-  const paintingPages = paginateGuideSteps(paintingSteps);
+  const paintingPages = paginateGuideSteps(paintingSteps, pageFormat);
   const detailById = new Map(
     (guide.manualDetails ?? []).map((detail) => [detail.id, detail]),
   );
@@ -231,6 +233,7 @@ export function getGuideViewModel(
 
   return {
     guide,
+    pageFormat,
     locale,
     settings,
     modelViews,

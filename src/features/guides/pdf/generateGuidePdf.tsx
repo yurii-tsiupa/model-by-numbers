@@ -46,7 +46,7 @@ export async function generateGuidePdf(
   if(unavailableStepImages)onImageWarning?.({code:"IMAGE_LOAD_FAILED",count:unavailableStepImages});
 
   let prepared,preparedSteps;
-  try{prepared=await prepareGuideImagesForPdf(guide);preparedSteps=await prepareGuideStepPreviewsForPdf(viewModel);}catch(error){throw new PdfExportError("PREPARATION_FAILED",error);}
+  try{prepared=await prepareGuideImagesForPdf(guide);preparedSteps=await prepareGuideStepPreviewsForPdf(viewModel,templateSettings.pageFormat);}catch(error){throw new PdfExportError("PREPARATION_FAILED",error);}
   if (prepared.hasFailures||preparedSteps.hasFailures) onImageWarning?.({ code: "IMAGE_LOAD_FAILED", count: 1 });
   if (prepared.lowResolutionCount > 0) onImageWarning?.({ code: "LOW_RESOLUTION_IMAGE", count: prepared.lowResolutionCount });
   onProgress?.({status:"rendering",progress:65});

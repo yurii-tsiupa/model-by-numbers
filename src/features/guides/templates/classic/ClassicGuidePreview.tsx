@@ -28,7 +28,7 @@ export function ClassicGuidePreview({
   guide,
   templateSettings,
 }: ClassicGuidePreviewProps) {
-  const viewModel = getGuideViewModel(guide);
+  const viewModel = getGuideViewModel(guide, templateSettings?.pageFormat);
 
   const { locale, settings } = viewModel;
 

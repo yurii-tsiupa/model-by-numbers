@@ -1,8 +1,9 @@
 import type { GuideViewModel } from "../lib/getGuideViewModel";
 import { paginateGuideSteps } from "../lib/paginateGuideSteps";
 import { prepareImageForPdf } from "../services/pdf/prepareImageForPdf";
+import type { GuidePageFormat } from "../types/GuidePageFormat";
 
-export async function prepareGuideStepPreviewsForPdf(viewModel: GuideViewModel) {
+export async function prepareGuideStepPreviewsForPdf(viewModel: GuideViewModel, pageFormat: GuidePageFormat) {
   let hasFailures = false;
   const paintingSteps = [];
   for (const step of viewModel.paintingSteps) {
@@ -47,9 +48,10 @@ export async function prepareGuideStepPreviewsForPdf(viewModel: GuideViewModel) 
   return {
     viewModel: {
       ...viewModel,
+      pageFormat,
       finishingData,
       paintingSteps,
-      paintingPages: paginateGuideSteps(paintingSteps),
+      paintingPages: paginateGuideSteps(paintingSteps, pageFormat),
     },
     hasFailures,
   };

@@ -7,7 +7,8 @@ import {
 import type { GuidePart, ModelGuide } from "../types/ModelGuide";
 import { GuidePage } from "./GuidePage";
 import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
-import { GUIDE_PDF_PAGE_CAPACITY } from "./resolveGuidePdfPagePlan";
+import { getGuidePdfPageCapacity } from "./resolveGuidePdfPagePlan";
+import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
 import {
   guidePdfStyles,
   pdfColors,
@@ -20,8 +21,6 @@ type GuidePartsPageProps = {
   parts: readonly GuidePart[];
   totalPages: number;
 };
-
-const PARTS_PER_PAGE = GUIDE_PDF_PAGE_CAPACITY.parts;
 
 const styles = StyleSheet.create({
   list: {
@@ -92,10 +91,11 @@ export function GuidePartsPage({
   parts,
   totalPages,
 }: GuidePartsPageProps) {
+  const partsPerPage = getGuidePdfPageCapacity(useGuidePdfTemplate().pageFormat).parts;
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
   const pageCount = Math.max(
     1,
-    Math.ceil(parts.length / PARTS_PER_PAGE),
+    Math.ceil(parts.length / partsPerPage),
   );
 
   return (
@@ -120,8 +120,8 @@ export function GuidePartsPage({
           <View style={styles.list}>
             {parts
               .slice(
-                pageIndex * PARTS_PER_PAGE,
-                (pageIndex + 1) * PARTS_PER_PAGE,
+                pageIndex * partsPerPage,
+                (pageIndex + 1) * partsPerPage,
               )
               .map((part) => {
                 const isAssigned =

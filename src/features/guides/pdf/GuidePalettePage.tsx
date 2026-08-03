@@ -9,7 +9,8 @@ import { defaultGuideDesignTokens as tokens } from "../design/guideDesignTokens"
 import { isLightGuideColor } from "../design/isLightGuideColor";
 import { GuidePage } from "./GuidePage";
 import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
-import { GUIDE_PDF_PAGE_CAPACITY } from "./resolveGuidePdfPagePlan";
+import { getGuidePdfPageCapacity } from "./resolveGuidePdfPagePlan";
+import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
 import {
   guidePdfStyles,
   pdfColors,
@@ -22,8 +23,6 @@ type GuidePalettePageProps = {
   totalPages: number;
   viewModel: GuideViewModel;
 };
-
-const COLORS_PER_PAGE = GUIDE_PDF_PAGE_CAPACITY.paletteColors;
 
 const styles = StyleSheet.create({
   grid: {
@@ -86,10 +85,11 @@ export function GuidePalettePage({
   viewModel,
 }: GuidePalettePageProps) {
   const {guide,usedPalette}=viewModel;
+  const colorsPerPage = getGuidePdfPageCapacity(useGuidePdfTemplate().pageFormat).paletteColors;
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values);
   const pageCount = Math.max(
     1,
-    Math.ceil(usedPalette.length / COLORS_PER_PAGE),
+    Math.ceil(usedPalette.length / colorsPerPage),
   );
 
   return (
@@ -114,8 +114,8 @@ export function GuidePalettePage({
           <View style={styles.grid}>
             {usedPalette
               .slice(
-                pageIndex * COLORS_PER_PAGE,
-                (pageIndex + 1) * COLORS_PER_PAGE,
+                pageIndex * colorsPerPage,
+                (pageIndex + 1) * colorsPerPage,
               )
               .map((color) => (
                 <View key={color.id} style={styles.card} wrap={false}>

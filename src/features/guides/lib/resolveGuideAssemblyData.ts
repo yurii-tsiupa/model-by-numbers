@@ -3,11 +3,11 @@ import type { GuideAssemblyPart, GuideSettings, ModelGuide } from "../types/Mode
 
 export const GUIDE_ASSEMBLY_OVERVIEW_PARTS_PER_PAGE = 18;
 
-export function getGuideAssemblyPageCount(data: GuideAssemblyData | null): number {
+export function getGuideAssemblyPageCount(data: GuideAssemblyData | null, partsPerPage = GUIDE_ASSEMBLY_OVERVIEW_PARTS_PER_PAGE): number {
   if (!data) return 0;
   return data.mode === "steps"
     ? data.steps.length
-    : Math.max(1, Math.ceil(data.parts.length / GUIDE_ASSEMBLY_OVERVIEW_PARTS_PER_PAGE));
+    : Math.max(1, Math.ceil(data.parts.length / partsPerPage));
 }
 
 export function resolveGuideAssemblyData(guide: ModelGuide, settings: GuideSettings): GuideAssemblyData | null {

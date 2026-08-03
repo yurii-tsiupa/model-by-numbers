@@ -7,11 +7,12 @@ import { defaultGuideDesignTokens as tokens } from "../design/guideDesignTokens"
 import type { GuideViewModel } from "../lib/getGuideViewModel";
 import {
   getGuideFinishingItemTitleKey,
-  GUIDE_FINISHING_ITEMS_PER_PAGE,
 } from "../lib/resolveGuideFinishingData";
 import { GuidePage } from "./GuidePage";
 import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import { guidePdfStyles, pdfColors } from "./guidePdfStyles";
+import { getGuidePdfPageCapacity } from "./resolveGuidePdfPagePlan";
+import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
 
 const styles = StyleSheet.create({
   item: {
@@ -73,13 +74,14 @@ export function GuideFinishingPages({
   viewModel: GuideViewModel;
 }) {
   const { finishingData, guide, locale } = viewModel;
+  const itemsPerPage = getGuidePdfPageCapacity(useGuidePdfTemplate().pageFormat).finishingItems;
   if (!finishingData) return null;
   const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
   const pages = Array.from(
-    { length: Math.ceil(finishingData.items.length / GUIDE_FINISHING_ITEMS_PER_PAGE) },
+    { length: Math.ceil(finishingData.items.length / itemsPerPage) },
     (_, pageIndex) => finishingData.items.slice(
-      pageIndex * GUIDE_FINISHING_ITEMS_PER_PAGE,
-      (pageIndex + 1) * GUIDE_FINISHING_ITEMS_PER_PAGE,
+      pageIndex * itemsPerPage,
+      (pageIndex + 1) * itemsPerPage,
     ),
   );
 
@@ -102,7 +104,7 @@ export function GuideFinishingPages({
         const title = item.title ?? t(getGuideFinishingItemTitleKey(item.type));
         return <View key={item.id} style={styles.item} wrap={false}>
           <View style={styles.itemHeader}>
-            <Text style={styles.number}>{String(pageIndex * GUIDE_FINISHING_ITEMS_PER_PAGE + itemIndex + 1).padStart(2, "0")}</Text>
+            <Text style={styles.number}>{String(pageIndex * itemsPerPage + itemIndex + 1).padStart(2, "0")}</Text>
             <View style={styles.itemCopy}>
               <Text style={styles.itemTitle}>{title}</Text>
               {item.description ? <Text style={styles.description}>{item.description}</Text> : null}

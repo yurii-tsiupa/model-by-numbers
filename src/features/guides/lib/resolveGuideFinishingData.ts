@@ -18,8 +18,8 @@ export function getGuideFinishingItemTitleKey(type: GuideFinishingItem["type"]):
   }
 }
 
-export function getGuideFinishingPageCount(data: GuideFinishingData | null): number {
-  return data ? Math.ceil(data.items.length / GUIDE_FINISHING_ITEMS_PER_PAGE) : 0;
+export function getGuideFinishingPageCount(data: GuideFinishingData | null, itemsPerPage = GUIDE_FINISHING_ITEMS_PER_PAGE): number {
+  return data ? Math.ceil(data.items.length / itemsPerPage) : 0;
 }
 
 export function resolveGuideFinishingData(
