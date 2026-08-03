@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, CircleAlert, FileText, SlidersHorizontal } from "lucide-react";
-import { useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { translate } from "@/features/i18n/lib/i18n";
 
@@ -20,6 +20,7 @@ import { GuidePreviewHeader } from "./GuidePreviewHeader";
 import { PaginatedGuidePdfPreview } from "./PaginatedGuidePdfPreview";
 import { GuideTemplateSection } from "./GuideTemplateSection";
 import type { GuideLibraryTemplate, UserGuideTemplate } from "@/features/templates/types/GuideLibraryTemplate";
+import type { GuideContentSectionId } from "../config/guideSectionRegistry";
 
 type GuidePreviewProps = {
   previewProject?: Project;
@@ -59,6 +60,40 @@ export function GuidePreview({
     locale,
     sections,
   } = viewModel;
+  const [observedActiveSectionId, setObservedActiveSectionId] = useState<GuideContentSectionId>();
+  const activeSectionId = sections.some((section) => section.id === observedActiveSectionId)
+    ? observedActiveSectionId
+    : sections[0]?.id;
+  const handleActiveSectionChange = useCallback((sectionId: GuideContentSectionId) => {
+    setObservedActiveSectionId(sectionId);
+  }, []);
+  const sectionPageMapRef = useRef(new Map<GuideContentSectionId, HTMLElement>());
+  const pendingSectionIdRef = useRef<GuideContentSectionId | null>(null);
+  const templateSettings = useMemo(() => ({
+    accentColor: template.settings.accentColor,
+    bodyFont: template.settings.bodyFont,
+    coverStyle: template.settings.coverStyle,
+    dividerStyle: template.settings.dividerStyle,
+    headingFont: template.settings.headingFont,
+    pageBackground: template.settings.pageBackground,
+    pageFormat: template.settings.pageFormat,
+    pageNumberPosition: template.settings.pageNumberPosition,
+    pageNumberStyle: template.settings.pageNumberStyle,
+    spacing: template.settings.spacing,
+    textColor: template.settings.textColor,
+  }), [
+    template.settings.accentColor,
+    template.settings.bodyFont,
+    template.settings.coverStyle,
+    template.settings.dividerStyle,
+    template.settings.headingFont,
+    template.settings.pageBackground,
+    template.settings.pageFormat,
+    template.settings.pageNumberPosition,
+    template.settings.pageNumberStyle,
+    template.settings.spacing,
+    template.settings.textColor,
+  ]);
 
   const text = (
     key: Parameters<typeof translate>[1],
@@ -77,7 +112,7 @@ export function GuidePreview({
 
   const pdfExport = useGuidePdfExport({
     viewModel,
-    templateSettings: template.settings,
+    templateSettings,
     existingBlob: savedPdfBlob,
     fileName: savedFileName,
     onImageWarning: (warning) => {
@@ -142,7 +177,7 @@ export function GuidePreview({
       />
 
       {pdfExport.isExporting ? (
-        <GuideExportDocument viewModel={viewModel} templateSettings={template.settings} />
+        <GuideExportDocument viewModel={viewModel} templateSettings={templateSettings} />
       ) : null}
 
       {pdfExport.status === "awaitingConfirmation" ? (
@@ -176,8 +211,11 @@ export function GuidePreview({
 
       <div className={`guide-layout mx-auto grid w-full max-w-[100rem] min-w-0 items-start gap-5 px-4 py-5 sm:px-6 lg:px-8 2xl:justify-center 2xl:gap-6 ${hasGuideTools ? "2xl:grid-cols-[17.5rem_minmax(38.75rem,50rem)_25rem]" : "2xl:grid-cols-[17.5rem_minmax(38.75rem,50rem)]"}`}>
         <GuideNavigation
+          activeSectionId={activeSectionId}
           sections={sections}
           locale={locale}
+          pendingSectionIdRef={pendingSectionIdRef}
+          sectionPageMapRef={sectionPageMapRef}
         />
 
         <div className="min-w-0 2xl:col-start-2 2xl:row-start-1">
@@ -204,8 +242,11 @@ export function GuidePreview({
         <div className="guide-preview-surface min-w-0 overflow-x-auto rounded-xl bg-[var(--surface)] p-4 sm:p-6 print:overflow-visible print:bg-transparent print:p-0">
           <div className="mx-auto w-full max-w-[52rem]">
             <PaginatedGuidePdfPreview
+              onActiveSectionChange={handleActiveSectionChange}
+              pendingSectionIdRef={pendingSectionIdRef}
+              sectionPageMapRef={sectionPageMapRef}
               viewModel={viewModel}
-              templateSettings={template.settings}
+              templateSettings={templateSettings}
             />
           </div>
         </div>

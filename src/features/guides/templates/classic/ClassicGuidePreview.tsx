@@ -5,6 +5,7 @@ import { GuidePartsPreviewSection } from "../../components/GuidePreview/sections
 import { GuideProjectSection } from "../../components/GuidePreview/sections/GuideProjectSection";
 import { GuideCoverSection } from "../../components/GuidePreview/sections/GuideCoverSection";
 import { GuidePaintingWorkflowSection } from "../../components/GuidePreview/sections/GuidePaintingWorkflowSection";
+import { GuideLegendSection } from "../../components/GuidePreview/sections/GuideLegendSection";
 import { GuideSectionAnchor } from "../../components/GuideSectionAnchor";
 import { getGuideViewModel } from "../../lib/getGuideViewModel";
 import type { ModelGuide } from "../../types/ModelGuide";
@@ -37,21 +38,23 @@ export function ClassicGuidePreview({
       case "cover":
         return <GuideCoverSection key={section.id} viewModel={viewModel} locale={locale} />;
       case "project-overview":
-        return <GuideSectionAnchor key={section.id} id={section.id}><GuideProjectSection viewModel={viewModel} locale={locale} /></GuideSectionAnchor>;
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><GuideProjectSection viewModel={viewModel} locale={locale} /></GuideSectionAnchor>;
+      case "legend":
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><GuideLegendSection locale={locale} targetMode={viewModel.targetMode} /></GuideSectionAnchor>;
       case "palette":
-        return <GuideSectionAnchor key={section.id} id={section.id}><GuidePalettePreviewSection palette={viewModel.usedPalette} locale={locale} /></GuideSectionAnchor>;
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><GuidePalettePreviewSection palette={viewModel.usedPalette} locale={locale} /></GuideSectionAnchor>;
       case "model-views":
-        return <GuideSectionAnchor key={section.id} id={section.id}><ClassicModelViewsSection views={viewModel.modelViews} t={t} /></GuideSectionAnchor>;
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicModelViewsSection views={viewModel.modelViews} t={t} /></GuideSectionAnchor>;
       case "exploded-view":
-        return <GuideSectionAnchor key={section.id} id={section.id}><ClassicExplodedSection view={guide.explodedView!} t={t} /></GuideSectionAnchor>;
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicExplodedSection view={guide.explodedView!} t={t} /></GuideSectionAnchor>;
       case "assembly":
-        return <GuideSectionAnchor key={section.id} id={section.id}><ClassicAssemblySection steps={guide.assemblySteps ?? []} showImages={settings.includeAssemblyStepImages} t={t} /></GuideSectionAnchor>;
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicAssemblySection steps={guide.assemblySteps ?? []} showImages={settings.includeAssemblyStepImages} t={t} /></GuideSectionAnchor>;
       case "references":
-        return <GuideSectionAnchor key={section.id} id={section.id}><ClassicReferencesSection references={viewModel.includedReferences} t={t} /></GuideSectionAnchor>;
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><ClassicReferencesSection references={viewModel.includedReferences} t={t} /></GuideSectionAnchor>;
       case "parts-overview":
-        return <GuideSectionAnchor key={section.id} id={section.id}><GuidePartsPreviewSection parts={viewModel.referencedParts} locale={locale} /></GuideSectionAnchor>;
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><GuidePartsPreviewSection parts={viewModel.referencedParts} locale={locale} /></GuideSectionAnchor>;
       case "painting-workflow":
-        return <GuideSectionAnchor key={section.id} id={section.id}><GuidePaintingWorkflowSection guide={viewModel.workflowGuide} locale={locale} steps={viewModel.paintingSteps} /></GuideSectionAnchor>;
+        return <GuideSectionAnchor key={section.id} id={section.contentSectionId}><GuidePaintingWorkflowSection guide={viewModel.workflowGuide} locale={locale} steps={viewModel.paintingSteps} /></GuideSectionAnchor>;
       default:
         return null;
     }

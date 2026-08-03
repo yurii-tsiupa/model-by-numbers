@@ -1,8 +1,8 @@
-import type {GuideSectionId} from "../../config/guideSectionRegistry";
+import type {GuideContentSectionId} from "../../config/guideSectionRegistry";
 import {PdfExportError} from "./pdfExportErrors";
 import {GUIDE_ASSET_TIMEOUT_MS} from "./waitForGuideImages";
 
-export async function prepareGuideForExport(sectionIds:readonly GuideSectionId[]):Promise<HTMLElement>{
+export async function prepareGuideForExport(sectionIds:readonly GuideContentSectionId[]):Promise<HTMLElement>{
   const root=await waitForExportRoot();
   await settleLayout();
   const mounted=new Set(Array.from(root.querySelectorAll<HTMLElement>("[data-guide-section]")).map(section=>section.dataset.guideSection));

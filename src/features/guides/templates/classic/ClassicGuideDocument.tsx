@@ -17,6 +17,7 @@ import {
 import {
   GuideModelViewsPage,
 } from "../../pdf/GuideModelViewsPage";
+import { GuideLegendPage } from "../../pdf/GuideLegendPage";
 import {
   GuidePaintingWorkflowPages,
 } from "../../pdf/GuidePaintingWorkflowPages";
@@ -88,6 +89,9 @@ export function ClassicGuideDocument({
                 viewModel={model}
               />
             );
+
+          case "legend":
+            return <GuideLegendPage key={section.id} pageNumber={pageRange.start} totalPages={pagePlan.totalPages} viewModel={model} />;
 
           case "model-views":
             return (

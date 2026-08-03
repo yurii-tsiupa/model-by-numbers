@@ -1,207 +1,56 @@
 "use client";
 
 import { ChevronDown, Layers3 } from "lucide-react";
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
 
 import { formatCount, translate } from "@/features/i18n/lib/i18n";
 import type { Locale } from "@/features/i18n/types/Locale";
 
 import type {
-  GuideSectionId,
+  GuideContentSectionId,
   GuideSectionMetadata,
 } from "../config/guideSectionRegistry";
 
 type GuideNavigationProps = {
+  activeSectionId?: GuideContentSectionId;
   sections: readonly GuideSectionMetadata[];
   locale: Locale;
+  pendingSectionIdRef: { current: GuideContentSectionId | null };
+  sectionPageMapRef: { current: Map<GuideContentSectionId, HTMLElement> };
 };
 
 export function GuideNavigation({
+  activeSectionId,
   sections,
   locale,
+  pendingSectionIdRef,
+  sectionPageMapRef,
 }: GuideNavigationProps) {
-  const [activeId, setActiveId] = useState<
-    GuideSectionId | undefined
-  >(sections[0]?.id);
-
-  const navigationTargetRef = useRef<GuideSectionId | null>(
-    null,
-  );
-
-  const navigationTimeoutRef = useRef<
-    ReturnType<typeof setTimeout> | null
-  >(null);
-
   const t = (
     key: Parameters<typeof translate>[1],
     values?: Parameters<typeof translate>[2],
   ) => translate(locale, key, values);
 
-  const resolvedActiveId = sections.some((section) => section.id === activeId)
-    ? activeId
+  const resolvedActiveId = sections.some((section) => section.id === activeSectionId)
+    ? activeSectionId
     : sections[0]?.id;
   const activeIndex = Math.max(0, sections.findIndex((section) => section.id === resolvedActiveId));
   const activeSection = sections[activeIndex];
   const progress = sections.length ? ((activeIndex + 1) / sections.length) * 100 : 0;
 
-  useEffect(() => {
-    const sectionIds = new Set(sections.map((section) => section.id));
-    const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-guide-section]"))
-      .filter((element) => sectionIds.has(element.dataset.guideSection as GuideSectionId));
-
-    if (!elements.length) {
-      return;
-    }
-
-    const intersectionRatios = new Map<Element, number>();
-    const lastSectionId = sections.at(-1)?.id;
-
-    let animationFrame: number | null = null;
-
-    const isAtPageBottom = () =>
-      window.scrollY + window.innerHeight >=
-      document.documentElement.scrollHeight - 2;
-
-    const activateLastSectionAtBottom = () => {
-      if (!lastSectionId || !isAtPageBottom()) {
-        return false;
-      }
-
-      navigationTargetRef.current = null;
-      setActiveId(lastSectionId);
-
-      return true;
-    };
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          intersectionRatios.set(
-            entry.target,
-            entry.isIntersecting
-              ? entry.intersectionRatio
-              : 0,
-          );
-        }
-
-        if (activateLastSectionAtBottom()) {
-          return;
-        }
-
-        const navigationTarget =
-          navigationTargetRef.current;
-
-        if (navigationTarget) {
-          if (
-            elements.some((element) => element.dataset.guideSection === navigationTarget && (intersectionRatios.get(element) ?? 0) > 0)
-          ) {
-            navigationTargetRef.current = null;
-            setActiveId(navigationTarget);
-          }
-
-          return;
-        }
-
-        const visibleSection = elements
-          .map((element) => ({
-            element,
-            ratio:
-              intersectionRatios.get(element) ?? 0,
-          }))
-          .filter((item) => item.ratio > 0)
-          .sort((a, b) => b.ratio - a.ratio)[0];
-
-        if (visibleSection) {
-          setActiveId(
-            visibleSection.element.dataset.guideSection as GuideSectionId,
-          );
-        }
-      },
-      {
-        rootMargin: "-15% 0px -70% 0px",
-        threshold: [0, 0.25, 0.5, 0.75, 1],
-      },
-    );
-
-    const handleScroll = () => {
-      if (animationFrame !== null) {
-        return;
-      }
-
-      animationFrame = window.requestAnimationFrame(
-        () => {
-          animationFrame = null;
-          activateLastSectionAtBottom();
-        },
-      );
-    };
-
-    elements.forEach((element) => {
-      observer.observe(element);
-    });
-
-    window.addEventListener("scroll", handleScroll, {
-      passive: true,
-    });
-
-    window.addEventListener("resize", handleScroll);
-
-    activateLastSectionAtBottom();
-
-    return () => {
-      observer.disconnect();
-
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
-
-      if (animationFrame !== null) {
-        window.cancelAnimationFrame(animationFrame);
-      }
-    };
-  }, [sections]);
-
-  useEffect(
-    () => () => {
-      if (navigationTimeoutRef.current) {
-        clearTimeout(navigationTimeoutRef.current);
-      }
-    },
-    [],
-  );
-
-  function navigate(id: GuideSectionId) {
-    const target = document.getElementById(id);
+  function navigate(id: GuideContentSectionId) {
+    const target = sectionPageMapRef.current.get(id);
 
     if (!target) {
+      pendingSectionIdRef.current = id;
       return;
     }
 
-    navigationTargetRef.current = id;
-
-    if (navigationTimeoutRef.current) {
-      clearTimeout(navigationTimeoutRef.current);
-    }
-
-    navigationTimeoutRef.current = setTimeout(() => {
-      navigationTargetRef.current = null;
-    }, 1500);
-
-    window.history.replaceState(null, "", `#${id}`);
-
-    target.focus({
-      preventScroll: true,
-    });
+    pendingSectionIdRef.current = null;
 
     target.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
-
-    setActiveId(id);
   }
 
   const links = (
@@ -230,6 +79,7 @@ export function GuideNavigation({
                 px-2
                 py-2
                 transition-colors
+                cursor-pointer
                 focus-visible:outline-none
                 focus-visible:ring-2
                 focus-visible:ring-[var(--accent)]

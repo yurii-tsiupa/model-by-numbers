@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 
 import { translate } from "@/features/i18n/lib/i18n";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
-import type { GuideSectionId } from "../config/guideSectionRegistry";
+import type { GuideContentSectionId, GuidePdfSectionId } from "../config/guideSectionRegistry";
 import type { GuideViewModel } from "../lib/getGuideViewModel";
+import { resolveGuidePdfPagePlan } from "../pdf/resolveGuidePdfPagePlan";
 type PreviewPage = {
   pageNumber: number;
-  sectionId?: GuideSectionId;
+  sectionId: GuidePdfSectionId;
   isSectionStart: boolean;
 };
 
@@ -46,10 +47,16 @@ function PdfPageCanvas({ page, scale }: { page: PDFPageProxy; scale: number }) {
   return <canvas ref={canvasRef} className="block" aria-hidden="true" />;
 }
 
-export function PaginatedGuidePdfPreview({
+export const PaginatedGuidePdfPreview = memo(function PaginatedGuidePdfPreview({
+  onActiveSectionChange,
+  pendingSectionIdRef,
+  sectionPageMapRef,
   viewModel,
   templateSettings,
 }: {
+  onActiveSectionChange: (sectionId: GuideContentSectionId) => void;
+  pendingSectionIdRef: { current: GuideContentSectionId | null };
+  sectionPageMapRef: { current: Map<GuideContentSectionId, HTMLElement> };
   viewModel: GuideViewModel;
   templateSettings: GuideTemplateSettings;
 }) {
@@ -89,21 +96,15 @@ export function PaginatedGuidePdfPreview({
       const loadedPages = await Promise.all(Array.from({ length: loadedDocument.numPages }, (_, index) => loadedDocument!.getPage(index + 1)));
       const documentViewport = loadedPages[0].getViewport({ scale: 1 });
 
-      const starts = (await Promise.all(viewModel.sections.map(async (section) => {
-        const destination = await loadedDocument?.getDestination(section.id);
-        if (!destination || !loadedDocument) return null;
-        return { sectionId: section.id, pageIndex: await loadedDocument.getPageIndex(destination[0]) };
-      }))).filter((start): start is { sectionId: GuideSectionId; pageIndex: number } => start !== null)
-        .sort((a, b) => a.pageIndex - b.pageIndex);
-
-      const nextPages = Array.from({ length: loadedDocument.numPages }, (_, pageIndex) => {
-        const start = starts.filter((candidate) => candidate.pageIndex <= pageIndex).at(-1);
-        return {
-          pageNumber: pageIndex + 1,
-          sectionId: start?.sectionId,
-          isSectionStart: start?.pageIndex === pageIndex,
-        };
-      });
+      const pagePlan = resolveGuidePdfPagePlan(viewModel);
+      if (pagePlan.pages.length !== loadedDocument.numPages) {
+        throw new Error(`Resolved guide page count ${pagePlan.pages.length} does not match rendered PDF page count ${loadedDocument.numPages}.`);
+      }
+      const nextPages = pagePlan.pages.map(({ pageNumber, sectionId }) => ({
+        isSectionStart: sectionId !== "toc" && pagePlan.sectionFirstPage[sectionId] === pageNumber,
+        pageNumber,
+        sectionId,
+      }));
 
       if (cancelled) {
         await destroyLoadingTask?.();
@@ -140,6 +141,67 @@ export function PaginatedGuidePdfPreview({
     return () => observer.disconnect();
   }, [pageGeometry]);
 
+  useEffect(() => {
+    const preview = previewRef.current;
+    const sectionPageMap = sectionPageMapRef.current;
+    sectionPageMap.clear();
+    if (!preview || status !== "ready" || !pages.length) return;
+    for (const page of preview.querySelectorAll<HTMLElement>("[data-guide-page][data-guide-section]")) {
+      const sectionId = page.dataset.guideSection as GuidePdfSectionId | undefined;
+      if (sectionId && sectionId !== "toc" && !sectionPageMap.has(sectionId)) {
+        sectionPageMap.set(sectionId, page);
+      }
+    }
+
+    let pendingScrollFrame: number | null = null;
+    const pendingSectionId = pendingSectionIdRef.current;
+    const pendingTarget = pendingSectionId ? sectionPageMap.get(pendingSectionId) : undefined;
+    if (pendingTarget) {
+      pendingSectionIdRef.current = null;
+      pendingScrollFrame = window.requestAnimationFrame(() => {
+        pendingTarget.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+
+    return () => {
+      if (pendingScrollFrame !== null) window.cancelAnimationFrame(pendingScrollFrame);
+      sectionPageMap.clear();
+    };
+  }, [pages, pendingSectionIdRef, sectionPageMapRef, status]);
+
+  useEffect(() => {
+    const preview = previewRef.current;
+    if (!preview || !pages.length) return;
+    const pageElements = Array.from(preview.querySelectorAll<HTMLElement>("[data-guide-page]"));
+    if (!pageElements.length) return;
+
+    let animationFrame: number | null = null;
+    const updateActiveSection = () => {
+      animationFrame = null;
+      const activationY = Math.min(window.innerHeight * 0.35, 320);
+      const activePage = pageElements.find((element) => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.top <= activationY && bounds.bottom > activationY;
+      }) ?? pageElements.find((element) => element.getBoundingClientRect().top > activationY) ?? pageElements.at(-1);
+      const sectionId = activePage?.dataset.guideSection as GuidePdfSectionId | undefined;
+      if (sectionId && sectionId !== "toc") onActiveSectionChange(sectionId);
+    };
+    const scheduleUpdate = () => {
+      if (animationFrame !== null) return;
+      animationFrame = window.requestAnimationFrame(updateActiveSection);
+    };
+
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    scheduleUpdate();
+
+    return () => {
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
+    };
+  }, [onActiveSectionChange, pages]);
+
   if (status === "failed") {
     return <div role="alert" className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 text-center text-sm text-[var(--text-secondary)]">{t("guide.error")}</div>;
   }
@@ -153,12 +215,12 @@ export function PaginatedGuidePdfPreview({
       {pages.map((page) => (
         <section
           key={page.pageNumber}
-          id={page.isSectionStart ? page.sectionId : undefined}
+          id={page.isSectionStart && page.sectionId !== "toc" ? page.sectionId : undefined}
           data-guide-section={page.sectionId}
           data-guide-page={page.pageNumber}
           data-pdf-page={page.pageNumber}
           tabIndex={page.isSectionStart ? -1 : undefined}
-          className="guide-pdf-page mx-auto overflow-hidden bg-white shadow-[0_12px_30px_rgba(15,23,42,0.18)] ring-1 ring-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          className="guide-pdf-page mx-auto scroll-mt-24 overflow-hidden bg-white shadow-[0_12px_30px_rgba(15,23,42,0.18)] ring-1 ring-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           style={{ width: pageGeometry.width * previewScale, height: pageGeometry.height * previewScale }}
           aria-label={t("guide.page", { page: page.pageNumber })}
         >
@@ -167,4 +229,4 @@ export function PaginatedGuidePdfPreview({
       ))}
     </div>
   );
-}
+});

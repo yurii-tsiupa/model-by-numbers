@@ -14,7 +14,7 @@ export function GuideExplodedPage({ guide, pageNumber, totalPages }: { guide: Mo
   if (!guide.explodedView) return null;
   const locale = guide.locale ?? "en";
   const t = (key: Parameters<typeof translate>[1], values?: Parameters<typeof translate>[2]) => translate(locale, key, values);
-  return <GuidePage id="exploded-view" locale={locale} pageNumber={pageNumber} projectName={guide.title} totalPages={totalPages}>
+  return <GuidePage id="explodedView" locale={locale} pageNumber={pageNumber} projectName={guide.title} totalPages={totalPages}>
     <PrintSectionStart><GuidePdfEyebrow>{t("guide.visual")}</GuidePdfEyebrow><Text style={guidePdfStyles.pageTitle}>{t("guide.exploded.title")}</Text><Text style={guidePdfStyles.sectionDescription}>{t("guide.exploded.description")}</Text></PrintSectionStart>
     <PrintKeepTogether>{guide.explodedView.image ? <Image src={guide.explodedView.image} style={styles.image}/> : <View style={[styles.placeholder, guidePdfStyles.placeholder]}><Text>{t("guide.exploded.imageMissing")}</Text></View>}<Text style={styles.meta}>{t("guide.exploded.partsCount", { count: guide.explodedView.partsCount })}</Text></PrintKeepTogether>
   </GuidePage>;

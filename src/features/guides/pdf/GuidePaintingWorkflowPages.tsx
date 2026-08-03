@@ -127,7 +127,7 @@ export function GuidePaintingWorkflowPages({ pageNumberStart, totalPages, viewMo
   return (
     <>
       {paintingPages.map((page) => (
-        <GuidePage key={page.steps[0]?.step.id ?? "painting-empty"} id={page.pageIndex === 0 ? "painting-workflow" : undefined} locale={locale} pageNumber={pageNumberStart+page.pageIndex} projectName={guide.title} totalPages={totalPages} wrap={false}>
+        <GuidePage key={page.steps[0]?.step.id ?? "painting-empty"} id={page.pageIndex === 0 ? "paintingInstructions" : undefined} locale={locale} pageNumber={pageNumberStart+page.pageIndex} projectName={guide.title} totalPages={totalPages} wrap={false}>
           {page.pageIndex === 0 ? (
             <PrintSectionStart>
               <GuidePdfEyebrow>{t("guide.paintingGuide")}</GuidePdfEyebrow>

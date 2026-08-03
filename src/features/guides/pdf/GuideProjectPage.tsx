@@ -67,7 +67,7 @@ export function GuideProjectPage({
   ];
 
   return (
-    <GuidePage id="project-overview" locale={locale} pageNumber={pageNumber} projectName={guide.title} totalPages={totalPages}>
+    <GuidePage locale={locale} pageNumber={pageNumber} projectName={guide.title} totalPages={totalPages}>
       <GuidePdfEyebrow>{t("guide.projectReference")}</GuidePdfEyebrow>
       <Text style={guidePdfStyles.pageTitle}>{guide.title}</Text>
 

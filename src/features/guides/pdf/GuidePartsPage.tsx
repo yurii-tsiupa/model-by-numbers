@@ -103,7 +103,7 @@ export function GuidePartsPage({
       {Array.from({ length: pageCount }, (_, pageIndex) => (
         <GuidePage
           key={pageIndex}
-          id={pageIndex===0?"parts-overview":undefined}
+          id={pageIndex===0?"partsOverview":undefined}
           locale={locale}
           pageNumber={pageNumberStart + pageIndex}
           projectName={guide.title}

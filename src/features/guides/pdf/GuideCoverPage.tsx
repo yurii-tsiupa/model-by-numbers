@@ -79,6 +79,7 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
 
   return (
     <GuidePage
+      id="projectOverview"
       locale={locale}
       pageNumber={pageNumber}
       projectName={guide.title}

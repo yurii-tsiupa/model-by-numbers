@@ -16,6 +16,23 @@ export type GuideSectionId =
   | "troubleshooting"
   | "back-cover";
 
+export type GuideContentSectionId =
+  | "projectOverview"
+  | "legend"
+  | "kit"
+  | "palette"
+  | "modelOverview"
+  | "explodedView"
+  | "assembly"
+  | "references"
+  | "partsOverview"
+  | "paintingInstructions"
+  | "finishing"
+  | "troubleshooting"
+  | "backCover";
+
+export type GuidePdfSectionId = GuideContentSectionId | "toc";
+
 export type GuideSectionResolutionContext = {
   hasAssembly: boolean;
   hasExplodedView: boolean;
@@ -32,6 +49,7 @@ export type GuideSectionDefinition = {
   defaultEnabled: boolean;
   implemented: boolean;
   includeInContents: boolean;
+  contentSectionId: GuideContentSectionId;
   titleKey?: TranslationKey;
   isAvailable: (context: GuideSectionResolutionContext) => boolean;
 };
@@ -39,27 +57,29 @@ export type GuideSectionDefinition = {
 const always = () => true;
 
 export const GUIDE_SECTION_REGISTRY: readonly GuideSectionDefinition[] = [
-  { id: "cover", core: true, defaultEnabled: true, implemented: true, includeInContents: false, titleKey: "guide.cover.document", isAvailable: always },
-  { id: "legend", core: true, defaultEnabled: false, implemented: false, includeInContents: true, isAvailable: always },
-  { id: "project-overview", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.overview", isAvailable: always },
-  { id: "kit", core: false, defaultEnabled: false, implemented: false, includeInContents: true, isAvailable: always },
-  { id: "palette", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.palette", isAvailable: (context) => context.hasPalette },
-  { id: "model-views", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.modelOverview", isAvailable: (context) => context.hasModelViews },
-  { id: "exploded-view", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.exploded.title", isAvailable: (context) => context.hasExplodedView },
-  { id: "assembly", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.assembly.title", isAvailable: (context) => context.hasAssembly },
-  { id: "references", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.references", isAvailable: (context) => context.hasReferences },
-  { id: "parts-overview", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.parts", isAvailable: (context) => context.hasPartsOverview },
-  { id: "painting-workflow", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.workflow.instructions", isAvailable: (context) => context.hasPaintingWorkflow },
-  { id: "finishing", core: false, defaultEnabled: false, implemented: false, includeInContents: true, isAvailable: always },
-  { id: "troubleshooting", core: false, defaultEnabled: false, implemented: false, includeInContents: true, isAvailable: always },
-  { id: "back-cover", core: false, defaultEnabled: false, implemented: false, includeInContents: false, isAvailable: always },
+  { id: "cover", contentSectionId: "projectOverview", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.overview", isAvailable: always },
+  { id: "project-overview", contentSectionId: "projectOverview", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.overview", isAvailable: always },
+  { id: "legend", contentSectionId: "legend", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.legend.title", isAvailable: always },
+  { id: "kit", contentSectionId: "kit", core: false, defaultEnabled: false, implemented: false, includeInContents: true, isAvailable: always },
+  { id: "palette", contentSectionId: "palette", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.palette", isAvailable: (context) => context.hasPalette },
+  { id: "model-views", contentSectionId: "modelOverview", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.modelOverview", isAvailable: (context) => context.hasModelViews },
+  { id: "exploded-view", contentSectionId: "explodedView", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.exploded.title", isAvailable: (context) => context.hasExplodedView },
+  { id: "assembly", contentSectionId: "assembly", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.assembly.title", isAvailable: (context) => context.hasAssembly },
+  { id: "references", contentSectionId: "references", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.references", isAvailable: (context) => context.hasReferences },
+  { id: "parts-overview", contentSectionId: "partsOverview", core: false, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.parts", isAvailable: (context) => context.hasPartsOverview },
+  { id: "painting-workflow", contentSectionId: "paintingInstructions", core: true, defaultEnabled: true, implemented: true, includeInContents: true, titleKey: "guide.workflow.instructions", isAvailable: (context) => context.hasPaintingWorkflow },
+  { id: "finishing", contentSectionId: "finishing", core: false, defaultEnabled: false, implemented: false, includeInContents: true, isAvailable: always },
+  { id: "troubleshooting", contentSectionId: "troubleshooting", core: false, defaultEnabled: false, implemented: false, includeInContents: true, isAvailable: always },
+  { id: "back-cover", contentSectionId: "backCover", core: false, defaultEnabled: false, implemented: false, includeInContents: false, isAvailable: always },
 ] as const;
 
 export type ResolvedGuideSection = GuideSectionDefinition & {
   order: number;
 };
 
-export type GuideSectionMetadata = ResolvedGuideSection & {
+export type GuideSectionMetadata = {
+  id: GuideContentSectionId;
+  order: number;
   titleKey: TranslationKey;
 };
 
@@ -70,7 +90,10 @@ export function resolveGuideSections(context: GuideSectionResolutionContext): Re
 }
 
 export function resolveGuideContentsSections(sections: readonly ResolvedGuideSection[]): GuideSectionMetadata[] {
-  return sections.flatMap((section) => section.includeInContents && section.titleKey
-    ? [{ ...section, titleKey: section.titleKey }]
-    : []);
+  const seen = new Set<GuideContentSectionId>();
+  return sections.flatMap((section) => {
+    if (!section.includeInContents || !section.titleKey || seen.has(section.contentSectionId)) return [];
+    seen.add(section.contentSectionId);
+    return [{ id: section.contentSectionId, order: seen.size - 1, titleKey: section.titleKey }];
+  });
 }
