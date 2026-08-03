@@ -25,6 +25,7 @@ import type { GuideSectionSettings } from "../types/GuideSectionSettings";
 import { GuideSectionManager } from "./GuideSectionManager";
 import { GuidePdfDesignPanel } from "./GuidePdfDesignPanel";
 import { GuideSidebarPanelSwitcher, type GuideSidebarPanel } from "./GuideSidebarPanelSwitcher";
+import { normalizeGuideAccentColor } from "../design/guideDesignTokens";
 
 type GuidePreviewProps = {
   previewProject?: Project;
@@ -185,6 +186,12 @@ export function GuidePreview({
     void onTemplateSettingsChange({ pageFormat }).catch(() => setSaveWarning(text("guide.pdfDesign.saveFailed")));
   }
 
+  function handleAccentColorChange(value: string) {
+    const accentColor = normalizeGuideAccentColor(value);
+    if (!onTemplateSettingsChange || !accentColor || accentColor === template.settings.accentColor) return;
+    void onTemplateSettingsChange({ accentColor }).catch(() => setSaveWarning(text("guide.pdfDesign.saveFailed")));
+  }
+
   return (
     <main className="min-h-0 flex-1 bg-[var(--bg)] text-[var(--text)]">
       <GuidePreviewHeader
@@ -259,7 +266,7 @@ export function GuidePreview({
                   {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
                 </div>
                 {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
-              </> : onTemplateSettingsChange ? <GuidePdfDesignPanel disabled={isUpdatingTemplateSettings} pageFormat={template.settings.pageFormat} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
+              </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} disabled={isUpdatingTemplateSettings} pageFormat={template.settings.pageFormat} onAccentColorChange={handleAccentColorChange} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
             </div>
           </div>
         </details> : null}
@@ -296,7 +303,7 @@ export function GuidePreview({
                 {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
               </div>
               {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
-            </> : onTemplateSettingsChange ? <GuidePdfDesignPanel disabled={isUpdatingTemplateSettings} pageFormat={template.settings.pageFormat} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
+            </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} disabled={isUpdatingTemplateSettings} pageFormat={template.settings.pageFormat} onAccentColorChange={handleAccentColorChange} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
           </div>
         </aside> : null}
       </div>

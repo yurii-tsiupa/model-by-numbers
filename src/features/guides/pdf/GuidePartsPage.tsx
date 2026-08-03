@@ -8,7 +8,7 @@ import type { GuidePart, ModelGuide } from "../types/ModelGuide";
 import { GuidePage } from "./GuidePage";
 import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import { getGuidePdfPageCapacity } from "./resolveGuidePdfPagePlan";
-import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
+import { useGuidePdfDesignTokens, useGuidePdfTemplate } from "./GuidePdfTemplateContext";
 import {
   guidePdfStyles,
   pdfColors,
@@ -38,7 +38,6 @@ const styles = StyleSheet.create({
     padding: 9,
   },
   partNumber: {
-    color: pdfColors.accent,
     fontSize: 10,
     fontWeight: 700,
     width: 36,
@@ -92,6 +91,7 @@ export function GuidePartsPage({
   totalPages,
 }: GuidePartsPageProps) {
   const partsPerPage = getGuidePdfPageCapacity(useGuidePdfTemplate().pageFormat).parts;
+  const design = useGuidePdfDesignTokens();
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
   const pageCount = Math.max(
     1,
@@ -131,7 +131,7 @@ export function GuidePartsPage({
 
                 return (
                   <View key={part.id} style={styles.row}>
-                    <Text style={styles.partNumber}>{part.number}</Text>
+                    <Text style={[styles.partNumber, { color: design.accentText }]}>{part.number}</Text>
                     <Text style={styles.partName}>{part.name}</Text>
                     <View style={styles.colorDetails}>
                       {isAssigned ? (

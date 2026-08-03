@@ -8,6 +8,8 @@ import type { GuideViewModel } from "../lib/getGuideViewModel";
 import { GuidePage } from "./GuidePage";
 import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import { guidePdfStyles, pdfColors } from "./guidePdfStyles";
+import { useGuidePdfDesignTokens } from "./GuidePdfTemplateContext";
+import type { GuideDesignTokens } from "../design/guideDesignTokens";
 
 type GuideLegendPageProps = {
   pageNumber: number;
@@ -60,14 +62,12 @@ const styles = StyleSheet.create({
   },
   stepBadge: {
     alignItems: "center",
-    backgroundColor: pdfColors.accent,
     borderRadius: 18,
     height: 36,
     justifyContent: "center",
     width: 36,
   },
   stepNumber: {
-    color: pdfColors.background,
     fontFamily: tokens.monoFont,
     fontSize: 11,
     fontWeight: tokens.weightSemibold,
@@ -79,27 +79,22 @@ const styles = StyleSheet.create({
   },
   marker: {
     alignItems: "center",
-    backgroundColor: pdfColors.accent,
     borderRadius: 11,
     height: 22,
     justifyContent: "center",
     width: 22,
   },
   markerStem: {
-    backgroundColor: pdfColors.accent,
     height: 10,
     marginLeft: 10,
     width: 2,
   },
   markerNumber: {
-    color: pdfColors.background,
     fontFamily: tokens.monoFont,
     fontSize: 8,
     fontWeight: tokens.weightSemibold,
   },
   region: {
-    backgroundColor: pdfColors.accentLight,
-    borderColor: pdfColors.accent,
     borderRadius: 13,
     borderStyle: "solid",
     borderWidth: 2,
@@ -111,14 +106,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   partPrimary: {
-    backgroundColor: pdfColors.accent,
     borderRadius: 6,
     height: 38,
     width: 25,
   },
   partSecondary: {
-    backgroundColor: pdfColors.accentLight,
-    borderColor: pdfColors.accent,
     borderRadius: 6,
     borderStyle: "solid",
     borderWidth: 1,
@@ -127,7 +119,6 @@ const styles = StyleSheet.create({
     width: 25,
   },
   swatch: {
-    backgroundColor: pdfColors.accent,
     borderColor: pdfColors.border,
     borderRadius: 8,
     borderStyle: "solid",
@@ -137,7 +128,6 @@ const styles = StyleSheet.create({
   },
   viewFrame: {
     alignItems: "center",
-    borderColor: pdfColors.accent,
     borderRadius: 7,
     borderStyle: "solid",
     borderWidth: 2,
@@ -146,7 +136,6 @@ const styles = StyleSheet.create({
     width: 50,
   },
   viewSubject: {
-    borderColor: pdfColors.accent,
     borderRadius: 9,
     borderStyle: "solid",
     borderWidth: 2,
@@ -155,29 +144,30 @@ const styles = StyleSheet.create({
   },
 });
 
-function LegendSample({ item }: { item: GuideLegendItem }) {
+function LegendSample({ item, design }: { item: GuideLegendItem; design: GuideDesignTokens }) {
   if (item.id === "step") {
-    return <View style={styles.stepBadge}><Text style={styles.stepNumber}>01</Text></View>;
+    return <View style={[styles.stepBadge, { backgroundColor: design.accentColor }]}><Text style={[styles.stepNumber, { color: design.accentForeground }]}>01</Text></View>;
   }
   if (item.id === "marker") {
-    return <View style={styles.markerGroup}>{[1, 1].map((number, index) => <View key={index}><View style={styles.marker}><Text style={styles.markerNumber}>{number}</Text></View><View style={styles.markerStem} /></View>)}</View>;
+    return <View style={styles.markerGroup}>{[1, 1].map((number, index) => <View key={index}><View style={[styles.marker, { backgroundColor: design.accentColor }]}><Text style={[styles.markerNumber, { color: design.accentForeground }]}>{number}</Text></View><View style={[styles.markerStem, { backgroundColor: design.accentColor }]} /></View>)}</View>;
   }
   if (item.id === "region") {
-    return <View style={styles.region} />;
+    return <View style={[styles.region, { backgroundColor: design.accentSoft, borderColor: design.accentColor }]} />;
   }
   if (item.id === "part") {
-    return <View style={styles.parts}><View style={styles.partPrimary} /><View style={styles.partSecondary} /></View>;
+    return <View style={styles.parts}><View style={[styles.partPrimary, { backgroundColor: design.accentColor }]} /><View style={[styles.partSecondary, { backgroundColor: design.accentSoft, borderColor: design.accentColor }]} /></View>;
   }
   if (item.id === "color") {
-    return <View style={styles.swatch} />;
+    return <View style={[styles.swatch, { backgroundColor: design.accentColor }]} />;
   }
-  return <View style={styles.viewFrame}><View style={styles.viewSubject} /></View>;
+  return <View style={[styles.viewFrame, { borderColor: design.accentColor }]}><View style={[styles.viewSubject, { borderColor: design.accentColor }]} /></View>;
 }
 
 export function GuideLegendPage({ pageNumber, totalPages, viewModel }: GuideLegendPageProps) {
   const { guide, locale, targetMode } = viewModel;
   const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
   const items = getGuideLegendItems(targetMode);
+  const design = useGuidePdfDesignTokens();
 
   return (
     <GuidePage id="legend" locale={locale} pageNumber={pageNumber} projectName={guide.title} totalPages={totalPages}>
@@ -187,7 +177,7 @@ export function GuideLegendPage({ pageNumber, totalPages, viewModel }: GuideLege
       <View style={styles.list}>
         {items.map((item) => (
           <View key={item.id} style={styles.row} wrap={false}>
-            <View style={styles.sample}><LegendSample item={item} /></View>
+            <View style={styles.sample}><LegendSample item={item} design={design} /></View>
             <View style={styles.copy}>
               <Text style={styles.itemTitle}>{t(item.titleKey)}</Text>
               <Text style={styles.itemDescription}>{t(item.descriptionKey)}</Text>

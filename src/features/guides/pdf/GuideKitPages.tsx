@@ -10,7 +10,8 @@ import { GuidePage } from "./GuidePage";
 import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import { guidePdfStyles, pdfColors } from "./guidePdfStyles";
 import { getGuidePdfPageCapacity } from "./resolveGuidePdfPagePlan";
-import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
+import { useGuidePdfDesignTokens, useGuidePdfTemplate } from "./GuidePdfTemplateContext";
+import type { GuideDesignTokens } from "../design/guideDesignTokens";
 
 type GuideKitPagesProps = {
   pageNumberStart: number;
@@ -23,7 +24,6 @@ const styles = StyleSheet.create({
     marginBottom: tokens.spacingMd,
   },
   categoryTitle: {
-    color: pdfColors.accent,
     fontFamily: tokens.headingFont,
     fontSize: tokens.sizeBody,
     fontWeight: tokens.weightSemibold,
@@ -48,7 +48,6 @@ const styles = StyleSheet.create({
     width: 18,
   },
   bullet: {
-    backgroundColor: pdfColors.accent,
     borderRadius: 3,
     height: 6,
     marginHorizontal: 6,
@@ -87,10 +86,10 @@ const categoryTitleKeys: Record<GuideKitCategory, Parameters<typeof translate>[1
   material: "guide.kit.materials",
 };
 
-function KitRow({ item, name }: { item: GuideKitItem; name: string }) {
+function KitRow({ item, name, design }: { item: GuideKitItem; name: string; design: GuideDesignTokens }) {
   return (
     <View style={styles.row} wrap={false}>
-      {item.colorHex ? <View style={[styles.swatch, { backgroundColor: item.colorHex }]} /> : <View style={styles.bullet} />}
+      {item.colorHex ? <View style={[styles.swatch, { backgroundColor: item.colorHex }]} /> : <View style={[styles.bullet, { backgroundColor: design.accentColor }]} />}
       {item.code ? <Text style={styles.code}>{item.code}</Text> : null}
       <Text style={styles.name}>{name}</Text>
       {item.colorHex ? <Text style={styles.hex}>{item.colorHex.toUpperCase()}</Text> : null}
@@ -102,6 +101,7 @@ function KitRow({ item, name }: { item: GuideKitItem; name: string }) {
 export function GuideKitPages({ pageNumberStart, totalPages, viewModel }: GuideKitPagesProps) {
   const { guide, kitItems, locale } = viewModel;
   const itemsPerPage = getGuidePdfPageCapacity(useGuidePdfTemplate().pageFormat).kitItems;
+  const design = useGuidePdfDesignTokens();
   const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
   const pageCount = Math.max(1, Math.ceil(kitItems.length / itemsPerPage));
 
@@ -117,7 +117,7 @@ export function GuideKitPages({ pageNumberStart, totalPages, viewModel }: GuideK
             {GUIDE_KIT_CATEGORY_ORDER.map((category) => {
               const categoryItems = pageItems.filter((item) => item.category === category);
               if (!categoryItems.length) return null;
-              return <View key={category} style={styles.category}><Text style={styles.categoryTitle}>{t(categoryTitleKeys[category])}</Text>{categoryItems.map((item) => <KitRow key={item.id} item={item} name={resolveGuideKitItemName(item, t)} />)}</View>;
+              return <View key={category} style={styles.category}><Text style={[styles.categoryTitle, { color: design.accentText }]}>{t(categoryTitleKeys[category])}</Text>{categoryItems.map((item) => <KitRow key={item.id} item={item} name={resolveGuideKitItemName(item, t)} design={design} />)}</View>;
             })}
           </GuidePage>
         );

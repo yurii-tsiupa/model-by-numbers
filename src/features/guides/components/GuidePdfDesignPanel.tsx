@@ -7,14 +7,18 @@ const PAGE_FORMATS: readonly { id: GuidePageFormat; labelKey: TranslationKey }[]
 ];
 
 export function GuidePdfDesignPanel({
+  accentColor,
   disabled,
   pageFormat,
   onPageFormatChange,
+  onAccentColorChange,
   t,
 }: {
+  accentColor: string;
   disabled: boolean;
   pageFormat: GuidePageFormat;
   onPageFormatChange: (pageFormat: GuidePageFormat) => void;
+  onAccentColorChange: (accentColor: string) => void;
   t: (key: TranslationKey) => string;
 }) {
   return (
@@ -41,6 +45,20 @@ export function GuidePdfDesignPanel({
         })}
       </div>
       <p className="mt-2 text-[11px] leading-4 text-[var(--text-secondary)]">{t("guide.pdfDesign.pageFormat.helper")}</p>
+      <div className="mt-4 border-t border-[var(--border)] pt-4">
+        <h2 className="text-sm font-semibold text-[var(--text)]">{t("guide.pdfDesign.accentColor.label")}</h2>
+        <div className="mt-2 flex items-center gap-2.5 rounded-xl bg-[var(--surface)] p-2">
+          <input
+            type="color"
+            value={accentColor}
+            disabled={disabled}
+            aria-label={t("guide.pdfDesign.accentColor.label")}
+            onChange={(event) => onAccentColorChange(event.target.value)}
+            className={`h-8 w-10 rounded-lg border border-[var(--border)] bg-[var(--card)] p-1 ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+          />
+          <span className="font-[family-name:var(--font-mono)] text-xs font-medium text-[var(--text)]">{accentColor}</span>
+        </div>
+      </div>
     </section>
   );
 }

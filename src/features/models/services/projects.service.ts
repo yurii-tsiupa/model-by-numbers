@@ -35,6 +35,7 @@ import { assignDetectedPartColor,getSingleIncludedDetectedPart } from "@/feature
 import { initializeDefaultPaintingStep } from "@/features/model-editor/lib/initializeDefaultPaintingStep";
 import { normalizeGuideSectionSettings, type GuideSectionSettings } from "@/features/guides/types/GuideSectionSettings";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
+import { normalizeGuideAccentColor } from "@/features/guides/design/guideDesignTokens";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -48,9 +49,9 @@ type StoredProjectPart = Omit<ProjectPart, "meshUuid" | "sourcePartKey"> & {
 function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null; }
 function normalizeGuideTemplateSettings(value: unknown): Partial<GuideTemplateSettings> | undefined {
   if (!isRecord(value)) return undefined;
-  return value.pageFormat === "a4" || value.pageFormat === "letter"
-    ? { pageFormat: value.pageFormat }
-    : undefined;
+  const pageFormat = value.pageFormat === "a4" || value.pageFormat === "letter" ? value.pageFormat : undefined;
+  const accentColor = typeof value.accentColor === "string" ? normalizeGuideAccentColor(value.accentColor) ?? undefined : undefined;
+  return pageFormat || accentColor ? { ...(pageFormat ? { pageFormat } : {}), ...(accentColor ? { accentColor } : {}) } : undefined;
 }
 function isVector3Like(value: unknown): value is Vector3Like { return isRecord(value) && [value.x, value.y, value.z].every((item) => typeof item === "number" && Number.isFinite(item)); }
 function parsePaintMarker(value: unknown, index: number): PaintMarker | null {
@@ -441,7 +442,9 @@ export async function saveProjectGuideTemplateSettings(projectId: string, userId
   const reference = doc(db, "projects", projectId);
   const snapshot = await getDoc(reference);
   if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error("Unable to update this project.");
-  await updateDoc(reference, { guideTemplateSettings: settings, updatedAt: serverTimestamp() });
+  const accentColor = settings.accentColor === undefined ? undefined : normalizeGuideAccentColor(settings.accentColor);
+  if (settings.accentColor !== undefined && !accentColor) throw new Error("Invalid Guide accent color.");
+  await updateDoc(reference, { guideTemplateSettings: { ...settings, ...(accentColor ? { accentColor } : {}) }, updatedAt: serverTimestamp() });
 }
 
 export async function saveProjectGuideSectionSettings(projectId: string, userId: string, settings: GuideSectionSettings): Promise<void> {

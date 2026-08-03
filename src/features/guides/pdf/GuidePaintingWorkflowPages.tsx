@@ -12,6 +12,8 @@ import { GuidePage } from "./GuidePage";
 import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import { PrintSectionStart } from "./PrintSectionStart";
 import { guidePdfStyles, pdfColors } from "./guidePdfStyles";
+import { useGuidePdfDesignTokens } from "./GuidePdfTemplateContext";
+import type { GuideDesignTokens } from "../design/guideDesignTokens";
 
 const styles = StyleSheet.create({
   intro: { color: pdfColors.muted, fontSize: 9, marginBottom: 18 },
@@ -24,7 +26,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   header: { alignItems: "flex-start", flexDirection: "row" },
-  number: { color: pdfColors.accent, fontSize: 13, fontWeight: 700, width: 34 },
+  number: { fontSize: 13, fontWeight: 700, width: 34 },
   heading: { flexGrow: 1 },
   title: { fontSize: 12, fontWeight: 700 },
   target: { color: pdfColors.muted, fontSize: 8, marginTop: 3 },
@@ -52,7 +54,6 @@ const styles = StyleSheet.create({
   preview: { objectFit: "contain" },
   caption: {
     alignItems: "center",
-    backgroundColor: pdfColors.accentLight,
     borderRadius: tokens.radiusPill,
     bottom: tokens.spacingXs,
     height: 14,
@@ -62,7 +63,6 @@ const styles = StyleSheet.create({
     position: "absolute",
   },
   captionText: {
-    color: pdfColors.accent,
     fontFamily: tokens.bodyFont,
     fontSize: 8,
     fontWeight: 500,
@@ -78,14 +78,14 @@ function getMeaningfulPreviewLabel(label: string): string | null {
   return trimmed.length>28?`${trimmed.slice(0,27).trimEnd()}…`:trimmed;
 }
 
-function StepBlock({ resolved, noColor, missingColor }: { resolved: ResolvedGuideStepLayout; noColor: string; missingColor: string }) {
+function StepBlock({ resolved, noColor, missingColor, design }: { resolved: ResolvedGuideStepLayout; noColor: string; missingColor: string; design: GuideDesignTokens }) {
   const { step, rows } = resolved;
 
   return (
     <View style={styles.step} wrap={false}>
       <View>
         <View style={styles.header}>
-          <Text style={styles.number}>{String(step.order).padStart(2, "0")}</Text>
+          <Text style={[styles.number, { color: design.accentText }]}>{String(step.order).padStart(2, "0")}</Text>
           <View style={styles.heading}>
             <Text style={styles.title}>{step.title}</Text>
             <Text style={styles.target}>{step.targetSummary}</Text>
@@ -110,7 +110,7 @@ function StepBlock({ resolved, noColor, missingColor }: { resolved: ResolvedGuid
               return <View key={image.preview.id} wrap={false} style={{width:image.width,marginRight:imageIndex<row.images.length-1?GUIDE_STEP_LAYOUT.imageGap:0}}>
                 <View style={[styles.previewFrame,{height:image.height}]}>
                   <Image src={image.preview.image.src} style={[styles.preview,{height:image.height,width:image.width}]}/>
-                  {label?<View style={styles.caption}><Text style={styles.captionText}>{label}</Text></View>:null}
+                  {label?<View style={[styles.caption, { backgroundColor: design.accentSoft }]}><Text style={[styles.captionText, { color: design.accentText }]}>{label}</Text></View>:null}
                 </View>
               </View>;
             })}
@@ -123,6 +123,7 @@ function StepBlock({ resolved, noColor, missingColor }: { resolved: ResolvedGuid
 
 export function GuidePaintingWorkflowPages({ pageNumberStart, totalPages, viewModel }: { pageNumberStart: number; totalPages: number; viewModel: GuideViewModel }) {
   const { workflowGuide: guide, locale, metrics, paintingPages } = viewModel;
+  const design = useGuidePdfDesignTokens();
   const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
   return (
     <>
@@ -137,7 +138,7 @@ export function GuidePaintingWorkflowPages({ pageNumberStart, totalPages, viewMo
               </Text>
             </PrintSectionStart>
           ) : <Text style={{ color: pdfColors.secondary, fontSize: tokens.sizeBody, fontWeight: tokens.weightSemibold, marginBottom: tokens.spacingMd }}>{t("guide.workflow.instructions")}</Text>}
-          {page.steps.map((resolved) => <StepBlock key={resolved.step.id} resolved={resolved} noColor={t("painting.stage.noColor")} missingColor={t("guide.workflow.missingColor")} />)}
+          {page.steps.map((resolved) => <StepBlock key={resolved.step.id} resolved={resolved} noColor={t("painting.stage.noColor")} missingColor={t("guide.workflow.missingColor")} design={design} />)}
         </GuidePage>
       ))}
     </>

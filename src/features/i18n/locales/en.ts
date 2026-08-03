@@ -346,6 +346,7 @@ export const en={
   "guide.pdfDesign.pageFormat.a4":"A4",
   "guide.pdfDesign.pageFormat.letter":"Letter",
   "guide.pdfDesign.pageFormat.helper":"Page format affects page dimensions and content pagination.",
+  "guide.pdfDesign.accentColor.label":"Accent color",
   "guide.pdfDesign.saveFailed":"Could not save the PDF design settings.",
   "guide.sections.title":"Guide sections",
   "guide.sections.helper":"Optional pages can be added to or removed from the guide.",

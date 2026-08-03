@@ -5,6 +5,7 @@ import { defaultGuideDesignTokens as tokens } from "../design/guideDesignTokens"
 import type { GuideViewModel } from "../lib/getGuideViewModel";
 import { GuidePage } from "./GuidePage";
 import { pdfColors } from "./guidePdfStyles";
+import { useGuidePdfDesignTokens } from "./GuidePdfTemplateContext";
 
 const styles = StyleSheet.create({
   content: {
@@ -44,7 +45,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   cta: {
-    color: pdfColors.accent,
     fontFamily: tokens.bodyFont,
     fontSize: tokens.sizeBody,
     fontWeight: tokens.weightSemibold,
@@ -70,6 +70,7 @@ export function GuideBackCoverPage({
   viewModel: GuideViewModel;
 }) {
   const { backCoverData, guide, locale } = viewModel;
+  const design = useGuidePdfDesignTokens();
   if (!backCoverData) return null;
   const destination = backCoverData.websiteUrl ?? backCoverData.socialUrl ?? backCoverData.qrValue;
   const accentStyle = backCoverData.accentColor ? { color: backCoverData.accentColor } : undefined;
@@ -89,7 +90,7 @@ export function GuideBackCoverPage({
         {backCoverData.brandName ? <Text style={accentStyle ? [styles.brandName, accentStyle] : styles.brandName}>{backCoverData.brandName}</Text> : null}
         {backCoverData.headline ? <Text style={styles.headline}>{backCoverData.headline}</Text> : null}
         {backCoverData.description ? <Text style={styles.description}>{backCoverData.description}</Text> : null}
-        {backCoverData.ctaText ? <Text style={accentStyle ? [styles.cta, accentStyle] : styles.cta}>{backCoverData.ctaText}</Text> : null}
+        {backCoverData.ctaText ? <Text style={[styles.cta, accentStyle ?? { color: design.accentText }]}>{backCoverData.ctaText}</Text> : null}
         {destination ? <Text style={styles.destination}>{destination}</Text> : null}
       </View>
     </GuidePage>

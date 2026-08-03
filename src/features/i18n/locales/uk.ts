@@ -347,6 +347,7 @@ export const uk:TranslationDictionary={
  "guide.pdfDesign.pageFormat.a4":"A4",
  "guide.pdfDesign.pageFormat.letter":"Letter",
  "guide.pdfDesign.pageFormat.helper":"Формат впливає на розміри сторінок і розподіл контенту.",
+ "guide.pdfDesign.accentColor.label":"Акцентний колір",
  "guide.pdfDesign.saveFailed":"Не вдалося зберегти налаштування оформлення PDF.",
  "guide.sections.title":"Розділи гайду",
  "guide.sections.helper":"Додаткові сторінки можна додавати або прибирати з гайду.",

@@ -7,6 +7,7 @@ import type { GuideViewModel } from "../lib/getGuideViewModel";
 import { GuidePage } from "./GuidePage";
 import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import { guidePdfStyles, pdfColors } from "./guidePdfStyles";
+import { useGuidePdfDesignTokens } from "./GuidePdfTemplateContext";
 
 const styles = StyleSheet.create({
   list: {
@@ -23,7 +24,6 @@ const styles = StyleSheet.create({
     paddingVertical: tokens.spacingMd,
   },
   number: {
-    color: pdfColors.accent,
     fontFamily: tokens.monoFont,
     fontSize: tokens.sizeCaption,
     width: 34,
@@ -54,6 +54,7 @@ export function GuideTroubleshootingPage({
   viewModel: GuideViewModel;
 }) {
   const { guide, locale, troubleshootingData } = viewModel;
+  const design = useGuidePdfDesignTokens();
   if (!troubleshootingData) return null;
   const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
 
@@ -65,7 +66,7 @@ export function GuideTroubleshootingPage({
       <View style={styles.list}>
         {troubleshootingData.items.map((item, itemIndex) => (
           <View key={item.id} style={styles.item} wrap={false}>
-            <Text style={styles.number}>{String(itemIndex + 1).padStart(2, "0")}</Text>
+            <Text style={[styles.number, { color: design.accentText }]}>{String(itemIndex + 1).padStart(2, "0")}</Text>
             <View style={styles.copy}>
               <Text style={styles.title}>{item.source === "default" ? t(item.titleKey) : item.title}</Text>
               <Text style={styles.description}>{item.source === "default" ? t(item.descriptionKey) : item.description}</Text>

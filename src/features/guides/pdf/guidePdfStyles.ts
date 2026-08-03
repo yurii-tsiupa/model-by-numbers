@@ -2,10 +2,6 @@ import { StyleSheet } from "@react-pdf/renderer";
 import { defaultGuideDesignTokens as tokens } from "../design/guideDesignTokens";
 
 export const pdfColors = {
-  accent: tokens.accentColor,
-  accentHover: tokens.accentHover,
-  accentLight: tokens.accentSoft,
-  teal: tokens.tealSecondary,
   background: tokens.paperBackground,
   surface: tokens.surfaceBackground,
   border: tokens.borderColor,
@@ -49,23 +45,19 @@ export const guidePdfStyles = StyleSheet.create({
   eyebrow: {
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: pdfColors.accentLight,
     borderRadius: tokens.radiusPill,
-    color: pdfColors.accent,
     flexDirection: "row",
     marginBottom: tokens.spacingSm,
     paddingHorizontal: tokens.spacingSm,
     paddingVertical: tokens.spacingXs,
   },
   eyebrowDot: {
-    backgroundColor: pdfColors.accent,
     borderRadius: tokens.radiusPill,
     height: tokens.spacingXs,
     marginRight: tokens.spacingXs,
     width: tokens.spacingXs,
   },
   eyebrowText: {
-    color: pdfColors.accent,
     fontFamily: tokens.eyebrowFont,
     fontSize: tokens.sizeEyebrow,
     fontWeight: tokens.weightSemibold,

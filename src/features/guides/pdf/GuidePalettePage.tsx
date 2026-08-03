@@ -10,7 +10,7 @@ import { isLightGuideColor } from "../design/isLightGuideColor";
 import { GuidePage } from "./GuidePage";
 import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import { getGuidePdfPageCapacity } from "./resolveGuidePdfPagePlan";
-import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
+import { useGuidePdfDesignTokens, useGuidePdfTemplate } from "./GuidePdfTemplateContext";
 import {
   guidePdfStyles,
   pdfColors,
@@ -69,9 +69,7 @@ const styles = StyleSheet.create({
     fontSize: tokens.sizeCaption,
   },
   usage: {
-    backgroundColor: pdfColors.accentLight,
     borderRadius: tokens.radiusPill,
-    color: pdfColors.accent,
     fontFamily: tokens.monoFont,
     fontSize: tokens.sizeCaption,
     paddingHorizontal: tokens.spacingSm,
@@ -86,6 +84,7 @@ export function GuidePalettePage({
 }: GuidePalettePageProps) {
   const {guide,usedPalette}=viewModel;
   const colorsPerPage = getGuidePdfPageCapacity(useGuidePdfTemplate().pageFormat).paletteColors;
+  const design = useGuidePdfDesignTokens();
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1],values?:Parameters<typeof translate>[2])=>translate(locale,key,values);
   const pageCount = Math.max(
     1,
@@ -130,7 +129,7 @@ export function GuidePalettePage({
                     <Text style={styles.name}>{formatGuideColorCode(color.number)} · {color.name}</Text>
                     <View style={styles.details}>
                       <Text style={styles.hex}>{color.hex.toUpperCase()}</Text>
-                      <Text style={styles.usage}>{formatCount(locale,color.usageCount,"step")}</Text>
+                      <Text style={[styles.usage, { backgroundColor: design.accentSoft, color: design.accentText }]}>{formatCount(locale,color.usageCount,"step")}</Text>
                     </View>
                   </View>
                 </View>

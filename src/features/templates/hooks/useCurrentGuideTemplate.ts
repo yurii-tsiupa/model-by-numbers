@@ -8,6 +8,7 @@ import type { Project } from "@/features/models/types/Project";
 import { resolveGuideTemplate } from "../lib/resolveGuideTemplate";
 import type { GuideTemplateSettings } from "../types/GuideLibraryTemplate";
 import { useGuideTemplates } from "./useGuideTemplates";
+import { defaultGuideDesignTokens } from "@/features/guides/design/guideDesignTokens";
 
 export function useCurrentGuideTemplate(project: Project | undefined, userId: string | undefined, overrideTemplateId?: string) {
   const templates = useGuideTemplates(userId);
@@ -17,7 +18,11 @@ export function useCurrentGuideTemplate(project: Project | undefined, userId: st
   const resolvedTemplate = resolveGuideTemplate(selectedId, templates.data ?? []);
   const current = {
     ...resolvedTemplate,
-    settings: { ...resolvedTemplate.settings, ...project?.guideTemplateSettings },
+    settings: {
+      ...resolvedTemplate.settings,
+      ...project?.guideTemplateSettings,
+      accentColor: project?.guideTemplateSettings?.accentColor ?? defaultGuideDesignTokens.accentColor,
+    },
   } as typeof resolvedTemplate;
 
   const selection = useMutation({
