@@ -47,12 +47,14 @@ import { GuidePdfTemplateProvider } from "../../pdf/GuidePdfTemplateContext";
 import { GuidePdfRenderModeProvider, type GuidePdfRenderMode } from "../../pdf/GuidePdfRenderModeContext";
 import { resolveGuidePdfPagePlan } from "../../pdf/resolveGuidePdfPagePlan";
 import { Fragment } from "react";
+import type { GuidePdfSectionSelection } from "../../pdf/ModelGuideDocument";
 
 type ClassicGuideDocumentProps = {
   guide: ModelGuide;
   viewModel?: GuideViewModel;
   templateSettings?: GuideTemplateSettings;
   renderMode?: GuidePdfRenderMode;
+  sectionSelection?: GuidePdfSectionSelection;
 };
 
 export function ClassicGuideDocument({
@@ -60,19 +62,23 @@ export function ClassicGuideDocument({
   viewModel,
   templateSettings,
   renderMode = "export",
+  sectionSelection,
 }: ClassicGuideDocumentProps) {
   const model =
     viewModel ?? getGuideViewModel(guide);
   const exportDate = new Date();
   const metadata = createPdfDocumentMetadata(guide, exportDate);
   const pagePlan = resolveGuidePdfPagePlan(model);
+  const renderedSections = sectionSelection
+    ? model.documentSections.filter((section) => sectionSelection.sectionIds.includes(section.id))
+    : model.documentSections;
 
   return (
     <GuideDocument
       {...metadata}
     >
       <GuidePdfRenderModeProvider value={renderMode}><GuidePdfTemplateProvider settings={templateSettings}>
-      {model.documentSections.map((section) => {
+      {renderedSections.map((section) => {
         const pageRange = pagePlan.sections[section.id];
         if (!pageRange) return null;
         switch (section.id) {
@@ -80,7 +86,7 @@ export function ClassicGuideDocument({
             return (
               <Fragment key={section.id}>
                 <GuideCoverPage viewModel={model} exportDate={exportDate} pageNumber={pageRange.start} templateSettings={templateSettings} totalPages={pagePlan.totalPages} />
-                {pagePlan.tableOfContents ? <GuideTableOfContentsPage pageNumber={pagePlan.tableOfContents} totalPages={pagePlan.totalPages} viewModel={model} /> : null}
+                {pagePlan.tableOfContents && (sectionSelection?.includeTableOfContents ?? !sectionSelection) ? <GuideTableOfContentsPage pageNumber={pagePlan.tableOfContents} totalPages={pagePlan.totalPages} viewModel={model} /> : null}
               </Fragment>
             );
 

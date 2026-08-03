@@ -20,7 +20,9 @@ import { GuidePreviewHeader } from "./GuidePreviewHeader";
 import { PaginatedGuidePdfPreview } from "./PaginatedGuidePdfPreview";
 import { GuideTemplateSection } from "./GuideTemplateSection";
 import type { GuideLibraryTemplate, UserGuideTemplate } from "@/features/templates/types/GuideLibraryTemplate";
-import type { GuideContentSectionId } from "../config/guideSectionRegistry";
+import { GUIDE_SECTION_REGISTRY, type GuideContentSectionId } from "../config/guideSectionRegistry";
+import type { GuideSectionSettings } from "../types/GuideSectionSettings";
+import { GuideSectionManager } from "./GuideSectionManager";
 
 type GuidePreviewProps = {
   previewProject?: Project;
@@ -36,6 +38,8 @@ type GuidePreviewProps = {
   onReferencesChange?: (references: GuideReferenceImage[]) => void;
   onOverviewViewsChange?: (views: GuideOverviewView[]) => void;
   onCaptureOverview?: (viewId:string|null,type:GuideOverviewView["type"])=>void;
+  onSectionSettingsChange?: (settings: GuideSectionSettings) => Promise<void>;
+  isUpdatingSectionSettings?: boolean;
 };
 
 export function GuidePreview({
@@ -52,6 +56,8 @@ export function GuidePreview({
   onReferencesChange,
   onOverviewViewsChange,
   onCaptureOverview,
+  onSectionSettingsChange,
+  isUpdatingSectionSettings = false,
 }: GuidePreviewProps) {
   const resolvedGuide = useResolvedGuideAssets(guide, previewProject);
   const viewModel = useGuideViewModel(resolvedGuide);
@@ -61,9 +67,15 @@ export function GuidePreview({
     sections,
   } = viewModel;
   const [observedActiveSectionId, setObservedActiveSectionId] = useState<GuideContentSectionId>();
+  const observedSectionOrder = GUIDE_SECTION_REGISTRY.findIndex((section) => section.contentSectionId === observedActiveSectionId);
+  const nearestSectionId = sections.reduce<{ distance: number; id?: GuideContentSectionId }>((nearest, section) => {
+    const sectionOrder = GUIDE_SECTION_REGISTRY.findIndex((definition) => definition.contentSectionId === section.id);
+    const distance = Math.abs(sectionOrder - observedSectionOrder);
+    return distance < nearest.distance ? { distance, id: section.id } : nearest;
+  }, { distance: Number.POSITIVE_INFINITY }).id;
   const activeSectionId = sections.some((section) => section.id === observedActiveSectionId)
     ? observedActiveSectionId
-    : sections[0]?.id;
+    : nearestSectionId;
   const handleActiveSectionChange = useCallback((sectionId: GuideContentSectionId) => {
     setObservedActiveSectionId(sectionId);
   }, []);
@@ -100,7 +112,7 @@ export function GuidePreview({
     values?: Parameters<typeof translate>[2],
   ) => translate(locale, key, values);
   const overviewDraftViews:GuideOverviewView[]=guide.overviewViews??viewModel.modelViews.map((view,index)=>({id:view.id,type:index===0?"clean":viewModel.targetMode==="markers"?"marker-map":viewModel.targetMode==="region"?"painted-regions":"colored-parts",image:view.image,order:index}));
-  const hasGuideTools = Boolean(onSelectTemplate || (onOverviewViewsChange && onCaptureOverview) || onReferencesChange);
+  const hasGuideTools = Boolean(onSelectTemplate || onSectionSettingsChange || (onOverviewViewsChange && onCaptureOverview) || onReferencesChange);
 
   const savedGuideIdRef = useRef<string | null>(null);
 
@@ -228,6 +240,7 @@ export function GuidePreview({
           <div className="space-y-4 border-t border-[var(--border)] p-3">
             <div className="guide-side-panel rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
               {onSelectTemplate ? <GuideTemplateSection current={template} userTemplates={userTemplates} isSelecting={isSelectingTemplate} onSelect={onSelectTemplate}/> : null}
+              {onSectionSettingsChange ? <GuideSectionManager controls={viewModel.sectionControls} disabled={isUpdatingSectionSettings} settings={viewModel.sectionSettings} t={text} onChange={(settings) => { void onSectionSettingsChange(settings).catch(() => setSaveWarning(text("guide.sections.saveFailed"))); }} /> : null}
               {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
             </div>
             {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
@@ -259,6 +272,7 @@ export function GuidePreview({
               <h2 className="text-sm font-semibold">{text("guide.tools")}</h2>
             </div>
             {onSelectTemplate ? <GuideTemplateSection current={template} userTemplates={userTemplates} isSelecting={isSelectingTemplate} onSelect={onSelectTemplate}/> : null}
+            {onSectionSettingsChange ? <GuideSectionManager controls={viewModel.sectionControls} disabled={isUpdatingSectionSettings} settings={viewModel.sectionSettings} t={text} onChange={(settings) => { void onSectionSettingsChange(settings).catch(() => setSaveWarning(text("guide.sections.saveFailed"))); }} /> : null}
             {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
           </div>
           {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}

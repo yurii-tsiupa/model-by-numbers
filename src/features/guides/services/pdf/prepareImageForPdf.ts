@@ -2,6 +2,7 @@ import { PDF_IMAGE } from "./pdfImage.constants";
 
 const PDF_DATA_URL = /^data:image\/(?:png|jpeg);base64,/i;
 const MINIMUM_DATA_URL_LENGTH = 64;
+const PREPARED_IMAGE_CACHE_LIMIT = 64;
 
 export type PrepareImageForPdfOptions = {
   preserveTransparency?: boolean;
@@ -16,6 +17,8 @@ export type PreparedPdfImage = {
   isLowResolution: boolean;
   wasOptimized: boolean;
 };
+
+const preparedImageCache = new Map<string, Promise<PreparedPdfImage>>();
 
 function loadImage(source: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -35,7 +38,7 @@ function hasTransparency(context: CanvasRenderingContext2D, width: number, heigh
   return false;
 }
 
-export async function prepareImageForPdf(source: string, options: PrepareImageForPdfOptions = {}): Promise<PreparedPdfImage> {
+async function prepareImage(source: string, options: PrepareImageForPdfOptions): Promise<PreparedPdfImage> {
   const image = await loadImage(source);
   if (typeof image.decode === "function") await image.decode();
   const sourceWidth = image.naturalWidth;
@@ -73,4 +76,24 @@ export async function prepareImageForPdf(source: string, options: PrepareImageFo
   const originalIsPdfCompatible = PDF_DATA_URL.test(source) && source.length > MINIMUM_DATA_URL_LENGTH;
   const canReuseOriginal = originalIsPdfCompatible && scale === 1 && ((keepTransparency && source.startsWith("data:image/png")) || (!transparent && candidate.length >= source.length));
   return { source: canReuseOriginal ? source : candidate, width: sourceWidth, height: sourceHeight, mimeType: canReuseOriginal && source.startsWith("data:image/png") ? "image/png" : mimeType, isLowResolution: sourceWidth < PDF_IMAGE.minWidth, wasOptimized: !canReuseOriginal };
+}
+
+export function prepareImageForPdf(source: string, options: PrepareImageForPdfOptions = {}): Promise<PreparedPdfImage> {
+  const key = `${options.preserveTransparency === true}:${options.applyWhiteBackground === true}:${source}`;
+  const cached = preparedImageCache.get(key);
+  if (cached) {
+    preparedImageCache.delete(key);
+    preparedImageCache.set(key, cached);
+    return cached;
+  }
+  const prepared = prepareImage(source, options).catch((error) => {
+    preparedImageCache.delete(key);
+    throw error;
+  });
+  preparedImageCache.set(key, prepared);
+  if (preparedImageCache.size > PREPARED_IMAGE_CACHE_LIMIT) {
+    const oldestKey = preparedImageCache.keys().next().value;
+    if (oldestKey) preparedImageCache.delete(oldestKey);
+  }
+  return prepared;
 }

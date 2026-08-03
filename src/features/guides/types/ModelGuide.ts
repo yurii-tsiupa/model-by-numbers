@@ -69,5 +69,6 @@ export type ModelGuide = {
   troubleshootingItems?: import("./GuideTroubleshooting").GuideCustomTroubleshootingItem[];
   includedTroubleshootingItemIds?: string[];
   backCover?: import("./GuideBackCover").GuideBackCover;
+  sectionSettings?: import("./GuideSectionSettings").GuideSectionSettings;
   paintingSummary?: { modelName:string; createdAt:Date; stagesCount:number; estimatedTimeMinutes:number; difficulties:import("@/features/model-editor/types/PaintingWorkflow").PaintingDifficulty[]; isReady:boolean };
 };

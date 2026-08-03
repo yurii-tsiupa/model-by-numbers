@@ -8,6 +8,7 @@ import { DEFAULT_GUIDE_PAGE_FORMAT } from "../types/GuidePageFormat";
 import { getGuidePdfPageSize } from "./printPageConstants";
 import { GuidePageHeader } from "./GuidePageHeader";
 import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
+import { useGuidePdfRenderMode } from "./GuidePdfRenderModeContext";
 
 type GuidePageProps = Omit<ComponentProps<typeof Page>, "children" | "size"> & {
   children: ReactNode;
@@ -21,6 +22,7 @@ type GuidePageProps = Omit<ComponentProps<typeof Page>, "children" | "size"> & {
 
 export function GuidePage({children, locale, pageNumber, projectName, showFooter = true, totalPages, contentStyle, style, wrap = false, ...props}: GuidePageProps) {
   const template=useGuidePdfTemplate();
+  const renderMode=useGuidePdfRenderMode();
   const pageStyle = Array.isArray(style)
     ? [guidePdfStyles.page, {backgroundColor:template.pageBackground,color:template.textColor}, ...style]
     : style
@@ -41,7 +43,7 @@ export function GuidePage({children, locale, pageNumber, projectName, showFooter
     >
       <View style={guidePdfStyles.pageHeader}><GuidePageHeader projectName={projectName}/></View>
       <View style={contentStyles}>{children}</View>
-      {showFooter ? <GuidePageFooter locale={locale} pageNumber={pageNumber} totalPages={totalPages}/> : <View style={guidePdfStyles.pageFooter}/>}
+      {showFooter && renderMode === "export" ? <GuidePageFooter locale={locale} pageNumber={pageNumber} totalPages={totalPages}/> : <View style={guidePdfStyles.pageFooter}/>}
     </Page>
   );
 }

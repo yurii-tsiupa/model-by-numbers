@@ -12,6 +12,7 @@ import { resolveGuideTroubleshootingData } from "./resolveGuideTroubleshootingDa
 import { resolveGuideBackCoverData } from "./resolveGuideBackCoverData";
 import {
   resolveGuideContentsSections,
+  resolveGuideSectionControls,
   resolveGuideSections,
   type GuideSectionMetadata,
 } from "../config/guideSectionRegistry";
@@ -192,7 +193,12 @@ export function getGuideViewModel(
     (part) => referencedPartIds.has(part.id),
   );
   const guideParts = targetMode === "parts" ? referencedParts : [];
-  const assemblyData = resolveGuideAssemblyData(guide, settings);
+  const legacyAssemblyData = resolveGuideAssemblyData(guide, settings);
+  const availableAssemblyData = resolveGuideAssemblyData(guide, {
+    ...settings,
+    includeAssemblyInstructions: true,
+  });
+  const assemblyData = availableAssemblyData;
   const backCoverData = resolveGuideBackCoverData(guide);
   const troubleshootingData = resolveGuideTroubleshootingData(
     guide,
@@ -200,8 +206,14 @@ export function getGuideViewModel(
     Boolean(finishingData),
   );
 
-  const documentSections = resolveGuideSections({
-    hasAssembly: Boolean(assemblyData),
+  const sectionSettings = guide.sectionSettings?.assembly
+    ? guide.sectionSettings
+    : {
+        ...guide.sectionSettings,
+        assembly: { enabled: Boolean(legacyAssemblyData) },
+      };
+  const sectionContext = {
+    hasAssembly: Boolean(availableAssemblyData),
     hasBackCover: Boolean(backCoverData),
     hasExplodedView: settings.includeExplodedView && Boolean(guide.explodedView),
     hasFinishing: Boolean(finishingData),
@@ -212,7 +224,9 @@ export function getGuideViewModel(
     hasPartsOverview: settings.includePartsTable && guideParts.length > 0,
     hasReferences: includedReferences.length > 0,
     hasTroubleshooting: Boolean(troubleshootingData),
-  });
+  };
+  const documentSections = resolveGuideSections(sectionContext, sectionSettings);
+  const sectionControls = resolveGuideSectionControls(sectionContext, sectionSettings);
   const sections: GuideSectionMetadata[] = resolveGuideContentsSections(documentSections);
 
   return {
@@ -227,6 +241,8 @@ export function getGuideViewModel(
     hasPaintingWorkflow,
     assemblyData,
     backCoverData,
+    sectionSettings,
+    sectionControls,
     finishingData,
     troubleshootingData,
     kitItems,

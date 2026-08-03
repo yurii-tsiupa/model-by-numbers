@@ -33,6 +33,7 @@ import { ensurePaletteColor } from "@/features/model-editor/lib/ensurePaletteCol
 import { normalizeHexColor } from "@/features/model-editor/lib/normalizeHexColor";
 import { assignDetectedPartColor,getSingleIncludedDetectedPart } from "@/features/model-editor/lib/assignDetectedPartColor";
 import { initializeDefaultPaintingStep } from "@/features/model-editor/lib/initializeDefaultPaintingStep";
+import { normalizeGuideSectionSettings, type GuideSectionSettings } from "@/features/guides/types/GuideSectionSettings";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -101,6 +102,7 @@ function mapProjectDocument(
     thumbnailUrl: data.thumbnailUrl ?? null,
     thumbnailVersion: typeof data.thumbnailVersion === "number" ? data.thumbnailVersion : undefined,
     selectedGuideTemplateId: typeof data.selectedGuideTemplateId === "string" ? data.selectedGuideTemplateId : undefined,
+    guideSectionSettings: normalizeGuideSectionSettings(data.guideSectionSettings),
 
     status: data.status,
 
@@ -425,6 +427,13 @@ export async function saveProjectGuideTemplate(projectId: string, userId: string
   const snapshot = await getDoc(reference);
   if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error("Unable to update this project.");
   await updateDoc(reference, { selectedGuideTemplateId: templateId, updatedAt: serverTimestamp() });
+}
+
+export async function saveProjectGuideSectionSettings(projectId: string, userId: string, settings: GuideSectionSettings): Promise<void> {
+  const reference = doc(db, "projects", projectId);
+  const snapshot = await getDoc(reference);
+  if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error("Unable to update this project.");
+  await updateDoc(reference, { guideSectionSettings: settings, updatedAt: serverTimestamp() });
 }
 
 export async function saveProjectThumbnailReference({

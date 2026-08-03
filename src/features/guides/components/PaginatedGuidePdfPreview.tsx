@@ -6,13 +6,32 @@ import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 import { translate } from "@/features/i18n/lib/i18n";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
-import type { GuideContentSectionId, GuidePdfSectionId } from "../config/guideSectionRegistry";
+import type { GuideContentSectionId, GuidePdfSectionId, GuideSectionId } from "../config/guideSectionRegistry";
+import { defaultGuideDesignTokens as tokens } from "../design/guideDesignTokens";
+import { getGuidePreviewSectionSignature } from "../lib/getGuidePreviewSectionSignature";
 import type { GuideViewModel } from "../lib/getGuideViewModel";
-import { resolveGuidePdfPagePlan } from "../pdf/resolveGuidePdfPagePlan";
+import { PDF_PAGE_LAYOUT } from "../pdf/printPageConstants";
+import { resolveGuidePdfPagePlan, type GuideResolvedPdfPage } from "../pdf/resolveGuidePdfPagePlan";
+
 type PreviewPage = {
   pageNumber: number;
+  sourceSectionId: GuideSectionId;
   sectionId: GuidePdfSectionId;
+  sectionPageIndex: number;
   isSectionStart: boolean;
+  pdfPage: PDFPageProxy;
+};
+
+type SectionPageGroup = {
+  id: GuideSectionId;
+  metadata: readonly GuideResolvedPdfPage[];
+  signature: string;
+};
+
+type GuideSectionRenderCache = {
+  sectionId: GuideSectionId;
+  signature: string;
+  pages: readonly PDFPageProxy[];
 };
 
 function PdfPageCanvas({ page, scale }: { page: PDFPageProxy; scale: number }) {
@@ -40,11 +59,28 @@ function PdfPageCanvas({ page, scale }: { page: PDFPageProxy; scale: number }) {
 
     return () => {
       cancelled = true;
-      renderTask?.cancel();
+      renderTask.cancel();
     };
   }, [page, scale]);
 
   return <canvas ref={canvasRef} className="block" aria-hidden="true" />;
+}
+
+function resolveSectionGroups(
+  viewModel: GuideViewModel,
+  templateSettings: GuideTemplateSettings,
+): { groups: SectionPageGroup[]; totalPages: number } {
+  const pagePlan = resolveGuidePdfPagePlan(viewModel);
+  const groups = viewModel.documentSections.flatMap((section) => {
+    const metadata = pagePlan.pages.filter((page) => page.sourceSectionId === section.id || (section.id === "cover" && page.sectionId === "toc"));
+    if (!metadata.length) return [];
+    return [{
+      id: section.id,
+      metadata,
+      signature: getGuidePreviewSectionSignature(section.id, viewModel, templateSettings),
+    }];
+  });
+  return { groups, totalPages: pagePlan.totalPages };
 }
 
 export const PaginatedGuidePdfPreview = memo(function PaginatedGuidePdfPreview({
@@ -60,25 +96,31 @@ export const PaginatedGuidePdfPreview = memo(function PaginatedGuidePdfPreview({
   viewModel: GuideViewModel;
   templateSettings: GuideTemplateSettings;
 }) {
-  const [document, setDocument] = useState<PDFDocumentProxy | null>(null);
-  const [pdfPages, setPdfPages] = useState<PDFPageProxy[]>([]);
   const [pages, setPages] = useState<PreviewPage[]>([]);
   const [pageGeometry, setPageGeometry] = useState<{ width: number; height: number } | null>(null);
   const [previewScale, setPreviewScale] = useState(1);
   const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
   const previewRef = useRef<HTMLDivElement>(null);
+  const cacheRef = useRef(new Map<GuideSectionId, GuideSectionRenderCache>());
+  const documentsRef = useRef(new Set<PDFDocumentProxy>());
+  const objectUrlsRef = useRef(new Set<string>());
+  const hasRenderedRef = useRef(false);
   const t = (key: Parameters<typeof translate>[1], values?: Parameters<typeof translate>[2]) => translate(viewModel.locale, key, values);
+
+  useEffect(() => () => {
+    for (const document of documentsRef.current) document.cleanup();
+    for (const objectUrl of objectUrlsRef.current) URL.revokeObjectURL(objectUrl);
+    documentsRef.current.clear();
+    objectUrlsRef.current.clear();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    let loadedDocument: PDFDocumentProxy | undefined;
-    let destroyLoadingTask: (() => Promise<void>) | undefined;
-    let objectUrl: string | undefined;
 
     void (async () => {
       await Promise.resolve();
       if (cancelled) return;
-      setStatus("loading");
+      if (!hasRenderedRef.current) setStatus("loading");
       const [{ generateGuidePdf }, pdfjs] = await Promise.all([
         import("../pdf/generateGuidePdf"),
         import("pdfjs-dist"),
@@ -87,46 +129,77 @@ export const PaginatedGuidePdfPreview = memo(function PaginatedGuidePdfPreview({
         "pdfjs-dist/build/pdf.worker.min.mjs",
         import.meta.url,
       ).toString();
-      const blob = await generateGuidePdf(viewModel, templateSettings, undefined, undefined, "preview");
+
+      const loadBlob = async (blob: Blob): Promise<{ document: PDFDocumentProxy; pages: PDFPageProxy[] }> => {
+        const objectUrl = URL.createObjectURL(blob);
+        objectUrlsRef.current.add(objectUrl);
+        const loadingTask = pdfjs.getDocument({ url: objectUrl });
+        const document = await loadingTask.promise;
+        documentsRef.current.add(document);
+        const loadedPages = await Promise.all(Array.from({ length: document.numPages }, (_, index) => document.getPage(index + 1)));
+        return { document, pages: loadedPages };
+      };
+
+      const { groups, totalPages } = resolveSectionGroups(viewModel, templateSettings);
+      if (!groups.length) throw new Error("The resolved Guide has no preview pages.");
+
+      if (!cacheRef.current.size) {
+        const blob = await generateGuidePdf(viewModel, templateSettings, undefined, undefined, "preview");
+        const loaded = await loadBlob(blob);
+        if (loaded.pages.length !== totalPages) throw new Error(`Resolved guide page count ${totalPages} does not match rendered PDF page count ${loaded.pages.length}.`);
+        for (const group of groups) {
+          cacheRef.current.set(group.id, {
+            sectionId: group.id,
+            signature: group.signature,
+            pages: group.metadata.map((page) => loaded.pages[page.pageNumber - 1]),
+          });
+        }
+      } else {
+        for (const group of groups) {
+          const cached = cacheRef.current.get(group.id);
+          if (cached?.signature === group.signature && cached.pages.length === group.metadata.length) continue;
+          const blob = await generateGuidePdf(
+            viewModel,
+            templateSettings,
+            undefined,
+            undefined,
+            "preview",
+            { sectionIds: [group.id], includeTableOfContents: group.id === "cover" },
+          );
+          const loaded = await loadBlob(blob);
+          if (loaded.pages.length !== group.metadata.length) throw new Error(`Section ${group.id} resolved ${group.metadata.length} pages but rendered ${loaded.pages.length}.`);
+          cacheRef.current.set(group.id, { sectionId: group.id, signature: group.signature, pages: loaded.pages });
+        }
+      }
+
+      const nextPages = groups.flatMap((group) => {
+        const cached = cacheRef.current.get(group.id);
+        if (!cached) return [];
+        return group.metadata.map((metadata, sectionPageIndex) => ({
+          isSectionStart: sectionPageIndex === 0 && metadata.sectionId !== "toc",
+          pageNumber: metadata.pageNumber,
+          sourceSectionId: group.id,
+          sectionId: metadata.sectionId,
+          sectionPageIndex,
+          pdfPage: cached.pages[sectionPageIndex],
+        }));
+      });
+      if (nextPages.length !== totalPages) throw new Error(`Cached guide page count ${nextPages.length} does not match resolved page count ${totalPages}.`);
+      const viewport = nextPages[0].pdfPage.getViewport({ scale: 1 });
       if (cancelled) return;
-      objectUrl = URL.createObjectURL(blob);
-      const loadingTask = pdfjs.getDocument({ url: objectUrl });
-      destroyLoadingTask = () => loadingTask.destroy();
-      loadedDocument = await loadingTask.promise;
-      const loadedPages = await Promise.all(Array.from({ length: loadedDocument.numPages }, (_, index) => loadedDocument!.getPage(index + 1)));
-      const documentViewport = loadedPages[0].getViewport({ scale: 1 });
-
-      const pagePlan = resolveGuidePdfPagePlan(viewModel);
-      if (pagePlan.pages.length !== loadedDocument.numPages) {
-        throw new Error(`Resolved guide page count ${pagePlan.pages.length} does not match rendered PDF page count ${loadedDocument.numPages}.`);
-      }
-      const nextPages = pagePlan.pages.map(({ pageNumber, sectionId }) => ({
-        isSectionStart: sectionId !== "toc" && pagePlan.sectionFirstPage[sectionId] === pageNumber,
-        pageNumber,
-        sectionId,
-      }));
-
-      if (cancelled) {
-        await destroyLoadingTask?.();
-        if (objectUrl) URL.revokeObjectURL(objectUrl);
-        return;
-      }
-      setDocument(loadedDocument);
-      setPdfPages(loadedPages);
       setPages(nextPages);
-      setPageGeometry({ width: documentViewport.width, height: documentViewport.height });
+      setPageGeometry({ width: viewport.width, height: viewport.height });
       setStatus("ready");
+      hasRenderedRef.current = true;
     })().catch((error: unknown) => {
       if (!cancelled) {
         console.error("Failed to generate paginated guide preview", error);
-        setStatus("failed");
+        if (!hasRenderedRef.current) setStatus("failed");
       }
     });
 
     return () => {
       cancelled = true;
-      if (destroyLoadingTask) void destroyLoadingTask();
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [templateSettings, viewModel]);
 
@@ -148,9 +221,7 @@ export const PaginatedGuidePdfPreview = memo(function PaginatedGuidePdfPreview({
     if (!preview || status !== "ready" || !pages.length) return;
     for (const page of preview.querySelectorAll<HTMLElement>("[data-guide-page][data-guide-section]")) {
       const sectionId = page.dataset.guideSection as GuidePdfSectionId | undefined;
-      if (sectionId && sectionId !== "toc" && !sectionPageMap.has(sectionId)) {
-        sectionPageMap.set(sectionId, page);
-      }
+      if (sectionId && sectionId !== "toc" && !sectionPageMap.has(sectionId)) sectionPageMap.set(sectionId, page);
     }
 
     let pendingScrollFrame: number | null = null;
@@ -158,11 +229,8 @@ export const PaginatedGuidePdfPreview = memo(function PaginatedGuidePdfPreview({
     const pendingTarget = pendingSectionId ? sectionPageMap.get(pendingSectionId) : undefined;
     if (pendingTarget) {
       pendingSectionIdRef.current = null;
-      pendingScrollFrame = window.requestAnimationFrame(() => {
-        pendingTarget.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+      pendingScrollFrame = window.requestAnimationFrame(() => pendingTarget.scrollIntoView({ behavior: "smooth", block: "start" }));
     }
-
     return () => {
       if (pendingScrollFrame !== null) window.cancelAnimationFrame(pendingScrollFrame);
       sectionPageMap.clear();
@@ -174,7 +242,6 @@ export const PaginatedGuidePdfPreview = memo(function PaginatedGuidePdfPreview({
     if (!preview || !pages.length) return;
     const pageElements = Array.from(preview.querySelectorAll<HTMLElement>("[data-guide-page]"));
     if (!pageElements.length) return;
-
     let animationFrame: number | null = null;
     const updateActiveSection = () => {
       animationFrame = null;
@@ -187,14 +254,11 @@ export const PaginatedGuidePdfPreview = memo(function PaginatedGuidePdfPreview({
       if (sectionId && sectionId !== "toc") onActiveSectionChange(sectionId);
     };
     const scheduleUpdate = () => {
-      if (animationFrame !== null) return;
-      animationFrame = window.requestAnimationFrame(updateActiveSection);
+      if (animationFrame === null) animationFrame = window.requestAnimationFrame(updateActiveSection);
     };
-
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
     scheduleUpdate();
-
     return () => {
       window.removeEventListener("scroll", scheduleUpdate);
       window.removeEventListener("resize", scheduleUpdate);
@@ -202,29 +266,40 @@ export const PaginatedGuidePdfPreview = memo(function PaginatedGuidePdfPreview({
     };
   }, [onActiveSectionChange, pages]);
 
-  if (status === "failed") {
-    return <div role="alert" className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 text-center text-sm text-[var(--text-secondary)]">{t("guide.error")}</div>;
-  }
-
-  if (status !== "ready" || !document || !pageGeometry || !pages.length || pdfPages.length !== pages.length) {
-    return <div role="status" className="grid min-h-80 place-items-center text-sm text-[var(--text-secondary)]">{t("guide.generating")}</div>;
-  }
+  if (status === "failed") return <div role="alert" className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 text-center text-sm text-[var(--text-secondary)]">{t("guide.error")}</div>;
+  if (status !== "ready" || !pageGeometry || !pages.length) return <div role="status" className="grid min-h-80 place-items-center text-sm text-[var(--text-secondary)]">{t("guide.generating")}</div>;
 
   return (
     <div ref={previewRef} className="w-full space-y-6">
       {pages.map((page) => (
         <section
-          key={page.pageNumber}
+          key={`${page.sourceSectionId}:${page.sectionPageIndex}`}
           id={page.isSectionStart && page.sectionId !== "toc" ? page.sectionId : undefined}
           data-guide-section={page.sectionId}
           data-guide-page={page.pageNumber}
           data-pdf-page={page.pageNumber}
           tabIndex={page.isSectionStart ? -1 : undefined}
-          className="guide-pdf-page mx-auto scroll-mt-24 overflow-hidden bg-white shadow-[0_12px_30px_rgba(15,23,42,0.18)] ring-1 ring-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          className="guide-pdf-page relative mx-auto scroll-mt-24 overflow-hidden bg-white shadow-[0_12px_30px_rgba(15,23,42,0.18)] ring-1 ring-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           style={{ width: pageGeometry.width * previewScale, height: pageGeometry.height * previewScale }}
           aria-label={t("guide.page", { page: page.pageNumber })}
         >
-          <PdfPageCanvas page={pdfPages[page.pageNumber - 1]} scale={previewScale} />
+          <PdfPageCanvas page={page.pdfPage} scale={previewScale} />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute flex items-center justify-end font-[family-name:var(--font-mono)]"
+            style={{
+              bottom: 0,
+              color: tokens.inkMuted,
+              fontSize: 7 * previewScale,
+              height: PDF_PAGE_LAYOUT.footerHeight * previewScale,
+              lineHeight: 1,
+              paddingRight: PDF_PAGE_LAYOUT.paddingRight * previewScale,
+              right: 0,
+              width: pageGeometry.width * previewScale,
+            }}
+          >
+            {page.pageNumber} / {pages.length}
+          </span>
         </section>
       ))}
     </div>

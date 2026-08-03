@@ -28,6 +28,7 @@ import { referencesToGuideImages } from "@/features/references/lib/referenceToDa
 import { loadGuideAssetReferences } from "@/features/guides/services/assets/loadGuideAsset";
 import type { GuideAssetReference } from "@/features/guides/services/assets/types";
 import { useCurrentGuideTemplate } from "@/features/templates/hooks/useCurrentGuideTemplate";
+import { useProjectGuideSectionSettings } from "@/features/guides/hooks/useProjectGuideSectionSettings";
 
 const EMPTY_GUIDE_IMAGES: GuideImages = {
   original: null,
@@ -176,6 +177,7 @@ export default function GuidePage() {
 
   const projectQuery = useProject(projectId, user?.uid);
   const guideTemplate = useCurrentGuideTemplate(projectQuery.data, user?.uid);
+  const guideSections = useProjectGuideSectionSettings(projectQuery.data, user?.uid);
   const referencesQuery = useReferenceImages(projectId);
 
   const [guideReferences, setGuideReferences] = useState<
@@ -333,8 +335,9 @@ export default function GuidePage() {
     backCover: user.displayName?.trim()
       ? { enabled: true, brandName: user.displayName.trim() }
       : undefined,
+    sectionSettings: project.guideSectionSettings,
   });
   guide.assetReferences = capturedProjectId === projectId && assetReferences.length > 0 ? assetReferences : storedAssetReferences;
 
-  return <GuidePreview previewProject={project} guide={guide} template={guideTemplate.current} userTemplates={guideTemplate.templates} isSelectingTemplate={guideTemplate.isSelecting} onSelectTemplate={async id => { await guideTemplate.select(id); }} onReferencesChange={(references) => { setGuideReferences(references); setDraftGuideReferences(projectId, references); }} onOverviewViewsChange={setOverviewViews} onCaptureOverview={(viewId,type)=>{requestOverviewCapture({projectId,viewId,type});}} />;
+  return <GuidePreview previewProject={project} guide={guide} template={guideTemplate.current} userTemplates={guideTemplate.templates} isSelectingTemplate={guideTemplate.isSelecting} onSelectTemplate={async id => { await guideTemplate.select(id); }} onSectionSettingsChange={async settings => { await guideSections.mutateAsync(settings); }} isUpdatingSectionSettings={guideSections.isPending} onReferencesChange={(references) => { setGuideReferences(references); setDraftGuideReferences(projectId, references); }} onOverviewViewsChange={setOverviewViews} onCaptureOverview={(viewId,type)=>{requestOverviewCapture({projectId,viewId,type});}} />;
 }

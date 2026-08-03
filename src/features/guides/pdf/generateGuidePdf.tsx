@@ -1,7 +1,7 @@
 import { pdf } from "@react-pdf/renderer";
 
 import type { GuideViewModel } from "../lib/getGuideViewModel";
-import { ModelGuideDocument } from "./ModelGuideDocument";
+import { ModelGuideDocument, type GuidePdfSectionSelection } from "./ModelGuideDocument";
 import { prepareGuideImagesForPdf } from "./prepareGuideImagesForPdf";
 import { PdfExportError } from "../services/pdf/pdfExportErrors";
 import type { PdfExportProgress } from "../services/pdf/types";
@@ -36,6 +36,7 @@ export async function generateGuidePdf(
   onImageWarning?: (warning: { code: "IMAGE_LOAD_FAILED" | "LOW_RESOLUTION_IMAGE"; count: number }) => void,
   onProgress?: (progress:PdfExportProgress)=>void,
   renderMode: GuidePdfRenderMode = "export",
+  sectionSelection?: GuidePdfSectionSelection,
 ): Promise<Blob> {
   const {guide}=viewModel;
   if (!guide.projectId || !guide.title || guide.partsCount < 0) {
@@ -56,7 +57,7 @@ export async function generateGuidePdf(
   });
   diagnoseInvalidPreviewDimensions(preparedSteps.viewModel);
   let renderer;
-  try{renderer=pdf(<ModelGuideDocument renderMode={renderMode} templateSettings={templateSettings} viewModel={{...preparedSteps.viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts},modelViews:preparedModelViews,assemblyData:resolveGuideAssemblyData(prepared.guide,preparedSteps.viewModel.settings),backCoverData:resolveGuideBackCoverData(prepared.guide)}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
+  try{renderer=pdf(<ModelGuideDocument renderMode={renderMode} sectionSelection={sectionSelection} templateSettings={templateSettings} viewModel={{...preparedSteps.viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts},modelViews:preparedModelViews,assemblyData:resolveGuideAssemblyData(prepared.guide,preparedSteps.viewModel.settings),backCoverData:resolveGuideBackCoverData(prepared.guide)}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
   onProgress?.({status:"generating",progress:85});
   let blob:Blob;try{blob=await renderer.toBlob();}catch(error){throw new PdfExportError("PDF_GENERATION_FAILED",error);}
 
