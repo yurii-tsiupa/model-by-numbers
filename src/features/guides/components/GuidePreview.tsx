@@ -19,10 +19,12 @@ import { GuideModelOverviewManager } from "./GuideModelOverviewManager";
 import { GuidePreviewHeader } from "./GuidePreviewHeader";
 import { PaginatedGuidePdfPreview } from "./PaginatedGuidePdfPreview";
 import { GuideTemplateSection } from "./GuideTemplateSection";
-import type { GuideLibraryTemplate, UserGuideTemplate } from "@/features/templates/types/GuideLibraryTemplate";
+import type { GuideLibraryTemplate, GuideTemplateSettings, UserGuideTemplate } from "@/features/templates/types/GuideLibraryTemplate";
 import { GUIDE_SECTION_REGISTRY, type GuideContentSectionId } from "../config/guideSectionRegistry";
 import type { GuideSectionSettings } from "../types/GuideSectionSettings";
 import { GuideSectionManager } from "./GuideSectionManager";
+import { GuidePdfDesignPanel } from "./GuidePdfDesignPanel";
+import { GuideSidebarPanelSwitcher, type GuideSidebarPanel } from "./GuideSidebarPanelSwitcher";
 
 type GuidePreviewProps = {
   previewProject?: Project;
@@ -35,6 +37,8 @@ type GuidePreviewProps = {
   userTemplates?: readonly UserGuideTemplate[];
   isSelectingTemplate?: boolean;
   onSelectTemplate?: (id: string) => Promise<void>;
+  onTemplateSettingsChange?: (settings: Partial<GuideTemplateSettings>) => Promise<void>;
+  isUpdatingTemplateSettings?: boolean;
   onReferencesChange?: (references: GuideReferenceImage[]) => void;
   onOverviewViewsChange?: (views: GuideOverviewView[]) => void;
   onCaptureOverview?: (viewId:string|null,type:GuideOverviewView["type"])=>void;
@@ -53,6 +57,8 @@ export function GuidePreview({
   userTemplates = [],
   isSelectingTemplate = false,
   onSelectTemplate,
+  onTemplateSettingsChange,
+  isUpdatingTemplateSettings = false,
   onReferencesChange,
   onOverviewViewsChange,
   onCaptureOverview,
@@ -67,6 +73,7 @@ export function GuidePreview({
     sections,
   } = viewModel;
   const [observedActiveSectionId, setObservedActiveSectionId] = useState<GuideContentSectionId>();
+  const [activeSidebarPanel, setActiveSidebarPanel] = useState<GuideSidebarPanel>("tools");
   const observedSectionOrder = GUIDE_SECTION_REGISTRY.findIndex((section) => section.contentSectionId === observedActiveSectionId);
   const nearestSectionId = sections.reduce<{ distance: number; id?: GuideContentSectionId }>((nearest, section) => {
     const sectionOrder = GUIDE_SECTION_REGISTRY.findIndex((definition) => definition.contentSectionId === section.id);
@@ -112,7 +119,7 @@ export function GuidePreview({
     values?: Parameters<typeof translate>[2],
   ) => translate(locale, key, values);
   const overviewDraftViews:GuideOverviewView[]=guide.overviewViews??viewModel.modelViews.map((view,index)=>({id:view.id,type:index===0?"clean":viewModel.targetMode==="markers"?"marker-map":viewModel.targetMode==="region"?"painted-regions":"colored-parts",image:view.image,order:index}));
-  const hasGuideTools = Boolean(onSelectTemplate || onSectionSettingsChange || (onOverviewViewsChange && onCaptureOverview) || onReferencesChange);
+  const hasGuideTools = Boolean(onSelectTemplate || onTemplateSettingsChange || onSectionSettingsChange || (onOverviewViewsChange && onCaptureOverview) || onReferencesChange);
 
   const savedGuideIdRef = useRef<string | null>(null);
 
@@ -171,6 +178,11 @@ export function GuidePreview({
         behavior: "smooth",
         block: "start",
       });
+  }
+
+  function handlePageFormatChange(pageFormat: GuideTemplateSettings["pageFormat"]) {
+    if (!onTemplateSettingsChange || pageFormat === template.settings.pageFormat) return;
+    void onTemplateSettingsChange({ pageFormat }).catch(() => setSaveWarning(text("guide.pdfDesign.saveFailed")));
   }
 
   return (
@@ -234,16 +246,21 @@ export function GuidePreview({
         {hasGuideTools ? <details data-guide-controls className="group mb-5 border-y border-[var(--border)] bg-[var(--card)] 2xl:hidden">
           <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-3 text-sm font-semibold text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">
             <SlidersHorizontal className="size-4 text-[var(--accent)]" aria-hidden="true" />
-            {text("guide.tools")}
+            {text(activeSidebarPanel === "tools" ? "guide.tools" : "guide.pdfDesign.title")}
             <ChevronDown className="ml-auto size-4 text-[var(--text-secondary)] transition-transform group-open:rotate-180" aria-hidden="true" />
           </summary>
           <div className="space-y-4 border-t border-[var(--border)] p-3">
-            <div className="guide-side-panel rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
-              {onSelectTemplate ? <GuideTemplateSection current={template} userTemplates={userTemplates} isSelecting={isSelectingTemplate} onSelect={onSelectTemplate}/> : null}
-              {onSectionSettingsChange ? <GuideSectionManager controls={viewModel.sectionControls} disabled={isUpdatingSectionSettings} settings={viewModel.sectionSettings} t={text} onChange={(settings) => { void onSectionSettingsChange(settings).catch(() => setSaveWarning(text("guide.sections.saveFailed"))); }} /> : null}
-              {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
+            {onTemplateSettingsChange ? <GuideSidebarPanelSwitcher activePanel={activeSidebarPanel} onChange={setActiveSidebarPanel} t={text} /> : null}
+            <div key={activeSidebarPanel} className="space-y-4 transition-[opacity,transform] duration-200 ease-out starting:translate-x-1 starting:opacity-0 motion-reduce:transition-none">
+              {activeSidebarPanel === "tools" ? <>
+                <div className="guide-side-panel rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+                  {onSelectTemplate ? <GuideTemplateSection current={template} userTemplates={userTemplates} isSelecting={isSelectingTemplate} onSelect={onSelectTemplate}/> : null}
+                  {onSectionSettingsChange ? <GuideSectionManager controls={viewModel.sectionControls} disabled={isUpdatingSectionSettings} settings={viewModel.sectionSettings} t={text} onChange={(settings) => { void onSectionSettingsChange(settings).catch(() => setSaveWarning(text("guide.sections.saveFailed"))); }} /> : null}
+                  {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
+                </div>
+                {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
+              </> : onTemplateSettingsChange ? <GuidePdfDesignPanel disabled={isUpdatingTemplateSettings} pageFormat={template.settings.pageFormat} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
             </div>
-            {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
           </div>
         </details> : null}
         <section data-guide-controls className="mb-3 flex min-h-10 items-center px-1 print:hidden" aria-label={text("guide.preview.pdfTitle")}>
@@ -265,17 +282,22 @@ export function GuidePreview({
         </div>
         </div>
 
-        {hasGuideTools ? <aside data-guide-controls aria-label={text("guide.tools")} className="sticky top-20 col-start-3 row-start-1 hidden max-h-[calc(100vh-6rem)] min-w-0 space-y-4 overflow-x-hidden overflow-y-auto text-[var(--text)] 2xl:block">
-          <div className="guide-side-panel rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
-            <div className="mb-[18px] flex items-center gap-2.5">
-              <span className="grid size-7 place-items-center rounded-lg bg-[var(--accent-soft)]"><SlidersHorizontal className="size-3.5 text-[var(--accent)]" aria-hidden="true" /></span>
-              <h2 className="text-sm font-semibold">{text("guide.tools")}</h2>
-            </div>
-            {onSelectTemplate ? <GuideTemplateSection current={template} userTemplates={userTemplates} isSelecting={isSelectingTemplate} onSelect={onSelectTemplate}/> : null}
-            {onSectionSettingsChange ? <GuideSectionManager controls={viewModel.sectionControls} disabled={isUpdatingSectionSettings} settings={viewModel.sectionSettings} t={text} onChange={(settings) => { void onSectionSettingsChange(settings).catch(() => setSaveWarning(text("guide.sections.saveFailed"))); }} /> : null}
-            {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
+        {hasGuideTools ? <aside data-guide-controls aria-label={text(activeSidebarPanel === "tools" ? "guide.tools" : "guide.pdfDesign.title")} className="sticky top-20 col-start-3 row-start-1 hidden max-h-[calc(100vh-6rem)] min-w-0 space-y-4 overflow-x-hidden overflow-y-auto text-[var(--text)] 2xl:block">
+          {onTemplateSettingsChange ? <GuideSidebarPanelSwitcher activePanel={activeSidebarPanel} onChange={setActiveSidebarPanel} t={text} /> : null}
+          <div key={activeSidebarPanel} className="space-y-4 transition-[opacity,transform] duration-200 ease-out starting:translate-x-1 starting:opacity-0 motion-reduce:transition-none">
+            {activeSidebarPanel === "tools" ? <>
+              <div className="guide-side-panel rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+                <div className="mb-[18px] flex items-center gap-2.5">
+                  <span className="grid size-7 place-items-center rounded-lg bg-[var(--accent-soft)]"><SlidersHorizontal className="size-3.5 text-[var(--accent)]" aria-hidden="true" /></span>
+                  <h2 className="text-sm font-semibold">{text("guide.tools")}</h2>
+                </div>
+                {onSelectTemplate ? <GuideTemplateSection current={template} userTemplates={userTemplates} isSelecting={isSelectingTemplate} onSelect={onSelectTemplate}/> : null}
+                {onSectionSettingsChange ? <GuideSectionManager controls={viewModel.sectionControls} disabled={isUpdatingSectionSettings} settings={viewModel.sectionSettings} t={text} onChange={(settings) => { void onSectionSettingsChange(settings).catch(() => setSaveWarning(text("guide.sections.saveFailed"))); }} /> : null}
+                {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
+              </div>
+              {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
+            </> : onTemplateSettingsChange ? <GuidePdfDesignPanel disabled={isUpdatingTemplateSettings} pageFormat={template.settings.pageFormat} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
           </div>
-          {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
         </aside> : null}
       </div>
     </main>

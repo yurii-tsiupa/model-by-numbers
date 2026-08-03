@@ -7,6 +7,7 @@ import type { ModelDimensions, ModelUnits } from "@/features/model-import/types/
 import type { ManualDetail } from "./ManualDetail";
 import type {SimpleTargetMode} from "./SimpleTargetMode";
 import type { GuideSectionSettings } from "@/features/guides/types/GuideSectionSettings";
+import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
 export type PrinterType = "fdm" | "resin" | "other";
 
@@ -37,6 +38,7 @@ export type Project = {
   thumbnailUrl: string | null;
   thumbnailVersion?: number;
   selectedGuideTemplateId?: string;
+  guideTemplateSettings?: Partial<GuideTemplateSettings>;
   guideSectionSettings?: GuideSectionSettings;
 
   status: ProjectStatus;

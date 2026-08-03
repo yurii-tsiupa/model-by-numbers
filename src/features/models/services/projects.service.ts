@@ -34,6 +34,7 @@ import { normalizeHexColor } from "@/features/model-editor/lib/normalizeHexColor
 import { assignDetectedPartColor,getSingleIncludedDetectedPart } from "@/features/model-editor/lib/assignDetectedPartColor";
 import { initializeDefaultPaintingStep } from "@/features/model-editor/lib/initializeDefaultPaintingStep";
 import { normalizeGuideSectionSettings, type GuideSectionSettings } from "@/features/guides/types/GuideSectionSettings";
+import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -45,6 +46,12 @@ type StoredProjectPart = Omit<ProjectPart, "meshUuid" | "sourcePartKey"> & {
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null; }
+function normalizeGuideTemplateSettings(value: unknown): Partial<GuideTemplateSettings> | undefined {
+  if (!isRecord(value)) return undefined;
+  return value.pageFormat === "a4" || value.pageFormat === "letter"
+    ? { pageFormat: value.pageFormat }
+    : undefined;
+}
 function isVector3Like(value: unknown): value is Vector3Like { return isRecord(value) && [value.x, value.y, value.z].every((item) => typeof item === "number" && Number.isFinite(item)); }
 function parsePaintMarker(value: unknown, index: number): PaintMarker | null {
   if (!isRecord(value) || typeof value.id !== "string" || !isVector3Like(value.position) || !isRecord(value.camera) || !isVector3Like(value.camera.position) || !isVector3Like(value.camera.target)) return null;
@@ -102,6 +109,7 @@ function mapProjectDocument(
     thumbnailUrl: data.thumbnailUrl ?? null,
     thumbnailVersion: typeof data.thumbnailVersion === "number" ? data.thumbnailVersion : undefined,
     selectedGuideTemplateId: typeof data.selectedGuideTemplateId === "string" ? data.selectedGuideTemplateId : undefined,
+    guideTemplateSettings: normalizeGuideTemplateSettings(data.guideTemplateSettings),
     guideSectionSettings: normalizeGuideSectionSettings(data.guideSectionSettings),
 
     status: data.status,
@@ -427,6 +435,13 @@ export async function saveProjectGuideTemplate(projectId: string, userId: string
   const snapshot = await getDoc(reference);
   if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error("Unable to update this project.");
   await updateDoc(reference, { selectedGuideTemplateId: templateId, updatedAt: serverTimestamp() });
+}
+
+export async function saveProjectGuideTemplateSettings(projectId: string, userId: string, settings: Partial<GuideTemplateSettings>): Promise<void> {
+  const reference = doc(db, "projects", projectId);
+  const snapshot = await getDoc(reference);
+  if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error("Unable to update this project.");
+  await updateDoc(reference, { guideTemplateSettings: settings, updatedAt: serverTimestamp() });
 }
 
 export async function saveProjectGuideSectionSettings(projectId: string, userId: string, settings: GuideSectionSettings): Promise<void> {
