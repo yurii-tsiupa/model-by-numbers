@@ -30,7 +30,7 @@ export function AppFooter() {
   const showLogin = !isLoading && !user && pathname !== "/login";
 
   return (
-    <footer className="shrink-0 border-t border-[var(--border)] bg-[var(--card)] py-6 text-[var(--text)] print:hidden">
+    <footer data-global-footer className="shrink-0 border-t border-[var(--border)] bg-[var(--card)] py-6 text-[var(--text)] print:hidden">
       <Container>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-xl">

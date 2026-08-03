@@ -9,6 +9,7 @@ import '@fontsource/jetbrains-mono/500.css';
 
 import { I18nProvider } from '@/features/i18n/context/I18nProvider';
 import { AppFooter } from '@/components/layout/AppFooter';
+import { BackToTopButton } from '@/components/layout/BackToTopButton';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
@@ -46,6 +47,7 @@ export default function RootLayout({
                 <div className="flex min-h-dvh flex-col bg-[var(--bg)] text-[var(--text)]">
                   <div className="flex min-h-0 flex-1 flex-col">{children}</div>
                   <AppFooter />
+                  <BackToTopButton />
                 </div>
               </AuthProvider>
             </I18nProvider>

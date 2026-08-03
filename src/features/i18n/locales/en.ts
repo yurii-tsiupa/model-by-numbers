@@ -300,6 +300,7 @@ export const en={
   "common.moveUp":"Move up",
   "common.moveDown":"Move down",
   "common.remove":"Remove",
+  "common.backToTop":"Back to top",
   "guide.metrics.steps":"Steps",
   "guide.metrics.paintingTargets":"Painting targets",
   "guide.metrics.paintedAreas":"Painted areas",

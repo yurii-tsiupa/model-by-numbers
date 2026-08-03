@@ -301,6 +301,7 @@ export const uk:TranslationDictionary={
  "common.moveUp":"Перемістити вище",
  "common.moveDown":"Перемістити нижче",
  "common.remove":"Видалити",
+ "common.backToTop":"Вгору",
  "guide.metrics.steps":"Кроки",
  "guide.metrics.paintingTargets":"Цілі фарбування",
  "guide.metrics.paintedAreas":"Пофарбовані ділянки",
