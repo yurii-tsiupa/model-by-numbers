@@ -6,20 +6,107 @@ import type { TranslationKey } from "@/features/i18n/locales/en";
 import { blobToDataUrl } from "../lib/blobToDataUrl";
 import { GUIDE_FONT_OPTIONS, type GuideFontId } from "../design/guideFontRegistry";
 import type { GuidePageFormat } from "../types/GuidePageFormat";
+import { normalizeGuideBrandUrl } from "../types/GuideBrandSettings";
 
 const PAGE_FORMATS: readonly { id: GuidePageFormat; labelKey: TranslationKey }[] = [
   { id: "a4", labelKey: "guide.pdfDesign.pageFormat.a4" },
   { id: "letter", labelKey: "guide.pdfDesign.pageFormat.letter" },
 ];
 
+function normalizeUrlDraft(value: string): { error: TranslationKey | null; value: string | null } {
+  if (!value.trim()) return { error: null, value: null };
+  const normalized = normalizeGuideBrandUrl(value);
+  return normalized
+    ? { error: null, value: normalized }
+    : { error: "guide.pdfDesign.branding.invalidUrl", value: null };
+}
+
+function CompactBrandField({
+  disabled,
+  label,
+  maxLength,
+  onSave,
+  t,
+  type = "text",
+  value,
+  validate,
+}: {
+  disabled: boolean;
+  label: TranslationKey;
+  maxLength: number;
+  onSave: (value: string | null) => void;
+  t: (key: TranslationKey) => string;
+  type?: "text" | "url";
+  value: string | null;
+  validate?: (value: string) => { error: TranslationKey | null; value: string | null };
+}) {
+  const [draft, setDraft] = useState(value ?? "");
+  const [persistedValue, setPersistedValue] = useState(value);
+  const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<TranslationKey | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  if (!editing && value !== persistedValue) {
+    setPersistedValue(value);
+    setDraft(value ?? "");
+    setError(null);
+  }
+
+  function startEditing() {
+    setEditing(true);
+    setError(null);
+    window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    });
+  }
+
+  function cancel() {
+    setDraft(value ?? "");
+    setPersistedValue(value);
+    setError(null);
+    setEditing(false);
+  }
+
+  function save() {
+    const normalized = validate?.(draft) ?? { error: null, value: draft.trim().slice(0, maxLength) || null };
+    if (normalized.error) {
+      setError(normalized.error);
+      return;
+    }
+    setDraft(normalized.value ?? "");
+    setPersistedValue(normalized.value);
+    setError(null);
+    setEditing(false);
+    if (normalized.value !== value) onSave(normalized.value);
+  }
+
+  return (
+    <div>
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-secondary)]">{t(label)}</p>
+      <div className="flex items-center gap-1.5">
+        <input ref={inputRef} type={type} aria-label={t(label)} value={draft} maxLength={maxLength} readOnly={!editing} disabled={disabled} onClick={() => { if (!disabled && !editing) startEditing(); }} onChange={(event) => { setDraft(event.target.value); setError(null); }} onKeyDown={(event) => { if (!editing) return; if (event.key === "Enter") { event.preventDefault(); save(); } if (event.key === "Escape") { event.preventDefault(); cancel(); } }} className={`h-8 min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--card)] px-2.5 text-sm text-[var(--text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-text"}`} />
+        {editing ? <>
+          <button type="button" title={t("guide.pdfDesign.branding.save")} aria-label={t("guide.pdfDesign.branding.save")} disabled={disabled} onClick={save} className={`grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:opacity-90"}`}><Check className="size-3.5" aria-hidden="true" /></button>
+          <button type="button" title={t("guide.pdfDesign.branding.cancel")} aria-label={t("guide.pdfDesign.branding.cancel")} disabled={disabled} onClick={cancel} className={`grid size-8 shrink-0 place-items-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--text)]"}`}><X className="size-3.5" aria-hidden="true" /></button>
+        </> : <button type="button" title={t("guide.pdfDesign.branding.editField")} aria-label={t("guide.pdfDesign.branding.editField")} disabled={disabled} onClick={startEditing} className={`grid size-8 shrink-0 place-items-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--text)]"}`}><Pencil className="size-3.5" aria-hidden="true" /></button>}
+      </div>
+      {error ? <p role="alert" className="mt-1.5 text-[11px] leading-4 text-[var(--accent)]">{t(error)}</p> : null}
+    </div>
+  );
+}
+
 export function GuidePdfDesignPanel({
   accentColor,
   brandName,
+  ctaText,
   bodyFontId,
   disabled,
   displayFontId,
   monoFontId,
   logoUrl,
+  qrValue,
+  websiteUrl,
   pageFormat,
   onPageFormatChange,
   onAccentColorChange,
@@ -27,16 +114,22 @@ export function GuidePdfDesignPanel({
   onDisplayFontChange,
   onMonoFontChange,
   onBrandNameChange,
+  onCtaTextChange,
   onLogoChange,
+  onQrValueChange,
+  onWebsiteUrlChange,
   t,
 }: {
   accentColor: string;
   brandName: string | null;
+  ctaText: string | null;
   bodyFontId: GuideFontId;
   disabled: boolean;
   displayFontId: GuideFontId;
   monoFontId: GuideFontId;
   logoUrl: string | null;
+  qrValue: string | null;
+  websiteUrl: string | null;
   pageFormat: GuidePageFormat;
   onPageFormatChange: (pageFormat: GuidePageFormat) => void;
   onAccentColorChange: (accentColor: string) => void;
@@ -44,7 +137,10 @@ export function GuidePdfDesignPanel({
   onDisplayFontChange: (fontId: GuideFontId) => void;
   onMonoFontChange: (fontId: GuideFontId) => void;
   onBrandNameChange: (name: string | null) => void;
+  onCtaTextChange: (ctaText: string | null) => void;
   onLogoChange: (logoUrl: string | null) => void;
+  onQrValueChange: (qrValue: string | null) => void;
+  onWebsiteUrlChange: (websiteUrl: string | null) => void;
   t: (key: TranslationKey) => string;
 }) {
   const [nameDraft, setNameDraft] = useState(brandName ?? "");
@@ -214,6 +310,11 @@ export function GuidePdfDesignPanel({
               <button type="button" title={t("guide.pdfDesign.branding.edit")} aria-label={t("guide.pdfDesign.branding.edit")} disabled={disabled} onClick={startBrandNameEdit} className={`grid size-8 shrink-0 place-items-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--text)]"}`}><Pencil className="size-3.5" aria-hidden="true" /></button>
             )}
           </span>
+        </div>
+        <div className="mt-3 space-y-3">
+          <CompactBrandField disabled={disabled} label="guide.pdfDesign.branding.cta" maxLength={160} value={ctaText} onSave={onCtaTextChange} t={t} />
+          <CompactBrandField disabled={disabled} label="guide.pdfDesign.branding.link" maxLength={2048} type="url" value={websiteUrl} validate={normalizeUrlDraft} onSave={onWebsiteUrlChange} t={t} />
+          <CompactBrandField disabled={disabled} label="guide.pdfDesign.branding.qr" maxLength={2048} type="url" value={qrValue} validate={normalizeUrlDraft} onSave={onQrValueChange} t={t} />
         </div>
         <div className="mt-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-secondary)]">{t("guide.pdfDesign.branding.logo")}</p>

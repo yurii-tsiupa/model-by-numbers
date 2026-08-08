@@ -21,6 +21,7 @@ export type ResolvedGuideBackCover = {
   websiteUrl: string | null;
   socialUrl: string | null;
   qrValue: string | null;
+  qrImageUrl?: string | null;
   ctaText: string | null;
   accentColor: string | null;
   backgroundColor: string | null;

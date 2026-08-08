@@ -10,6 +10,7 @@ import {prepareGuideStepPreviewsForPdf} from "./prepareGuideStepPreviewsForPdf";
 import type { GuidePdfRenderMode } from "./GuidePdfRenderModeContext";
 import { resolveGuideAssemblyData } from "../lib/resolveGuideAssemblyData";
 import { resolveGuideBackCoverData } from "../lib/resolveGuideBackCoverData";
+import { generateGuideQrDataUrl } from "../lib/generateGuideQrDataUrl";
 
 function diagnoseInvalidPreviewDimensions(viewModel: GuideViewModel): void {
   if (process.env.NODE_ENV === "production") return;
@@ -56,8 +57,12 @@ export async function generateGuidePdf(
     return image ? [{ ...view, image }] : [];
   });
   diagnoseInvalidPreviewDimensions(preparedSteps.viewModel);
+  const resolvedBackCover = resolveGuideBackCoverData(prepared.guide);
+  const backCoverData = resolvedBackCover
+    ? { ...resolvedBackCover, qrImageUrl: await generateGuideQrDataUrl(resolvedBackCover.qrValue) }
+    : null;
   let renderer;
-  try{renderer=pdf(<ModelGuideDocument renderMode={renderMode} sectionSelection={sectionSelection} templateSettings={templateSettings} viewModel={{...preparedSteps.viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts},modelViews:preparedModelViews,assemblyData:resolveGuideAssemblyData(prepared.guide,preparedSteps.viewModel.settings),backCoverData:resolveGuideBackCoverData(prepared.guide)}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
+  try{renderer=pdf(<ModelGuideDocument renderMode={renderMode} sectionSelection={sectionSelection} templateSettings={templateSettings} viewModel={{...preparedSteps.viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts},modelViews:preparedModelViews,assemblyData:resolveGuideAssemblyData(prepared.guide,preparedSteps.viewModel.settings),backCoverData}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
   onProgress?.({status:"generating",progress:85});
   let blob:Blob;try{blob=await renderer.toBlob();}catch(error){throw new PdfExportError("PDF_GENERATION_FAILED",error);}
 

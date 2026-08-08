@@ -45,6 +45,16 @@ const styles = StyleSheet.create({
     marginTop: tokens.spacingXl,
     textAlign: "center",
   },
+  qrFrame: {
+    backgroundColor: "#FFFFFF",
+    marginTop: tokens.spacingLg,
+    padding: 8,
+  },
+  qrImage: {
+    height: 126,
+    objectFit: "contain",
+    width: 126,
+  },
   destination: {
     color: pdfColors.muted,
     fontSize: tokens.sizeCaption,
@@ -105,6 +115,7 @@ export function GuideBackCoverPage({
         {backCoverData.headline ? <Text style={[styles.headline, headlineStyle]}>{backCoverData.headline}</Text> : null}
         {backCoverData.description ? <Text style={[styles.description, descriptionStyle]}>{backCoverData.description}</Text> : null}
         {backCoverData.ctaText ? <Text style={[styles.cta, ctaStyle, accentStyle ?? { color: design.accentText }]}>{backCoverData.ctaText}</Text> : null}
+        {backCoverData.qrImageUrl ? <View style={styles.qrFrame}><Image src={backCoverData.qrImageUrl} style={styles.qrImage} /></View> : null}
         {destination ? <Text style={[styles.destination, destinationStyle]}>{destination}</Text> : null}
       </View>
     </GuidePage>

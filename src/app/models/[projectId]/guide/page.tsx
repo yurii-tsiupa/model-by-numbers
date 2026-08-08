@@ -332,11 +332,14 @@ export default function GuidePage() {
     assemblySteps,
     templateId: guideTemplate.current.id,
     overviewViews: overviewViews ?? undefined,
-    backCover: guideTemplate.current.settings.branding.name || guideTemplate.current.settings.branding.logoUrl
+    backCover: Object.values(guideTemplate.current.settings.branding).some(Boolean)
       ? {
           enabled: true,
           brandName: guideTemplate.current.settings.branding.name,
           logoUrl: guideTemplate.current.settings.branding.logoUrl,
+          ctaText: guideTemplate.current.settings.branding.ctaText,
+          websiteUrl: guideTemplate.current.settings.branding.websiteUrl,
+          qrValue: guideTemplate.current.settings.branding.qrValue,
         }
       : undefined,
     sectionSettings: project.guideSectionSettings,
