@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ImagePlus, Link2, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import type { ReactNode } from "react";
+import { Check, ChevronDown, ImagePlus, Link2, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import type { TranslationKey } from "@/features/i18n/locales/en";
 import { blobToDataUrl } from "../lib/blobToDataUrl";
 import { GUIDE_FONT_OPTIONS, type GuideFontId } from "../design/guideFontRegistry";
@@ -18,6 +19,21 @@ const PAGE_FORMATS: readonly { id: GuidePageFormat; labelKey: TranslationKey }[]
   { id: "a4", labelKey: "guide.pdfDesign.pageFormat.a4" },
   { id: "letter", labelKey: "guide.pdfDesign.pageFormat.letter" },
 ];
+
+type PdfDesignAccordionId = "background" | "typography" | "branding" | "layout";
+const PDF_DESIGN_ACCORDION_CONFIG = { allowMultiple: false } as const;
+
+function PdfDesignAccordionSection({ children, expanded, id, onToggle, summary, title }: { children: ReactNode; expanded: boolean; id: PdfDesignAccordionId; onToggle: (id: PdfDesignAccordionId) => void; summary?: ReactNode; title: string }) {
+  const bodyId = `pdf-design-${id}-body`;
+  return <div className="border-t-[0.5px] border-[var(--border)]">
+    <button type="button" aria-expanded={expanded} aria-controls={bodyId} onClick={() => onToggle(id)} className="flex min-h-11 w-full cursor-pointer items-center gap-2 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--accent)]">
+      <span className="min-w-0 flex-1 font-[family-name:var(--font-display)] text-[13px] font-medium text-[var(--text)]">{title}</span>
+      {!expanded && summary ? <span className="flex min-w-0 items-center text-[10px] text-[var(--text-secondary)]">{summary}</span> : null}
+      <ChevronDown aria-hidden="true" className={`size-4 shrink-0 text-[var(--text-secondary)] transition-transform motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`} />
+    </button>
+    {expanded ? <div id={bodyId} className="pb-3">{children}</div> : null}
+  </div>;
+}
 
 function normalizeUrlDraft(value: string): { error: TranslationKey | null; value: string | null } {
   if (!value.trim()) return { error: null, value: null };
@@ -36,6 +52,7 @@ function CompactBrandField({
   type = "text",
   value,
   validate,
+  validateOnBlur = false,
 }: {
   disabled: boolean;
   label: TranslationKey;
@@ -45,6 +62,7 @@ function CompactBrandField({
   type?: "text" | "url";
   value: string | null;
   validate?: (value: string) => { error: TranslationKey | null; value: string | null };
+  validateOnBlur?: boolean;
 }) {
   const [draft, setDraft] = useState(value ?? "");
   const [persistedValue, setPersistedValue] = useState(value);
@@ -87,17 +105,22 @@ function CompactBrandField({
     if (normalized.value !== value) onSave(normalized.value);
   }
 
+  function validateDraft() {
+    if (!validateOnBlur || !validate) return;
+    setError(validate(draft).error);
+  }
+
   return (
     <div>
       <p className="mb-1 text-[9px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]">{t(label)}</p>
       <div className="flex items-center gap-1.5">
-        <input ref={inputRef} type={type} aria-label={t(label)} value={draft} maxLength={maxLength} readOnly={!editing} disabled={disabled} onClick={() => { if (!disabled && !editing) startEditing(); }} onChange={(event) => { setDraft(event.target.value); setError(null); }} onKeyDown={(event) => { if (!editing) return; if (event.key === "Enter") { event.preventDefault(); save(); } if (event.key === "Escape") { event.preventDefault(); cancel(); } }} className={`h-8 min-w-0 flex-1 rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-xs text-[var(--text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-text"}`} />
+        <input ref={inputRef} type={type} aria-label={t(label)} aria-invalid={Boolean(error)} value={draft} maxLength={maxLength} readOnly={!editing} disabled={disabled} onClick={() => { if (!disabled && !editing) startEditing(); }} onBlur={validateDraft} onChange={(event) => { setDraft(event.target.value); setError(null); }} onKeyDown={(event) => { if (!editing) return; if (event.key === "Enter") { event.preventDefault(); save(); } if (event.key === "Escape") { event.preventDefault(); cancel(); } }} className={`h-8 min-w-0 flex-1 rounded-md border bg-[var(--card)] px-2 text-xs text-[var(--text)] outline-none focus-visible:ring-2 ${error ? "border-[var(--danger)] focus-visible:ring-[var(--danger)]" : "border-[var(--border)] focus-visible:ring-[var(--accent)]"} ${disabled ? "cursor-not-allowed opacity-60" : "cursor-text"}`} />
         {editing ? <>
           <button type="button" title={t("guide.pdfDesign.branding.save")} aria-label={t("guide.pdfDesign.branding.save")} disabled={disabled} onClick={save} className={`grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:opacity-90"}`}><Check className="size-3.5" aria-hidden="true" /></button>
           <button type="button" title={t("guide.pdfDesign.branding.cancel")} aria-label={t("guide.pdfDesign.branding.cancel")} disabled={disabled} onClick={cancel} className={`grid size-8 shrink-0 place-items-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--text)]"}`}><X className="size-3.5" aria-hidden="true" /></button>
         </> : <button type="button" title={t("guide.pdfDesign.branding.editField")} aria-label={t("guide.pdfDesign.branding.editField")} disabled={disabled} onClick={startEditing} className={`grid size-8 shrink-0 place-items-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--text)]"}`}><Pencil className="size-3.5" aria-hidden="true" /></button>}
       </div>
-      {error ? <p role="alert" className="mt-1.5 text-[11px] leading-4 text-[var(--accent)]">{t(error)}</p> : null}
+      {error ? <p role="alert" className="mt-1.5 text-[11px] leading-4 text-[var(--danger)]">{t(error)}</p> : null}
     </div>
   );
 }
@@ -152,6 +175,7 @@ function SocialLinksEditor({ disabled, links, onChange, t }: { disabled: boolean
           <button type="button" title={t("guide.pdfDesign.branding.removeSocial")} aria-label={t("guide.pdfDesign.branding.removeSocial")} disabled={disabled || editingId !== null} onClick={() => onChange(links.filter((item) => item.id !== link.id))} className={`grid size-6 shrink-0 place-items-center rounded text-[var(--text-secondary)] ${disabled || editingId !== null ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:text-[var(--accent)]"}`}><Trash2 className="size-3" aria-hidden="true" /></button>
         </div>)}
         {editingId !== null ? <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2">
+          <p className="mb-1.5 text-[10px] font-medium text-[var(--text)]">{t(editingId === "new" ? "guide.pdfDesign.branding.addSocial" : "guide.pdfDesign.branding.editSocial")}</p>
           <div className="grid grid-cols-2 gap-1.5">
             <label><span className="sr-only">{t("guide.pdfDesign.branding.socialType")}</span><select value={platform} disabled={disabled} onChange={(event) => setPlatform(event.target.value as GuideBrandSocialPlatform)} className={`h-8 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-1.5 text-[11px] text-[var(--text)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>{GUIDE_SOCIAL_PLATFORMS.map((item) => <option key={item} value={item}>{t(`guide.pdfDesign.branding.socialType.${item}`)}</option>)}</select></label>
             <label><span className="sr-only">{t("guide.pdfDesign.branding.socialLabel")}</span><input value={handle} maxLength={60} disabled={disabled} placeholder={t("guide.pdfDesign.branding.socialLabel")} onChange={(event) => setHandle(event.target.value)} className={`h-8 w-full min-w-0 rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-[11px] text-[var(--text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : ""}`} /></label>
@@ -161,7 +185,7 @@ function SocialLinksEditor({ disabled, links, onChange, t }: { disabled: boolean
             <button type="button" title={t("guide.pdfDesign.branding.save")} aria-label={t("guide.pdfDesign.branding.save")} disabled={disabled} onClick={save} className={`grid size-8 shrink-0 place-items-center rounded-md bg-[var(--accent)] text-[var(--accent-foreground)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:opacity-90"}`}><Check className="size-3.5" aria-hidden="true" /></button>
             <button type="button" title={t("guide.pdfDesign.branding.cancel")} aria-label={t("guide.pdfDesign.branding.cancel")} disabled={disabled} onClick={cancel} className={`grid size-8 shrink-0 place-items-center rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:text-[var(--text)]"}`}><X className="size-3.5" aria-hidden="true" /></button>
           </div>
-          {error ? <p role="alert" className="mt-1 text-[10px] text-[var(--accent)]">{t(error)}</p> : null}
+          {error ? <p role="alert" className="mt-1 text-[10px] text-[var(--danger)]">{t(error)}</p> : null}
         </div> : null}
       </div>
     </div>
@@ -187,7 +211,7 @@ function CustomLinksEditor({ disabled, links, onChange, t }: { disabled: boolean
     <div className="flex items-center justify-between gap-2"><p className="text-[9px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]">{t("guide.pdfDesign.branding.customLinks")}</p>{editingId === null && links.length < 5 ? <button type="button" title={t("guide.pdfDesign.branding.addCustomLink")} aria-label={t("guide.pdfDesign.branding.addCustomLink")} disabled={disabled} onClick={() => edit()} className={`grid size-7 place-items-center rounded-md text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--accent)]"}`}><Plus className="size-3.5" aria-hidden="true" /></button> : null}</div>
     <div className="mt-1.5 space-y-1.5">
       {links.map((link) => editingId === link.id ? null : <div key={link.id} className="flex h-8 items-center gap-1.5 rounded-md bg-[var(--surface)] px-2"><Link2 className="size-3 shrink-0 text-[var(--text-secondary)]" aria-hidden="true" /><span className="min-w-0 flex-1 truncate text-[11px] text-[var(--text)]">{link.label}</span><button type="button" title={t("guide.pdfDesign.branding.editCustomLink")} aria-label={t("guide.pdfDesign.branding.editCustomLink")} disabled={disabled || editingId !== null} onClick={() => edit(link)} className={`grid size-6 place-items-center text-[var(--text-secondary)] ${disabled || editingId !== null ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:text-[var(--accent)]"}`}><Pencil className="size-3" /></button><button type="button" title={t("guide.pdfDesign.branding.removeCustomLink")} aria-label={t("guide.pdfDesign.branding.removeCustomLink")} disabled={disabled || editingId !== null} onClick={() => onChange(links.filter((item) => item.id !== link.id))} className={`grid size-6 place-items-center text-[var(--text-secondary)] ${disabled || editingId !== null ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:text-[var(--accent)]"}`}><Trash2 className="size-3" /></button></div>)}
-      {editingId !== null ? <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2"><div className="grid grid-cols-2 gap-1.5"><input value={label} maxLength={60} disabled={disabled} aria-label={t("guide.pdfDesign.branding.customLabel")} placeholder={t("guide.pdfDesign.branding.customLabel")} onChange={(event) => { setLabel(event.target.value); setError(null); }} className="h-8 min-w-0 rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-[11px] text-[var(--text)]" /><input type="url" value={url} disabled={disabled} aria-label={t("guide.pdfDesign.branding.customUrl")} placeholder={t("guide.pdfDesign.branding.customUrl")} onChange={(event) => { setUrl(event.target.value); setError(null); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); save(); } if (event.key === "Escape") { event.preventDefault(); cancel(); } }} className="h-8 min-w-0 rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-[11px] text-[var(--text)]" /></div><div className="mt-1.5 flex justify-end gap-1.5"><button type="button" aria-label={t("guide.pdfDesign.branding.save")} title={t("guide.pdfDesign.branding.save")} disabled={disabled} onClick={save} className={`grid size-8 place-items-center rounded-md bg-[var(--accent)] text-[var(--accent-foreground)] ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}><Check className="size-3.5" /></button><button type="button" aria-label={t("guide.pdfDesign.branding.cancel")} title={t("guide.pdfDesign.branding.cancel")} disabled={disabled} onClick={cancel} className={`grid size-8 place-items-center rounded-md border border-[var(--border)] bg-[var(--card)] ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}><X className="size-3.5" /></button></div>{error ? <p role="alert" className="mt-1 text-[10px] text-[var(--accent)]">{t(error)}</p> : null}</div> : null}
+      {editingId !== null ? <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2"><p className="mb-1.5 text-[10px] font-medium text-[var(--text)]">{t(editingId === "new" ? "guide.pdfDesign.branding.addCustomLink" : "guide.pdfDesign.branding.editCustomLink")}</p><div className="grid grid-cols-2 gap-1.5"><input value={label} maxLength={60} disabled={disabled} aria-label={t("guide.pdfDesign.branding.customLabel")} placeholder={t("guide.pdfDesign.branding.customLabel")} onChange={(event) => { setLabel(event.target.value); setError(null); }} className="h-8 min-w-0 rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-[11px] text-[var(--text)]" /><input type="url" value={url} disabled={disabled} aria-label={t("guide.pdfDesign.branding.customUrl")} placeholder={t("guide.pdfDesign.branding.customUrl")} onChange={(event) => { setUrl(event.target.value); setError(null); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); save(); } if (event.key === "Escape") { event.preventDefault(); cancel(); } }} className="h-8 min-w-0 rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-[11px] text-[var(--text)]" /></div><div className="mt-1.5 flex justify-end gap-1.5"><button type="button" aria-label={t("guide.pdfDesign.branding.save")} title={t("guide.pdfDesign.branding.save")} disabled={disabled} onClick={save} className={`grid size-8 place-items-center rounded-md bg-[var(--accent)] text-[var(--accent-foreground)] ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}><Check className="size-3.5" /></button><button type="button" aria-label={t("guide.pdfDesign.branding.cancel")} title={t("guide.pdfDesign.branding.cancel")} disabled={disabled} onClick={cancel} className={`grid size-8 place-items-center rounded-md border border-[var(--border)] bg-[var(--card)] ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}><X className="size-3.5" /></button></div>{error ? <p role="alert" className="mt-1 text-[10px] text-[var(--danger)]">{t(error)}</p> : null}</div> : null}
     </div>
   </div>;
 }
@@ -205,17 +229,30 @@ const BACKGROUND_TARGETS: readonly { id: GuidePdfBackgroundTarget; label: Transl
 
 function BackgroundOpacitySlider({ disabled, onCommit, t, value }: { disabled: boolean; onCommit: (value: number) => void; t: (key: TranslationKey) => string; value: number }) {
   const [draft, setDraft] = useState(value);
-  return <div className="mt-1.5"><div className="flex items-center justify-between"><span className="text-[9px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]">{t("guide.pdfDesign.background.opacity")}</span><output className="font-[family-name:var(--font-mono)] text-[9px] text-[var(--text-secondary)]">{draft}%</output></div><input type="range" min={0} max={100} step={1} value={draft} aria-label={t("guide.pdfDesign.background.opacity")} disabled={disabled} onChange={(event) => setDraft(Number(event.target.value))} onPointerUp={() => draft !== value && onCommit(draft)} onKeyUp={() => draft !== value && onCommit(draft)} onBlur={() => draft !== value && onCommit(draft)} className={`h-5 w-full accent-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`} /></div>;
+  const commit = () => { if (draft !== value) onCommit(draft); };
+  const updateDraft = (next: number) => setDraft(Math.min(100, Math.max(0, Math.round(next))));
+  return <div className="mt-1.5">
+    <p className="text-[9px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]">{t("guide.pdfDesign.background.opacity")}</p>
+    <div className="mt-0.5 flex items-center gap-2">
+      <input type="range" min={0} max={100} step={1} value={draft} aria-label={t("guide.pdfDesign.background.opacity")} disabled={disabled} onChange={(event) => updateDraft(Number(event.target.value))} onPointerUp={commit} onKeyUp={commit} onBlur={commit} className={`h-5 min-w-0 flex-1 accent-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`} />
+      <div className="flex h-7 w-[4.25rem] shrink-0 items-center rounded-md border border-[var(--border)] bg-[var(--card)] px-1.5 focus-within:ring-2 focus-within:ring-[var(--accent)]">
+        <input type="number" min={0} max={100} step={1} value={draft} aria-label={t("guide.pdfDesign.background.opacityValue")} disabled={disabled} onChange={(event) => updateDraft(Number(event.target.value))} onBlur={commit} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); commit(); event.currentTarget.blur(); } }} className={`min-w-0 flex-1 bg-transparent text-right font-[family-name:var(--font-mono)] text-[10px] text-[var(--text)] outline-none ${disabled ? "cursor-not-allowed opacity-60" : ""}`} />
+        <span className="text-[9px] text-[var(--text-secondary)]">%</span>
+      </div>
+    </div>
+  </div>;
 }
 
 function BackgroundEditor({ disabled, items, onChange, t }: { disabled: boolean; items: GuidePdfBackgroundItems; onChange: (items: GuidePdfBackgroundItems) => void; t: (key: TranslationKey) => string }) {
   const [error, setError] = useState<TranslationKey | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(items[0]?.id ?? null);
   const inputRef = useRef<HTMLInputElement>(null);
   const itemsRef = useRef(items);
   const fileOperationRef = useRef<{ kind: "add"; target: GuidePdfBackgroundTarget } | { kind: "replace"; id: string } | null>(null);
   useEffect(() => { itemsRef.current = items; }, [items]);
   const usedTargets = new Set(items.map((item) => item.target));
   const firstAvailableTarget = BACKGROUND_TARGETS.find((target) => !usedTargets.has(target.id))?.id;
+  const selected = items.find((item) => item.id === selectedId) ?? items[0] ?? null;
   function openFilePicker(operation: NonNullable<typeof fileOperationRef.current>) {
     fileOperationRef.current = operation;
     setError(null);
@@ -237,8 +274,10 @@ function BackgroundEditor({ disabled, items, onChange, t }: { disabled: boolean;
           ? BACKGROUND_TARGETS.find((candidate) => !currentItems.some((item) => item.target === candidate.id))?.id
           : operation.target;
         if (!target) return;
-        const nextItems = [...currentItems, { id: crypto.randomUUID(), imageUrl, localAssetId: null, opacity: 20, target }];
+        const newItem = { id: crypto.randomUUID(), imageUrl, localAssetId: null, opacity: 20, target };
+        const nextItems = [...currentItems, newItem];
         itemsRef.current = nextItems;
+        setSelectedId(newItem.id);
         onChange(nextItems);
       } else if (operation?.kind === "replace") {
         const nextItems = currentItems.map((item) => item.id === operation.id ? { ...item, imageUrl } : item);
@@ -252,18 +291,22 @@ function BackgroundEditor({ disabled, items, onChange, t }: { disabled: boolean;
     if (items.some((item) => item.id !== id && item.target === target)) { setError("guide.pdfDesign.background.duplicateTarget"); return; }
     setError(null); onChange(items.map((item) => item.id === id ? { ...item, target } : item));
   }
-  return <div className="mt-3 border-t-[0.5px] border-[var(--border)] pt-3">
-    <h2 className="font-[family-name:var(--font-display)] text-[13px] font-medium text-[var(--text)]">{t("guide.pdfDesign.background.title")}</h2>
-    <div className="mt-2 space-y-2">{items.map((item) => <div key={item.id} className="border-b-[0.5px] border-[var(--border)] pb-2 last:border-b-0">
-      <div className="flex items-center gap-2">
-        {/* eslint-disable-next-line @next/next/no-img-element -- persisted data URL cannot use the Next image optimizer. */}
-        <img src={item.imageUrl ?? ""} alt="" className="size-10 shrink-0 rounded-md bg-[var(--card)] object-cover" />
-        <label className="min-w-0 flex-1"><span className="sr-only">{t("guide.pdfDesign.background.applyTo")}</span><select value={item.target} disabled={disabled} onChange={(event) => changeTarget(item.id, event.target.value as GuidePdfBackgroundTarget)} className={`h-8 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-[11px] text-[var(--text)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>{BACKGROUND_TARGETS.map((target) => <option key={target.id} value={target.id} disabled={target.id !== item.target && usedTargets.has(target.id)}>{t(target.label)}</option>)}</select></label>
-      </div>
-      <BackgroundOpacitySlider key={`${item.id}-${item.opacity}`} disabled={disabled} value={item.opacity} onCommit={(opacity) => onChange(items.map((entry) => entry.id === item.id ? { ...entry, opacity } : entry))} t={t} />
-      <div className="flex justify-end gap-1"><button type="button" disabled={disabled} onClick={() => replaceBackground(item.id)} className={`h-7 rounded-md px-2 text-[10px] text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--accent)]"}`}>{t("guide.pdfDesign.background.replace")}</button><button type="button" disabled={disabled} onClick={() => onChange(items.filter((entry) => entry.id !== item.id))} className={`h-7 rounded-md px-2 text-[10px] text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--accent)]"}`}>{t("guide.pdfDesign.background.remove")}</button></div>
-    </div>)}</div>
-    {firstAvailableTarget ? <button type="button" disabled={disabled} onClick={addBackground} className={`mt-2 flex h-8 items-center gap-1.5 rounded-md border border-dashed border-[var(--border-strong)] px-2 text-[10px] text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-[var(--accent)] hover:text-[var(--accent)]"}`}><ImagePlus className="size-3.5" aria-hidden="true" />{t("guide.pdfDesign.background.add")}</button> : null}
+  return <div>
+    <div className="flex max-w-full gap-2 overflow-x-auto pb-1" role="list" aria-label={t("guide.pdfDesign.background.title")}>
+      {items.map((item) => <div key={item.id} role="listitem" className="group relative size-10 shrink-0">
+        <button type="button" aria-pressed={selected?.id === item.id} aria-label={BACKGROUND_TARGETS.find((target) => target.id === item.target) ? t(BACKGROUND_TARGETS.find((target) => target.id === item.target)!.label) : t("guide.pdfDesign.background.title")} disabled={disabled} onClick={() => setSelectedId(item.id)} className={`size-10 overflow-hidden rounded-md bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"} ${selected?.id === item.id ? "ring-2 ring-[var(--accent)] ring-offset-1 ring-offset-[var(--card)]" : "ring-1 ring-[var(--border)]"}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- persisted local object/data URL cannot use the Next image optimizer. */}
+          <img src={item.imageUrl ?? ""} alt="" className="size-full object-cover" />
+        </button>
+        <button type="button" title={t("guide.pdfDesign.background.replace")} aria-label={t("guide.pdfDesign.background.replace")} disabled={disabled} onClick={() => replaceBackground(item.id)} className={`absolute -bottom-1 -left-1 grid size-5 place-items-center rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] shadow-sm opacity-0 focus:opacity-100 group-hover:opacity-100 ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:text-[var(--accent)]"}`}><Pencil className="size-2.5" aria-hidden="true" /></button>
+        <button type="button" title={t("guide.pdfDesign.background.remove")} aria-label={t("guide.pdfDesign.background.remove")} disabled={disabled} onClick={() => onChange(items.filter((entry) => entry.id !== item.id))} className={`absolute -right-1 -top-1 grid size-5 place-items-center rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] shadow-sm opacity-0 focus:opacity-100 group-hover:opacity-100 ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:text-[var(--accent)]"}`}><Trash2 className="size-2.5" aria-hidden="true" /></button>
+      </div>)}
+      {firstAvailableTarget ? <button type="button" title={t("guide.pdfDesign.background.add")} aria-label={t("guide.pdfDesign.background.add")} disabled={disabled} onClick={addBackground} className={`grid size-10 shrink-0 place-items-center rounded-md border border-dashed border-[var(--border-strong)] text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-[var(--accent)] hover:text-[var(--accent)]"}`}><Plus className="size-4" aria-hidden="true" /></button> : null}
+    </div>
+    {selected ? <div className="mt-2.5">
+      <label className="block"><span className="mb-1 block text-[9px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]">{t("guide.pdfDesign.background.applyTo")}</span><select value={selected.target} disabled={disabled} onChange={(event) => changeTarget(selected.id, event.target.value as GuidePdfBackgroundTarget)} className={`h-8 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-[11px] text-[var(--text)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>{BACKGROUND_TARGETS.map((target) => <option key={target.id} value={target.id} disabled={target.id !== selected.target && usedTargets.has(target.id)}>{t(target.label)}</option>)}</select></label>
+      <BackgroundOpacitySlider key={`${selected.id}-${selected.opacity}`} disabled={disabled} value={selected.opacity} onCommit={(opacity) => onChange(items.map((entry) => entry.id === selected.id ? { ...entry, opacity } : entry))} t={t} />
+    </div> : <p className="py-1 text-[10px] text-[var(--text-secondary)]">{t("guide.pdfDesign.background.none")}</p>}
     <input ref={inputRef} hidden type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file, event.currentTarget); else event.currentTarget.value = ""; }} />
     {error ? <p role="alert" className="mt-1 text-[10px] text-[var(--accent)]">{t(error)}</p> : null}
   </div>;
@@ -286,9 +329,8 @@ function BrandLayoutEditor({ backCoverLayout, coverLayout, disabled, onBackCover
   const settings = layout[element];
   const setPosition = (position: GuideBrandElementPosition) => update({ ...layout, [element]: { ...settings, position } });
 
-  return <div className="mt-3 border-t-[0.5px] border-[var(--border)] pt-3">
-    <div className="flex items-center justify-between gap-2">
-      <h3 className="font-[family-name:var(--font-display)] text-[12px] font-medium text-[var(--text)]">{t("guide.pdfDesign.branding.layout.title")}</h3>
+  return <div>
+    <div className="flex items-center justify-end">
       <button type="button" title={t("guide.pdfDesign.branding.layout.reset")} aria-label={t("guide.pdfDesign.branding.layout.reset")} disabled={disabled} onClick={() => update(page === "cover" ? DEFAULT_COVER_BRAND_LAYOUT : DEFAULT_BACK_COVER_BRAND_LAYOUT)} className={`grid size-7 place-items-center rounded-md text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--accent)]"}`}><RotateCcw className="size-3.5" aria-hidden="true" /></button>
     </div>
     <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-lg bg-[var(--surface)] p-0.5">{(["cover", "backCover"] as const).map((item) => <button key={item} type="button" disabled={disabled} aria-pressed={page === item} onClick={() => setPage(item)} className={`h-7 rounded-md text-[10px] font-medium ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"} ${page === item ? "bg-[var(--card)] text-[var(--accent)] shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text)]"}`}>{t(`guide.pdfDesign.branding.layout.page.${item}`)}</button>)}</div>
@@ -372,8 +414,12 @@ export function GuidePdfDesignPanel({
   const [previousBrandName, setPreviousBrandName] = useState(brandName);
   const [isEditingBrandName, setIsEditingBrandName] = useState(false);
   const [logoError, setLogoError] = useState<TranslationKey | null>(null);
+  const [expandedSections, setExpandedSections] = useState<PdfDesignAccordionId[]>([]);
   const brandNameInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const toggleAccordionSection = (id: PdfDesignAccordionId) => setExpandedSections((current) => current.includes(id)
+    ? current.filter((item) => item !== id)
+    : PDF_DESIGN_ACCORDION_CONFIG.allowMultiple ? [...current, id] : [id]);
 
   if (!isEditingBrandName && brandName !== previousBrandName) {
     setPreviousBrandName(brandName);
@@ -418,6 +464,7 @@ export function GuidePdfDesignPanel({
       setLogoError("guide.pdfDesign.branding.logoUnreadable");
     }
   }
+  const backgroundSummaryUrl = backgroundItems.find((item) => item.target === "all")?.imageUrl ?? backgroundItems[0]?.imageUrl;
 
   return (
     <section className="guide-side-panel rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
@@ -431,10 +478,15 @@ export function GuidePdfDesignPanel({
         </div>
       </div>
 
-      <BackgroundEditor disabled={disabled} items={backgroundItems} onChange={onBackgroundItemsChange} t={t} />
+      <div className="mt-3">
+        <PdfDesignAccordionSection id="background" title={t("guide.pdfDesign.background.title")} expanded={expandedSections.includes("background")} onToggle={toggleAccordionSection} summary={backgroundSummaryUrl ? <span className="size-5 overflow-hidden rounded-md ring-1 ring-[var(--border)]">
+          {/* eslint-disable-next-line @next/next/no-img-element -- local runtime URL cannot use the Next image optimizer. */}
+          <img src={backgroundSummaryUrl} alt="" className="size-full object-cover" />
+        </span> : t("guide.pdfDesign.background.none")}>
+          <BackgroundEditor disabled={disabled} items={backgroundItems} onChange={onBackgroundItemsChange} t={t} />
+        </PdfDesignAccordionSection>
 
-      <div className="mt-3 border-t-[0.5px] border-[var(--border)] pt-3">
-        <h2 className="font-[family-name:var(--font-display)] text-[13px] font-medium text-[var(--text)]">{t("guide.pdfDesign.typography.label")}</h2>
+        <PdfDesignAccordionSection id="typography" title={t("guide.pdfDesign.typography.label")} expanded={expandedSections.includes("typography")} onToggle={toggleAccordionSection} summary={<span className="size-3 rounded-full" style={{ backgroundColor: accentColor }} />}>
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           {([
             ["guide.pdfDesign.typography.display", displayFontId, onDisplayFontChange],
@@ -458,11 +510,10 @@ export function GuidePdfDesignPanel({
             <span className="font-[family-name:var(--font-mono)] text-[11px] font-medium text-[var(--text)]">{accentColor}</span>
           </div>
         </div>
-      </div>
+        </PdfDesignAccordionSection>
 
-      <div className="mt-3 border-t-[0.5px] border-[var(--border)] pt-3">
-        <h2 className="font-[family-name:var(--font-display)] text-[13px] font-medium text-[var(--text)]">{t("guide.pdfDesign.branding.title")}</h2>
-        <div className="mt-2.5 flex items-start gap-2.5">
+        <PdfDesignAccordionSection id="branding" title={t("guide.pdfDesign.branding.title")} expanded={expandedSections.includes("branding")} onToggle={toggleAccordionSection} summary={<span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[9px] font-medium text-[var(--accent)]">{socialLinks.length + customLinks.length} {t("guide.pdfDesign.branding.linksSummary")}</span>}>
+        <div className="flex items-start gap-2.5">
           <div className="relative size-12 shrink-0">
             {logoUrl ? <>
               {/* eslint-disable-next-line @next/next/no-img-element -- user-provided data URL is not compatible with next/image. */}
@@ -506,11 +557,15 @@ export function GuidePdfDesignPanel({
         {logoError ? <p role="alert" className="mt-1.5 text-[11px] leading-4 text-[var(--accent)]">{t(logoError)}</p> : null}
         <div className="mt-2.5 grid grid-cols-2 gap-x-2 gap-y-2.5">
           <CompactBrandField disabled={disabled} label="guide.pdfDesign.branding.cta" maxLength={160} value={ctaText} onSave={onCtaTextChange} t={t} />
-          <div className="col-span-2"><CompactBrandField disabled={disabled} label="guide.pdfDesign.branding.qr" maxLength={2048} type="url" value={qrValue} validate={normalizeUrlDraft} onSave={onQrValueChange} t={t} /></div>
+          <div className="col-span-2"><CompactBrandField disabled={disabled} label="guide.pdfDesign.branding.qr" maxLength={2048} type="url" value={qrValue} validate={normalizeUrlDraft} validateOnBlur onSave={onQrValueChange} t={t} /></div>
         </div>
         <SocialLinksEditor disabled={disabled} links={socialLinks} onChange={onSocialLinksChange} t={t} />
         <CustomLinksEditor disabled={disabled} links={customLinks} onChange={onCustomLinksChange} t={t} />
-        <BrandLayoutEditor backCoverLayout={backCoverLayout} coverLayout={coverLayout} disabled={disabled} onBackCoverLayoutChange={onBackCoverLayoutChange} onCoverLayoutChange={onCoverLayoutChange} t={t} />
+        </PdfDesignAccordionSection>
+
+        <PdfDesignAccordionSection id="layout" title={t("guide.pdfDesign.branding.layout.title")} expanded={expandedSections.includes("layout")} onToggle={toggleAccordionSection}>
+          <BrandLayoutEditor backCoverLayout={backCoverLayout} coverLayout={coverLayout} disabled={disabled} onBackCoverLayoutChange={onBackCoverLayoutChange} onCoverLayoutChange={onCoverLayoutChange} t={t} />
+        </PdfDesignAccordionSection>
       </div>
     </section>
   );
