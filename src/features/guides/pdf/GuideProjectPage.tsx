@@ -69,7 +69,7 @@ export function GuideProjectPage({
   ];
 
   return (
-    <GuidePage locale={locale} pageNumber={pageNumber} projectName={guide.title} totalPages={totalPages}>
+    <GuidePage backgroundSectionId="projectOverview" locale={locale} pageNumber={pageNumber} projectName={guide.title} totalPages={totalPages}>
       <GuidePdfEyebrow>{t("guide.projectReference")}</GuidePdfEyebrow>
       <Text style={[guidePdfStyles.pageTitle, { fontFamily: design.headingFont }]}> {guide.title}</Text>
 

@@ -102,6 +102,7 @@ export function GuidePartsPage({
     <>
       {Array.from({ length: pageCount }, (_, pageIndex) => (
         <GuidePage
+          backgroundSectionId="partsOverview"
           key={pageIndex}
           id={pageIndex===0?"partsOverview":undefined}
           locale={locale}

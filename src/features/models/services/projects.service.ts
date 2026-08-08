@@ -38,6 +38,7 @@ import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibr
 import { normalizeGuideAccentColor } from "@/features/guides/design/guideDesignTokens";
 import { normalizeGuideFontId } from "@/features/guides/design/guideFontRegistry";
 import { normalizeGuideBrandSettings } from "@/features/guides/types/GuideBrandSettings";
+import { migrateLegacyGuidePdfBackgrounds, normalizeGuidePdfBackgroundItems } from "@/features/guides/types/GuidePdfBackground";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -58,6 +59,11 @@ function normalizeGuideTemplateSettings(value: unknown): Partial<GuideTemplateSe
   const monoFont = value.monoFont === undefined ? undefined : normalizeGuideFontId(typeof value.monoFont === "string" ? value.monoFont : undefined);
   const nextSettings: Partial<GuideTemplateSettings> = {
     ...(value.branding !== undefined ? { branding: normalizeGuideBrandSettings(value.branding) } : {}),
+    ...(value.backgroundItems !== undefined
+      ? { backgroundItems: normalizeGuidePdfBackgroundItems(value.backgroundItems) }
+      : value.globalBackground !== undefined || value.backgroundOverrides !== undefined
+        ? { backgroundItems: migrateLegacyGuidePdfBackgrounds(value.globalBackground, value.backgroundOverrides) }
+        : {}),
     ...(pageFormat ? { pageFormat } : {}),
     ...(accentColor ? { accentColor } : {}),
     ...(headingFont ? { headingFont } : {}),
@@ -461,6 +467,7 @@ export async function saveProjectGuideTemplateSettings(projectId: string, userId
     guideTemplateSettings: {
       ...settings,
       ...(settings.branding ? { branding: normalizeGuideBrandSettings(settings.branding) } : {}),
+      ...(settings.backgroundItems ? { backgroundItems: normalizeGuidePdfBackgroundItems(settings.backgroundItems) } : {}),
       ...(accentColor ? { accentColor } : {}),
     },
     updatedAt: serverTimestamp(),

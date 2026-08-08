@@ -87,6 +87,7 @@ export function GuideFinishingPages({
 
   return <>{pages.map((items, pageIndex) => (
     <GuidePage
+      backgroundSectionId="finishing"
       key={items[0]?.id ?? pageIndex}
       id={pageIndex === 0 ? "finishing" : undefined}
       locale={locale}

@@ -166,6 +166,7 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
 
   return (
     <GuidePage
+      backgroundSectionId="cover"
       id="projectOverview"
       locale={locale}
       pageNumber={pageNumber}

@@ -44,7 +44,7 @@ export function GuideAssemblyPages({ pageNumberStart, totalPages, viewModel }: {
   if (!assemblyData) return null;
 
   if (assemblyData.mode === "steps") {
-    return <>{assemblyData.steps.map((step, pageIndex) => <GuidePage key={step.id} id={pageIndex === 0 ? "assembly" : undefined} locale={locale} pageNumber={pageNumberStart + pageIndex} projectName={guide.title} totalPages={totalPages}>
+    return <>{assemblyData.steps.map((step, pageIndex) => <GuidePage key={step.id} backgroundSectionId="assembly" id={pageIndex === 0 ? "assembly" : undefined} locale={locale} pageNumber={pageNumberStart + pageIndex} projectName={guide.title} totalPages={totalPages}>
       <PrintSectionStart fixed={pageIndex > 0}>
         <GuidePdfEyebrow>{t("guide.assembly.sectionEyebrow")}</GuidePdfEyebrow>
         {pageIndex === 0 ? <><Text style={guidePdfStyles.pageTitle}>{t("guide.assembly.sectionTitle")}</Text><Text style={guidePdfStyles.sectionDescription}>{t("guide.assembly.description")}</Text></> : <Text style={styles.runningTitle}>{t("guide.assembly.sectionTitle")}</Text>}
@@ -60,7 +60,7 @@ export function GuideAssemblyPages({ pageNumberStart, totalPages, viewModel }: {
   const pageCount = Math.max(1, Math.ceil(assemblyData.parts.length / partsPerPage));
   return <>{Array.from({ length: pageCount }, (_, pageIndex) => {
     const pageParts = assemblyData.parts.slice(pageIndex * partsPerPage, (pageIndex + 1) * partsPerPage);
-    return <GuidePage key={pageIndex} id={pageIndex === 0 ? "assembly" : undefined} locale={locale} pageNumber={pageNumberStart + pageIndex} projectName={guide.title} totalPages={totalPages}>
+    return <GuidePage key={pageIndex} backgroundSectionId="assembly" id={pageIndex === 0 ? "assembly" : undefined} locale={locale} pageNumber={pageNumberStart + pageIndex} projectName={guide.title} totalPages={totalPages}>
       <GuidePdfEyebrow>{t("guide.assembly.sectionEyebrow")}</GuidePdfEyebrow>
       <Text style={guidePdfStyles.pageTitle}>{t("guide.assembly.sectionTitle")}{pageIndex > 0 ? ` (${t("guide.continued")})` : ""}</Text>
       {pageIndex === 0 ? <Text style={guidePdfStyles.sectionDescription}>{t("guide.assembly.overviewDescription")}</Text> : null}

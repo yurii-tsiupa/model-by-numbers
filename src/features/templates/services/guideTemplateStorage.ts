@@ -1,6 +1,7 @@
 import { DEFAULT_GUIDE_PAGE_FORMAT } from "@/features/guides/types/GuidePageFormat";
 import { normalizeGuideFontId } from "@/features/guides/design/guideFontRegistry";
 import { normalizeGuideBrandSettings } from "@/features/guides/types/GuideBrandSettings";
+import { migrateLegacyGuidePdfBackgrounds, normalizeGuidePdfBackgroundItems } from "@/features/guides/types/GuidePdfBackground";
 import { LOCAL_DATABASE_STORES, openLocalDatabase } from "@/features/storage/lib/localDatabase";
 import type { CreateUserGuideTemplateInput, GuideTemplateCategory, GuideTemplateSettings, UserGuideTemplate } from "../types/GuideLibraryTemplate";
 
@@ -23,7 +24,10 @@ function normalizeSettings(value:unknown):GuideTemplateSettings|null {
   const headingFont = settings.headingFont === undefined ? undefined : normalizeGuideFontId(typeof settings.headingFont === "string" ? settings.headingFont : undefined);
   const bodyFont = settings.bodyFont === undefined ? undefined : normalizeGuideFontId(typeof settings.bodyFont === "string" ? settings.bodyFont : undefined);
   const monoFont = settings.monoFont === undefined ? undefined : normalizeGuideFontId(typeof settings.monoFont === "string" ? settings.monoFont : undefined);
-  return { ...settings, branding: normalizeGuideBrandSettings(settings.branding), pageFormat, ...(headingFont ? { headingFont } : {}), ...(bodyFont ? { bodyFont } : {}), ...(monoFont ? { monoFont } : {}) } as GuideTemplateSettings;
+  const legacy = settings as typeof settings & { globalBackground?: unknown; backgroundOverrides?: unknown; backgroundItems?: unknown };
+  const backgroundItems = legacy.backgroundItems !== undefined ? normalizeGuidePdfBackgroundItems(legacy.backgroundItems) : migrateLegacyGuidePdfBackgrounds(legacy.globalBackground, legacy.backgroundOverrides);
+  const currentSettings = Object.fromEntries(Object.entries(legacy).filter(([key]) => key !== "globalBackground" && key !== "backgroundOverrides"));
+  return { ...currentSettings, backgroundItems, branding: normalizeGuideBrandSettings(settings.branding), pageFormat, ...(headingFont ? { headingFont } : {}), ...(bodyFont ? { bodyFont } : {}), ...(monoFont ? { monoFont } : {}) } as GuideTemplateSettings;
 }
 
 function normalize(value:unknown):UserGuideTemplate|null {

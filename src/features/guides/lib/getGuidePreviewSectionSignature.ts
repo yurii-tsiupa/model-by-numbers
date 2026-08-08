@@ -1,6 +1,6 @@
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
-import type { GuideSectionId } from "../config/guideSectionRegistry";
+import { GUIDE_SECTION_REGISTRY, type GuideSectionId } from "../config/guideSectionRegistry";
 import type { GuideViewModel } from "./getGuideViewModel";
 
 const sourceFingerprintCache = new Map<string, string>();
@@ -69,6 +69,12 @@ export function getGuidePreviewSectionSignature(
   builder.add(sectionId);
   builder.add(viewModel.locale);
   addTemplate(builder, templateSettings);
+  const contentSectionId = GUIDE_SECTION_REGISTRY.find((section) => section.id === sectionId)?.contentSectionId;
+  const relevantBackgroundIds = sectionId === "cover" ? (["cover"] as const) : contentSectionId ? [contentSectionId] : [];
+  templateSettings.backgroundItems.forEach((background) => {
+    if (background.target !== "all" && !relevantBackgroundIds.includes(background.target as never)) return;
+    builder.add(background.id); builder.add(background.target); builder.add(background.opacity); builder.image(background.imageUrl);
+  });
 
   if (sectionId === "cover") {
     builder.add(templateSettings.branding.name); builder.image(templateSettings.branding.logoUrl);

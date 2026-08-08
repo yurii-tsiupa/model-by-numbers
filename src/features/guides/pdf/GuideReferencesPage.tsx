@@ -16,7 +16,7 @@ export function GuideReferencesPage({ references, locale, pageNumberStart, proje
   const pageCount=Math.max(1,Math.ceil(references.length/referencesPerPage));
   return <>{Array.from({length:pageCount},(_,pageIndex)=>{
     const pageReferences=references.slice(pageIndex*referencesPerPage,(pageIndex+1)*referencesPerPage);
-    return <GuidePage key={pageIndex} id={pageIndex === 0 ? "references" : undefined} locale={locale} pageNumber={pageNumberStart+pageIndex} projectName={projectName} totalPages={totalPages}>
+    return <GuidePage key={pageIndex} backgroundSectionId="references" id={pageIndex === 0 ? "references" : undefined} locale={locale} pageNumber={pageNumberStart+pageIndex} projectName={projectName} totalPages={totalPages}>
       <GuidePdfEyebrow>{t("guide.source")}</GuidePdfEyebrow><Text style={guidePdfStyles.pageTitle}>{t("guide.references")}{pageIndex>0?` (${t("guide.continued")})`:""}</Text>{pageIndex===0?<Text style={guidePdfStyles.sectionDescription}>{t("pdf.referencesHelp")}</Text>:null}
       <View style={styles.grid}>{pageReferences.map((reference,index) => {const large=pageReferences.length===1||(pageReferences.length===3&&index===0),caption=reference.caption?.trim();return <View key={reference.id} style={[styles.card,large?{width:"100%"}:{}]}>{reference.dataUrl ? <Image src={reference.dataUrl} style={[styles.image,large?styles.largeImage:{}]}/> : <View style={[styles.image, guidePdfStyles.placeholder]}><Text>{t("pdf.missingView")}</Text></View>}{caption?<View style={styles.caption}><Text style={styles.name}>{caption}</Text></View>:null}</View>})}</View>
     </GuidePage>;

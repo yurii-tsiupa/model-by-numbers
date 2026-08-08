@@ -16,7 +16,7 @@ const styles=StyleSheet.create({
 
 export function GuideModelViewsPage({pageNumberStart,totalPages,viewModel}:{pageNumberStart:number;totalPages:number;viewModel:GuideViewModel}){
  const {guide,locale,modelViews}=viewModel,t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
- return <>{modelViews.map((view,pageIndex)=><GuidePage key={view.id} id={pageIndex===0?"modelOverview":undefined} locale={locale} pageNumber={pageNumberStart+pageIndex} projectName={guide.title} totalPages={totalPages}>
+ return <>{modelViews.map((view,pageIndex)=><GuidePage key={view.id} backgroundSectionId="modelOverview" id={pageIndex===0?"modelOverview":undefined} locale={locale} pageNumber={pageNumberStart+pageIndex} projectName={guide.title} totalPages={totalPages}>
   <GuidePdfEyebrow>{t("guide.visual")}</GuidePdfEyebrow>
   <Text style={guidePdfStyles.pageTitle}>{t("guide.modelOverview")}{pageIndex>0?` (${t("guide.continued")})`:""}</Text>
   {pageIndex===0?<Text style={guidePdfStyles.sectionDescription}>{t("guide.modelOverviewDescription")}</Text>:null}

@@ -110,7 +110,7 @@ export function GuideKitPages({ pageNumberStart, totalPages, viewModel }: GuideK
       {Array.from({ length: pageCount }, (_, pageIndex) => {
         const pageItems = kitItems.slice(pageIndex * itemsPerPage, (pageIndex + 1) * itemsPerPage);
         return (
-          <GuidePage key={pageIndex} id={pageIndex === 0 ? "kit" : undefined} locale={locale} pageNumber={pageNumberStart + pageIndex} projectName={guide.title} totalPages={totalPages}>
+          <GuidePage key={pageIndex} backgroundSectionId="kit" id={pageIndex === 0 ? "kit" : undefined} locale={locale} pageNumber={pageNumberStart + pageIndex} projectName={guide.title} totalPages={totalPages}>
             <GuidePdfEyebrow>{t("guide.kit.eyebrow")}</GuidePdfEyebrow>
             <Text style={guidePdfStyles.pageTitle}>{t("guide.kit.title")}{pageIndex > 0 ? ` (${t("guide.continued")})` : ""}</Text>
             <Text style={guidePdfStyles.sectionDescription}>{t("guide.kit.description")}</Text>

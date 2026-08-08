@@ -95,6 +95,7 @@ export function GuidePalettePage({
     <>
       {Array.from({ length: pageCount }, (_, pageIndex) => (
         <GuidePage
+          backgroundSectionId="palette"
           key={pageIndex}
           id={pageIndex===0?"palette":undefined}
           locale={locale}

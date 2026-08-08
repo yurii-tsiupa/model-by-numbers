@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, ImagePlus, Link2, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import type { TranslationKey } from "@/features/i18n/locales/en";
 import { blobToDataUrl } from "../lib/blobToDataUrl";
@@ -11,6 +11,8 @@ import { getGuideSocialLabel, getGuideSocialPlatformLabel } from "../lib/guideBr
 import { GUIDE_SOCIAL_PLATFORM_DEFINITIONS, GUIDE_SOCIAL_PLATFORMS } from "../lib/guideSocialPlatforms";
 import { DEFAULT_BACK_COVER_BRAND_LAYOUT, DEFAULT_COVER_BRAND_LAYOUT, GUIDE_BRAND_ALIGNMENTS, GUIDE_BRAND_ELEMENT_ORDER, GUIDE_BRAND_LOGO_SCALE_MAX, GUIDE_BRAND_LOGO_SCALE_MIN, GUIDE_BRAND_POSITIONS, GUIDE_BRAND_QR_SCALE_MAX, GUIDE_BRAND_QR_SCALE_MIN } from "../lib/guideBrandLayout";
 import type { GuideBrandElementPosition, GuideBrandElementType, GuideBrandPageLayout } from "../types/GuideBrandLayout";
+import { GUIDE_SECTION_REGISTRY } from "../config/guideSectionRegistry";
+import type { GuidePdfBackgroundItems, GuidePdfBackgroundTarget } from "../types/GuidePdfBackground";
 
 const PAGE_FORMATS: readonly { id: GuidePageFormat; labelKey: TranslationKey }[] = [
   { id: "a4", labelKey: "guide.pdfDesign.pageFormat.a4" },
@@ -190,6 +192,83 @@ function CustomLinksEditor({ disabled, links, onChange, t }: { disabled: boolean
   </div>;
 }
 
+const BACKGROUND_SECTION_TARGETS: { id: GuidePdfBackgroundTarget; label: TranslationKey }[] = GUIDE_SECTION_REGISTRY.reduce<{ id: GuidePdfBackgroundTarget; label: TranslationKey }[]>((targets, section) => {
+  if (!section.titleKey) return targets;
+  if (section.id === "cover") return [...targets, { id: "cover", label: "guide.pdfDesign.background.cover" }];
+  if (section.contentSectionId === "projectOverview" || targets.some((target) => target.id === section.contentSectionId)) return targets;
+  return [...targets, { id: section.contentSectionId, label: section.titleKey }];
+}, []);
+const BACKGROUND_TARGETS: readonly { id: GuidePdfBackgroundTarget; label: TranslationKey }[] = [
+  { id: "all", label: "guide.pdfDesign.background.entirePdf" },
+  ...BACKGROUND_SECTION_TARGETS,
+];
+
+function BackgroundOpacitySlider({ disabled, onCommit, t, value }: { disabled: boolean; onCommit: (value: number) => void; t: (key: TranslationKey) => string; value: number }) {
+  const [draft, setDraft] = useState(value);
+  return <div className="mt-1.5"><div className="flex items-center justify-between"><span className="text-[9px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]">{t("guide.pdfDesign.background.opacity")}</span><output className="font-[family-name:var(--font-mono)] text-[9px] text-[var(--text-secondary)]">{draft}%</output></div><input type="range" min={0} max={100} step={1} value={draft} aria-label={t("guide.pdfDesign.background.opacity")} disabled={disabled} onChange={(event) => setDraft(Number(event.target.value))} onPointerUp={() => draft !== value && onCommit(draft)} onKeyUp={() => draft !== value && onCommit(draft)} onBlur={() => draft !== value && onCommit(draft)} className={`h-5 w-full accent-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`} /></div>;
+}
+
+function BackgroundEditor({ disabled, items, onChange, t }: { disabled: boolean; items: GuidePdfBackgroundItems; onChange: (items: GuidePdfBackgroundItems) => void; t: (key: TranslationKey) => string }) {
+  const [error, setError] = useState<TranslationKey | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const itemsRef = useRef(items);
+  const fileOperationRef = useRef<{ kind: "add"; target: GuidePdfBackgroundTarget } | { kind: "replace"; id: string } | null>(null);
+  useEffect(() => { itemsRef.current = items; }, [items]);
+  const usedTargets = new Set(items.map((item) => item.target));
+  const firstAvailableTarget = BACKGROUND_TARGETS.find((target) => !usedTargets.has(target.id))?.id;
+  function openFilePicker(operation: NonNullable<typeof fileOperationRef.current>) {
+    fileOperationRef.current = operation;
+    setError(null);
+    if (inputRef.current) inputRef.current.value = "";
+    inputRef.current?.click();
+  }
+  const addBackground = () => { if (firstAvailableTarget) openFilePicker({ kind: "add", target: firstAvailableTarget }); };
+  const replaceBackground = (id: string) => openFilePicker({ kind: "replace", id });
+  async function upload(file: File, input: HTMLInputElement) {
+    const operation = fileOperationRef.current;
+    setError(null);
+    if (!(file.type === "image/png" || file.type === "image/jpeg")) { setError("guide.pdfDesign.background.unsupported"); return; }
+    if (!file.size || file.size > 700 * 1024) { setError("guide.pdfDesign.background.tooLarge"); return; }
+    try {
+      const imageUrl = await blobToDataUrl(file);
+      const currentItems = itemsRef.current;
+      if (operation?.kind === "add") {
+        const target = currentItems.some((item) => item.target === operation.target)
+          ? BACKGROUND_TARGETS.find((candidate) => !currentItems.some((item) => item.target === candidate.id))?.id
+          : operation.target;
+        if (!target) return;
+        const nextItems = [...currentItems, { id: crypto.randomUUID(), imageUrl, opacity: 20, target }];
+        itemsRef.current = nextItems;
+        onChange(nextItems);
+      } else if (operation?.kind === "replace") {
+        const nextItems = currentItems.map((item) => item.id === operation.id ? { ...item, imageUrl } : item);
+        itemsRef.current = nextItems;
+        onChange(nextItems);
+      }
+    } catch { setError("guide.pdfDesign.background.unreadable"); }
+    finally { input.value = ""; fileOperationRef.current = null; }
+  }
+  function changeTarget(id: string, target: GuidePdfBackgroundTarget) {
+    if (items.some((item) => item.id !== id && item.target === target)) { setError("guide.pdfDesign.background.duplicateTarget"); return; }
+    setError(null); onChange(items.map((item) => item.id === id ? { ...item, target } : item));
+  }
+  return <div className="mt-3 border-t-[0.5px] border-[var(--border)] pt-3">
+    <h2 className="font-[family-name:var(--font-display)] text-[13px] font-medium text-[var(--text)]">{t("guide.pdfDesign.background.title")}</h2>
+    <div className="mt-2 space-y-2">{items.map((item) => <div key={item.id} className="border-b-[0.5px] border-[var(--border)] pb-2 last:border-b-0">
+      <div className="flex items-center gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element -- persisted data URL cannot use the Next image optimizer. */}
+        <img src={item.imageUrl} alt="" className="size-10 shrink-0 rounded-md bg-[var(--card)] object-cover" />
+        <label className="min-w-0 flex-1"><span className="sr-only">{t("guide.pdfDesign.background.applyTo")}</span><select value={item.target} disabled={disabled} onChange={(event) => changeTarget(item.id, event.target.value as GuidePdfBackgroundTarget)} className={`h-8 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-[11px] text-[var(--text)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>{BACKGROUND_TARGETS.map((target) => <option key={target.id} value={target.id} disabled={target.id !== item.target && usedTargets.has(target.id)}>{t(target.label)}</option>)}</select></label>
+      </div>
+      <BackgroundOpacitySlider key={`${item.id}-${item.opacity}`} disabled={disabled} value={item.opacity} onCommit={(opacity) => onChange(items.map((entry) => entry.id === item.id ? { ...entry, opacity } : entry))} t={t} />
+      <div className="flex justify-end gap-1"><button type="button" disabled={disabled} onClick={() => replaceBackground(item.id)} className={`h-7 rounded-md px-2 text-[10px] text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--accent)]"}`}>{t("guide.pdfDesign.background.replace")}</button><button type="button" disabled={disabled} onClick={() => onChange(items.filter((entry) => entry.id !== item.id))} className={`h-7 rounded-md px-2 text-[10px] text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--accent)]"}`}>{t("guide.pdfDesign.background.remove")}</button></div>
+    </div>)}</div>
+    {firstAvailableTarget ? <button type="button" disabled={disabled} onClick={addBackground} className={`mt-2 flex h-8 items-center gap-1.5 rounded-md border border-dashed border-[var(--border-strong)] px-2 text-[10px] text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-[var(--accent)] hover:text-[var(--accent)]"}`}><ImagePlus className="size-3.5" aria-hidden="true" />{t("guide.pdfDesign.background.add")}</button> : null}
+    <input ref={inputRef} hidden type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file, event.currentTarget); else event.currentTarget.value = ""; }} />
+    {error ? <p role="alert" className="mt-1 text-[10px] text-[var(--accent)]">{t(error)}</p> : null}
+  </div>;
+}
+
 function BrandScaleSlider({ disabled, label, max, min, onCommit, t, value }: { disabled: boolean; label: TranslationKey; max: number; min: number; onCommit: (value: number) => void; t: (key: TranslationKey) => string; value: number }) {
   const [draft, setDraft] = useState(value);
   const commit = () => { if (draft !== value) onCommit(draft); };
@@ -240,6 +319,7 @@ export function GuidePdfDesignPanel({
   qrValue,
   socialLinks,
   customLinks,
+  backgroundItems,
   pageFormat,
   onPageFormatChange,
   onAccentColorChange,
@@ -254,6 +334,7 @@ export function GuidePdfDesignPanel({
   onQrValueChange,
   onSocialLinksChange,
   onCustomLinksChange,
+  onBackgroundItemsChange,
   t,
 }: {
   accentColor: string;
@@ -269,6 +350,7 @@ export function GuidePdfDesignPanel({
   qrValue: string | null;
   socialLinks: GuideBrandSocialLink[];
   customLinks: GuideBrandCustomLink[];
+  backgroundItems: GuidePdfBackgroundItems;
   pageFormat: GuidePageFormat;
   onPageFormatChange: (pageFormat: GuidePageFormat) => void;
   onAccentColorChange: (accentColor: string) => void;
@@ -283,6 +365,7 @@ export function GuidePdfDesignPanel({
   onQrValueChange: (qrValue: string | null) => void;
   onSocialLinksChange: (socialLinks: GuideBrandSocialLink[]) => void;
   onCustomLinksChange: (customLinks: GuideBrandCustomLink[]) => void;
+  onBackgroundItemsChange: (items: GuidePdfBackgroundItems) => void;
   t: (key: TranslationKey) => string;
 }) {
   const [nameDraft, setNameDraft] = useState(brandName ?? "");
@@ -347,6 +430,8 @@ export function GuidePdfDesignPanel({
           })}
         </div>
       </div>
+
+      <BackgroundEditor disabled={disabled} items={backgroundItems} onChange={onBackgroundItemsChange} t={t} />
 
       <div className="mt-3 border-t-[0.5px] border-[var(--border)] pt-3">
         <h2 className="font-[family-name:var(--font-display)] text-[13px] font-medium text-[var(--text)]">{t("guide.pdfDesign.typography.label")}</h2>

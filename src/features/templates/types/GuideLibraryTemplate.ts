@@ -1,5 +1,6 @@
 import type { GuidePageFormat } from "@/features/guides/types/GuidePageFormat";
 import type { GuideBrandSettings } from "@/features/guides/types/GuideBrandSettings";
+import type { GuidePdfBackgroundItems } from "@/features/guides/types/GuidePdfBackground";
 
 export type GuideTemplateCategory = "minimal" | "technical" | "editorial" | "custom";
 export type PageNumberStyle = "numeric" | "numericWithTotal";
@@ -9,6 +10,7 @@ import type { GuideFontId } from "@/features/guides/design/guideFontRegistry";
 
 export type GuideTemplateSettings = {
   branding: GuideBrandSettings;
+  backgroundItems: GuidePdfBackgroundItems;
   pageFormat: GuidePageFormat;
   pageBackground: string;
   textColor: string;
