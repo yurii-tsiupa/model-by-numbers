@@ -1,4 +1,4 @@
-export type GuideAssetKind = "thumbnail" | "model-original" | "model-base" | "model-painted" | "model-numbers" | "exploded" | "assembly" | "reference" | "step-preview";
+export type GuideAssetKind = "thumbnail" | "model-original" | "model-base" | "model-painted" | "model-numbers" | "exploded" | "assembly" | "reference" | "step-preview" | "branding-logo" | "pdf-background";
 
 export type GuideAssetReference = {
   id: string;

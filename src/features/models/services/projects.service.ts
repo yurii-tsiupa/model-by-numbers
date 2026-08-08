@@ -39,6 +39,7 @@ import { normalizeGuideAccentColor } from "@/features/guides/design/guideDesignT
 import { normalizeGuideFontId } from "@/features/guides/design/guideFontRegistry";
 import { normalizeGuideBrandSettings } from "@/features/guides/types/GuideBrandSettings";
 import { migrateLegacyGuidePdfBackgrounds, normalizeGuidePdfBackgroundItems } from "@/features/guides/types/GuidePdfBackground";
+import { assertGuideSettingsFirestoreSafe, serializeGuideTemplateSettings } from "@/features/templates/lib/serializeGuideTemplateSettings";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -463,13 +464,16 @@ export async function saveProjectGuideTemplateSettings(projectId: string, userId
   if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error("Unable to update this project.");
   const accentColor = settings.accentColor === undefined ? undefined : normalizeGuideAccentColor(settings.accentColor);
   if (settings.accentColor !== undefined && !accentColor) throw new Error("Invalid Guide accent color.");
+  const serializedSettings = serializeGuideTemplateSettings({
+    ...settings,
+    ...(settings.branding ? { branding: normalizeGuideBrandSettings(settings.branding) } : {}),
+    ...(settings.backgroundItems ? { backgroundItems: normalizeGuidePdfBackgroundItems(settings.backgroundItems) } : {}),
+    ...(accentColor ? { accentColor } : {}),
+  });
+  assertGuideSettingsFirestoreSafe(serializedSettings);
   await updateDoc(reference, {
-    guideTemplateSettings: {
-      ...settings,
-      ...(settings.branding ? { branding: normalizeGuideBrandSettings(settings.branding) } : {}),
-      ...(settings.backgroundItems ? { backgroundItems: normalizeGuidePdfBackgroundItems(settings.backgroundItems) } : {}),
-      ...(accentColor ? { accentColor } : {}),
-    },
+    guideTemplateSettings: serializedSettings,
+    ...(typeof snapshot.data().thumbnailUrl === "string" && /^(data:|blob:)/.test(snapshot.data().thumbnailUrl) ? { thumbnailUrl: null } : {}),
     updatedAt: serverTimestamp(),
   });
 }
@@ -484,18 +488,16 @@ export async function saveProjectGuideSectionSettings(projectId: string, userId:
 export async function saveProjectThumbnailReference({
   projectId,
   userId,
-  thumbnailUrl,
   thumbnailVersion,
 }: {
   projectId: string;
   userId: string;
-  thumbnailUrl: string;
   thumbnailVersion: number;
 }): Promise<void> {
   const reference = doc(db, "projects", projectId);
   const snapshot = await getDoc(reference);
   if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error("Unable to update this project.");
-  await updateDoc(reference, { thumbnailUrl, thumbnailVersion, updatedAt: serverTimestamp() });
+  await updateDoc(reference, { thumbnailUrl: null, thumbnailVersion, updatedAt: serverTimestamp() });
 }
 
 export async function updateProjectBaseColor(

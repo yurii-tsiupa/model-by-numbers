@@ -4,6 +4,7 @@ import { normalizeGuideBrandSettings } from "@/features/guides/types/GuideBrandS
 import { migrateLegacyGuidePdfBackgrounds, normalizeGuidePdfBackgroundItems } from "@/features/guides/types/GuidePdfBackground";
 import { LOCAL_DATABASE_STORES, openLocalDatabase } from "@/features/storage/lib/localDatabase";
 import type { CreateUserGuideTemplateInput, GuideTemplateCategory, GuideTemplateSettings, UserGuideTemplate } from "../types/GuideLibraryTemplate";
+import { serializeGuideTemplateSettings } from "../lib/serializeGuideTemplateSettings";
 
 type StoredTemplate = Omit<UserGuideTemplate,"createdAt"|"updatedAt"|"settings"> & {
   createdAt: Date|string|number;
@@ -44,6 +45,6 @@ function result<T>(request:IDBRequest<T>):Promise<T>{return new Promise((resolve
 
 export const guideTemplateStorage={
   async getByUserId(userId:string){const db=await openLocalDatabase();const records=await result(db.transaction(STORE).objectStore(STORE).index("userId").getAll(userId) as IDBRequest<unknown[]>);return records.flatMap(value=>{const template=normalize(value);return template&&template.userId===userId?[template]:[]});},
-  async create(userId:string,input:CreateUserGuideTemplateInput){const db=await openLocalDatabase(),now=new Date();const template:UserGuideTemplate={id:crypto.randomUUID(),userId,source:"user",name:input.name.trim().slice(0,100),category:input.category,settings:{...input.settings},createdAt:now,updatedAt:now};await result(db.transaction(STORE,"readwrite").objectStore(STORE).add(template));return template;},
+  async create(userId:string,input:CreateUserGuideTemplateInput){const db=await openLocalDatabase(),now=new Date();const template:UserGuideTemplate={id:crypto.randomUUID(),userId,source:"user",name:input.name.trim().slice(0,100),category:input.category,settings:serializeGuideTemplateSettings(input.settings) as GuideTemplateSettings,createdAt:now,updatedAt:now};await result(db.transaction(STORE,"readwrite").objectStore(STORE).add(template));return template;},
   async delete(userId:string,id:string){const db=await openLocalDatabase(),store=db.transaction(STORE,"readonly").objectStore(STORE),existing=normalize(await result(store.get(id)));if(!existing||existing.userId!==userId)throw new Error("Template not found.");await result(db.transaction(STORE,"readwrite").objectStore(STORE).delete(id));},
 };

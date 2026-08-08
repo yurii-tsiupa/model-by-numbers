@@ -15,7 +15,12 @@ export const guideAssetStorage = {
     const file = await loadGuideAssetFile(reference.storageKey);
     return file?.entity === "guide-asset" ? file.blob : null;
   },
+  async loadByStorageKey(storageKey: string): Promise<Blob | null> {
+    const file = await loadGuideAssetFile(storageKey);
+    return file?.entity === "guide-asset" ? file.blob : null;
+  },
   delete: (reference: GuideAssetReference) => deleteGuideAssetFile(reference.storageKey),
+  deleteByStorageKey: (storageKey: string) => deleteGuideAssetFile(storageKey),
   async list(projectId: string): Promise<GuideAssetReference[]> {
     return (await loadGuideAssetFiles(projectId)).map(file => ({ id: file.id, storageKey: file.id, mimeType: file.mimeType, createdAt: file.createdAt.toISOString(), kind: String(file.metadata?.kind) as GuideAssetReference["kind"], assetId: String(file.metadata?.assetId),...(typeof file.metadata?.contentKey==="string"?{contentKey:file.metadata.contentKey}:{}) }));
   },

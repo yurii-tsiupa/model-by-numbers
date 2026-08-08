@@ -237,7 +237,7 @@ function BackgroundEditor({ disabled, items, onChange, t }: { disabled: boolean;
           ? BACKGROUND_TARGETS.find((candidate) => !currentItems.some((item) => item.target === candidate.id))?.id
           : operation.target;
         if (!target) return;
-        const nextItems = [...currentItems, { id: crypto.randomUUID(), imageUrl, opacity: 20, target }];
+        const nextItems = [...currentItems, { id: crypto.randomUUID(), imageUrl, localAssetId: null, opacity: 20, target }];
         itemsRef.current = nextItems;
         onChange(nextItems);
       } else if (operation?.kind === "replace") {
@@ -257,7 +257,7 @@ function BackgroundEditor({ disabled, items, onChange, t }: { disabled: boolean;
     <div className="mt-2 space-y-2">{items.map((item) => <div key={item.id} className="border-b-[0.5px] border-[var(--border)] pb-2 last:border-b-0">
       <div className="flex items-center gap-2">
         {/* eslint-disable-next-line @next/next/no-img-element -- persisted data URL cannot use the Next image optimizer. */}
-        <img src={item.imageUrl} alt="" className="size-10 shrink-0 rounded-md bg-[var(--card)] object-cover" />
+        <img src={item.imageUrl ?? ""} alt="" className="size-10 shrink-0 rounded-md bg-[var(--card)] object-cover" />
         <label className="min-w-0 flex-1"><span className="sr-only">{t("guide.pdfDesign.background.applyTo")}</span><select value={item.target} disabled={disabled} onChange={(event) => changeTarget(item.id, event.target.value as GuidePdfBackgroundTarget)} className={`h-8 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-[11px] text-[var(--text)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>{BACKGROUND_TARGETS.map((target) => <option key={target.id} value={target.id} disabled={target.id !== item.target && usedTargets.has(target.id)}>{t(target.label)}</option>)}</select></label>
       </div>
       <BackgroundOpacitySlider key={`${item.id}-${item.opacity}`} disabled={disabled} value={item.opacity} onCommit={(opacity) => onChange(items.map((entry) => entry.id === item.id ? { ...entry, opacity } : entry))} t={t} />

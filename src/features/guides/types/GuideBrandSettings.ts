@@ -18,6 +18,7 @@ export type GuideBrandSettings = {
   coverLayout: GuideBrandPageLayout;
   ctaText: string | null;
   name: string | null;
+  logoAssetId: string | null;
   logoUrl: string | null;
   qrValue: string | null;
   socialLinks: GuideBrandSocialLink[];
@@ -41,13 +42,14 @@ export function normalizeGuideBrandUrl(value: string | null | undefined): string
 const SOCIAL_PLATFORMS: readonly GuideBrandSocialPlatform[] = ["instagram", "tiktok", "telegram", "facebook", "youtube", "x", "linkedin"];
 
 export function normalizeGuideBrandSettings(value: unknown): GuideBrandSettings {
-  if (!value || typeof value !== "object") return { backCoverLayout: DEFAULT_BACK_COVER_BRAND_LAYOUT, coverLayout: DEFAULT_COVER_BRAND_LAYOUT, ctaText: null, customLinks: [], name: null, logoUrl: null, qrValue: null, socialLinks: [] };
+  if (!value || typeof value !== "object") return { backCoverLayout: DEFAULT_BACK_COVER_BRAND_LAYOUT, coverLayout: DEFAULT_COVER_BRAND_LAYOUT, ctaText: null, customLinks: [], name: null, logoAssetId: null, logoUrl: null, qrValue: null, socialLinks: [] };
   const branding = value as Record<string, unknown>;
   const ctaText = typeof branding.ctaText === "string" ? branding.ctaText.trim().slice(0, 160) || null : null;
   const backCoverLayout = normalizeGuideBrandPageLayout(branding.backCoverLayout, DEFAULT_BACK_COVER_BRAND_LAYOUT);
   const coverLayout = normalizeGuideBrandPageLayout(branding.coverLayout, DEFAULT_COVER_BRAND_LAYOUT);
   const name = typeof branding.name === "string" ? branding.name.trim().slice(0, 100) || null : null;
-  const logoUrl = typeof branding.logoUrl === "string" && /^data:image\/(png|jpeg);base64,/.test(branding.logoUrl)
+  const logoAssetId = typeof branding.logoAssetId === "string" && branding.logoAssetId.startsWith("guide-asset:") ? branding.logoAssetId : null;
+  const logoUrl = typeof branding.logoUrl === "string" && (/^data:image\/(png|jpeg);base64,/.test(branding.logoUrl) || branding.logoUrl.startsWith("blob:"))
     ? branding.logoUrl
     : null;
   const qrValue = typeof branding.qrValue === "string" ? normalizeGuideBrandUrl(branding.qrValue) : null;
@@ -84,7 +86,7 @@ export function normalizeGuideBrandSettings(value: unknown): GuideBrandSettings 
     if (!url || !label) return [];
     return [{ id: typeof link.id === "string" && link.id.trim() ? link.id : `custom-${index}`, label, url }];
   });
-  return { backCoverLayout, coverLayout, ctaText, customLinks, name, logoUrl, qrValue, socialLinks };
+  return { backCoverLayout, coverLayout, ctaText, customLinks, name, logoAssetId, logoUrl, qrValue, socialLinks };
 }
 import { DEFAULT_BACK_COVER_BRAND_LAYOUT, DEFAULT_COVER_BRAND_LAYOUT, normalizeGuideBrandPageLayout } from "../lib/guideBrandLayout";
 import type { GuideBrandPageLayout } from "./GuideBrandLayout";

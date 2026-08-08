@@ -52,7 +52,7 @@ export function GuidePage({backgroundSectionId, children, id, locale, pageNumber
       style={pageStyle}
       wrap={wrap}
     >
-      {background ? <Image fixed src={background.imageUrl} style={{ height: geometry.pageHeight, left: 0, objectFit: "cover", objectPosition: "center", opacity: background.opacity / 100, position: "absolute", top: 0, width: geometry.pageWidth }} /> : null}
+      {background?.imageUrl ? <Image fixed src={background.imageUrl} style={{ height: geometry.pageHeight, left: 0, objectFit: "cover", objectPosition: "center", opacity: background.opacity / 100, position: "absolute", top: 0, width: geometry.pageWidth }} /> : null}
       <View style={[guidePdfStyles.pageHeader, { height: geometry.headerHeight, ...horizontalPadding }]}><GuidePageHeader projectName={projectName}/></View>
       <View style={contentStyles}>{children}</View>
       {showFooter && renderMode === "export" ? <GuidePageFooter locale={locale} pageNumber={pageNumber} totalPages={totalPages} geometry={geometry}/> : <View style={[guidePdfStyles.pageFooter, { height: geometry.footerHeight, ...horizontalPadding }]}/>}
