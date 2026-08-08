@@ -23,7 +23,7 @@ export function resolveGuideBackCoverData(guide: ModelGuide): ResolvedGuideBackC
       : undefined
   );
   if (!backCover?.enabled) return null;
-  const socialLinks = normalizeGuideBrandSettings({ socialLinks: backCover.socialLinks }).socialLinks;
+  const normalizedLinks = normalizeGuideBrandSettings({ customLinks: backCover.customLinks, socialLinks: backCover.socialLinks, websiteUrl: backCover.websiteUrl });
   const resolved: ResolvedGuideBackCover = {
     enabled: true,
     brandName: optionalText(backCover.brandName),
@@ -32,7 +32,8 @@ export function resolveGuideBackCoverData(guide: ModelGuide): ResolvedGuideBackC
     description: optionalText(backCover.description),
     websiteUrl: optionalText(backCover.websiteUrl),
     socialUrl: optionalText(backCover.socialUrl),
-    socialLinks,
+    socialLinks: normalizedLinks.socialLinks,
+    customLinks: normalizedLinks.customLinks,
     qrValue: optionalText(backCover.qrValue),
     ctaText: optionalText(backCover.ctaText),
     accentColor: optionalColor(backCover.accentColor),
@@ -46,6 +47,7 @@ export function resolveGuideBackCoverData(guide: ModelGuide): ResolvedGuideBackC
       || resolved.websiteUrl
       || resolved.socialUrl
       || resolved.socialLinks.length
+      || resolved.customLinks.length
       || resolved.qrValue
       || resolved.ctaText,
   );

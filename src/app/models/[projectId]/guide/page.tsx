@@ -335,7 +335,7 @@ export default function GuidePage() {
     backCover: guideTemplate.current.settings.branding.name
       || guideTemplate.current.settings.branding.logoUrl
       || guideTemplate.current.settings.branding.ctaText
-      || guideTemplate.current.settings.branding.websiteUrl
+      || guideTemplate.current.settings.branding.customLinks.length
       || guideTemplate.current.settings.branding.qrValue
       || guideTemplate.current.settings.branding.socialLinks.length
       ? {
@@ -343,7 +343,7 @@ export default function GuidePage() {
           brandName: guideTemplate.current.settings.branding.name,
           logoUrl: guideTemplate.current.settings.branding.logoUrl,
           ctaText: guideTemplate.current.settings.branding.ctaText,
-          websiteUrl: guideTemplate.current.settings.branding.websiteUrl,
+          customLinks: guideTemplate.current.settings.branding.customLinks,
           qrValue: guideTemplate.current.settings.branding.qrValue,
           socialLinks: guideTemplate.current.settings.branding.socialLinks,
         }

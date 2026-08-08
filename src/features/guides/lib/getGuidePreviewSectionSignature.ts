@@ -72,8 +72,10 @@ export function getGuidePreviewSectionSignature(
 
   if (sectionId === "cover") {
     builder.add(templateSettings.branding.name); builder.image(templateSettings.branding.logoUrl);
-    builder.add(templateSettings.branding.websiteUrl); builder.add(templateSettings.branding.qrValue);
-    for (const link of templateSettings.branding.socialLinks) { builder.add(link.id); builder.add(link.type); builder.add(link.url); builder.add(link.label); }
+    builder.add(templateSettings.branding.qrValue);
+    for (const link of templateSettings.branding.socialLinks) { builder.add(link.id); builder.add(link.platform); builder.add(link.url); builder.add(link.handle); }
+    for (const link of templateSettings.branding.customLinks) { builder.add(link.id); builder.add(link.label); builder.add(link.url); }
+    for (const settings of Object.values(templateSettings.branding.coverLayout)) { builder.add(settings.position); builder.add(settings.size); builder.add(settings.alignment); builder.add(settings.logoScale); builder.add(settings.qrScale); }
     builder.add(guide.title); builder.add(guide.description); builder.add(guide.author);
     builder.add(guide.printerType); builder.add(guide.material); builder.add(guide.baseColor);
     builder.image(guide.images.painted ?? guide.images.base ?? guide.images.original ?? guide.images.numbers);
@@ -125,7 +127,9 @@ export function getGuidePreviewSectionSignature(
     const data = viewModel.backCoverData;
     builder.add(data?.brandName); builder.image(data?.logoUrl); builder.add(data?.headline); builder.add(data?.description);
     builder.add(data?.websiteUrl); builder.add(data?.socialUrl); builder.add(data?.qrValue); builder.add(data?.ctaText); builder.add(data?.accentColor);
-    for (const link of data?.socialLinks ?? []) { builder.add(link.id); builder.add(link.type); builder.add(link.url); builder.add(link.label); }
+    for (const link of data?.socialLinks ?? []) { builder.add(link.id); builder.add(link.platform); builder.add(link.url); builder.add(link.handle); }
+    for (const link of data?.customLinks ?? []) { builder.add(link.id); builder.add(link.label); builder.add(link.url); }
+    for (const settings of Object.values(templateSettings.branding.backCoverLayout)) { builder.add(settings.position); builder.add(settings.size); builder.add(settings.alignment); builder.add(settings.logoScale); builder.add(settings.qrScale); }
   }
   return builder.value();
 }

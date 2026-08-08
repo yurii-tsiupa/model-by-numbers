@@ -1,19 +1,27 @@
-export type GuideBrandSocialLinkType = "instagram" | "tiktok" | "facebook" | "youtube" | "other";
+export type GuideBrandSocialPlatform = "instagram" | "tiktok" | "telegram" | "facebook" | "youtube" | "x" | "linkedin";
 
 export type GuideBrandSocialLink = {
   id: string;
-  type: GuideBrandSocialLinkType;
+  platform: GuideBrandSocialPlatform;
   url: string;
-  label: string | null;
+  handle: string | null;
+};
+
+export type GuideBrandCustomLink = {
+  id: string;
+  label: string;
+  url: string;
 };
 
 export type GuideBrandSettings = {
+  backCoverLayout: GuideBrandPageLayout;
+  coverLayout: GuideBrandPageLayout;
   ctaText: string | null;
   name: string | null;
   logoUrl: string | null;
   qrValue: string | null;
   socialLinks: GuideBrandSocialLink[];
-  websiteUrl: string | null;
+  customLinks: GuideBrandCustomLink[];
 };
 
 export function normalizeGuideBrandUrl(value: string | null | undefined): string | null {
@@ -30,30 +38,53 @@ export function normalizeGuideBrandUrl(value: string | null | undefined): string
   }
 }
 
+const SOCIAL_PLATFORMS: readonly GuideBrandSocialPlatform[] = ["instagram", "tiktok", "telegram", "facebook", "youtube", "x", "linkedin"];
+
 export function normalizeGuideBrandSettings(value: unknown): GuideBrandSettings {
-  if (!value || typeof value !== "object") return { ctaText: null, name: null, logoUrl: null, qrValue: null, socialLinks: [], websiteUrl: null };
+  if (!value || typeof value !== "object") return { backCoverLayout: DEFAULT_BACK_COVER_BRAND_LAYOUT, coverLayout: DEFAULT_COVER_BRAND_LAYOUT, ctaText: null, customLinks: [], name: null, logoUrl: null, qrValue: null, socialLinks: [] };
   const branding = value as Record<string, unknown>;
   const ctaText = typeof branding.ctaText === "string" ? branding.ctaText.trim().slice(0, 160) || null : null;
+  const backCoverLayout = normalizeGuideBrandPageLayout(branding.backCoverLayout, DEFAULT_BACK_COVER_BRAND_LAYOUT);
+  const coverLayout = normalizeGuideBrandPageLayout(branding.coverLayout, DEFAULT_COVER_BRAND_LAYOUT);
   const name = typeof branding.name === "string" ? branding.name.trim().slice(0, 100) || null : null;
   const logoUrl = typeof branding.logoUrl === "string" && /^data:image\/(png|jpeg);base64,/.test(branding.logoUrl)
     ? branding.logoUrl
     : null;
   const qrValue = typeof branding.qrValue === "string" ? normalizeGuideBrandUrl(branding.qrValue) : null;
-  const socialLinks = Array.isArray(branding.socialLinks)
-    ? branding.socialLinks.slice(0, 8).flatMap((item, index): GuideBrandSocialLink[] => {
+  const rawSocialLinks = Array.isArray(branding.socialLinks) ? branding.socialLinks : [];
+  const socialLinks = rawSocialLinks
+    ? rawSocialLinks.slice(0, 8).flatMap((item, index): GuideBrandSocialLink[] => {
         if (!item || typeof item !== "object") return [];
         const link = item as Record<string, unknown>;
         const url = typeof link.url === "string" ? normalizeGuideBrandUrl(link.url) : null;
         if (!url) return [];
-        const type: GuideBrandSocialLinkType = link.type === "instagram" || link.type === "tiktok" || link.type === "facebook" || link.type === "youtube" ? link.type : "other";
+        const candidate = typeof link.platform === "string" ? link.platform : link.type;
+        if (!SOCIAL_PLATFORMS.includes(candidate as GuideBrandSocialPlatform)) return [];
         return [{
           id: typeof link.id === "string" && link.id.trim() ? link.id : `social-${index}`,
-          type,
+          platform: candidate as GuideBrandSocialPlatform,
           url,
-          label: typeof link.label === "string" ? link.label.trim().slice(0, 60) || null : null,
+          handle: typeof link.handle === "string" ? link.handle.trim().slice(0, 60) || null : typeof link.label === "string" ? link.label.trim().slice(0, 60) || null : null,
         }];
       })
     : [];
-  const websiteUrl = typeof branding.websiteUrl === "string" ? normalizeGuideBrandUrl(branding.websiteUrl) : null;
-  return { ctaText, name, logoUrl, qrValue, socialLinks, websiteUrl };
+  const customCandidates: unknown[] = Array.isArray(branding.customLinks) ? [...branding.customLinks] : [];
+  if (typeof branding.websiteUrl === "string") customCandidates.unshift({ id: "legacy-website", label: "Website", url: branding.websiteUrl });
+  rawSocialLinks.forEach((item, index) => {
+    if (!item || typeof item !== "object") return;
+    const link = item as Record<string, unknown>;
+    const candidate = typeof link.platform === "string" ? link.platform : link.type;
+    if (!SOCIAL_PLATFORMS.includes(candidate as GuideBrandSocialPlatform)) customCandidates.push({ id: link.id ?? `legacy-link-${index}`, label: link.label ?? "Link", url: link.url });
+  });
+  const customLinks = customCandidates.slice(0, 5).flatMap((item, index): GuideBrandCustomLink[] => {
+    if (!item || typeof item !== "object") return [];
+    const link = item as Record<string, unknown>;
+    const url = typeof link.url === "string" ? normalizeGuideBrandUrl(link.url) : null;
+    const label = typeof link.label === "string" ? link.label.trim().slice(0, 60) : "";
+    if (!url || !label) return [];
+    return [{ id: typeof link.id === "string" && link.id.trim() ? link.id : `custom-${index}`, label, url }];
+  });
+  return { backCoverLayout, coverLayout, ctaText, customLinks, name, logoUrl, qrValue, socialLinks };
 }
+import { DEFAULT_BACK_COVER_BRAND_LAYOUT, DEFAULT_COVER_BRAND_LAYOUT, normalizeGuideBrandPageLayout } from "../lib/guideBrandLayout";
+import type { GuideBrandPageLayout } from "./GuideBrandLayout";

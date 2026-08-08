@@ -16,7 +16,11 @@ import { GuidePage } from "./GuidePage";
 import { formatLocalizedDate,translate } from "@/features/i18n/lib/i18n";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 import { useGuidePdfDesignTokens } from "./GuidePdfTemplateContext";
-import { getGuideSocialLabel, getGuideSocialPlatformLabel, getGuideWebsiteLabel } from "../lib/guideBrandContacts";
+import { getGuideSocialLabel, shortenGuideContactText } from "../lib/guideBrandContacts";
+import { resolveGuideBrandLogoDimensions, resolveGuideBrandQrPoints } from "../lib/guideBrandLayout";
+import type { GuideBrandElementLayout, GuideBrandElementType } from "../types/GuideBrandLayout";
+import { GuideBrandLayoutLayer } from "./GuideBrandLayoutZone";
+import { GuideLinkIcon, GuideSocialIcon } from "./GuideSocialIcon";
 
 type GuideCoverPageProps = {
   viewModel: GuideViewModel;
@@ -29,6 +33,7 @@ type GuideCoverPageProps = {
 const styles = StyleSheet.create({
   content: {
     justifyContent: "space-between",
+    position: "relative",
   },
   titleBlock: {
     marginTop: 30,
@@ -81,28 +86,31 @@ const styles = StyleSheet.create({
     ...guidePdfStyles.card,
     width: "31.8%",
   },
-  contactBlock: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 12,
-  },
   contactQrFrame: {
     backgroundColor: "#FFFFFF",
     padding: 4,
   },
   contactQr: {
-    height: 72,
     objectFit: "contain",
-    width: 72,
   },
   contactDetails: {
-    gap: 3,
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
+  contactItem: { alignItems: "center", flexDirection: "row", marginBottom: 3, marginRight: 6 },
   contactLine: {
     color: pdfColors.muted,
     fontSize: 8,
+    marginTop: 3,
     textDecoration: "none",
+  },
+  contactText: {
+    fontSize: 9,
+    fontWeight: 600,
+  },
+  contactCta: {
+    fontSize: 8,
+    marginTop: 2,
   },
   coverMeta: {
     color: pdfColors.faint,
@@ -120,8 +128,41 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
   const targetLabel=targetMode==="markers"?t("guide.metrics.paintingTargets"):targetMode==="region"?t("guide.metrics.paintedAreas"):t("guide.metrics.modelParts");
   const metadata = [[t("guide.metrics.steps"),String(metrics.stepCount)],[t("guide.usedColors"),String(metrics.usedColorCount)],[targetLabel,String(metrics.targetCount)]].filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
   const contact = viewModel.backCoverData;
-  const coverSocialLinks = contact?.socialLinks.slice(0, 3) ?? [];
-  const hasContact = Boolean(contact?.websiteUrl || contact?.qrImageUrl || coverSocialLinks.length);
+  const coverSocialLinks = branding?.socialLinks.slice(0, 4) ?? [];
+  const coverCustomLinks = branding?.customLinks.slice(0, 3) ?? [];
+  const layout = branding?.coverLayout;
+  const activeBrandElements = new Set<GuideBrandElementType>([
+    ...(branding?.logoUrl ? ["logo" as const] : []),
+    ...(branding?.name ? ["brand" as const] : []),
+    ...(branding?.ctaText ? ["cta" as const] : []),
+    ...(contact?.qrImageUrl ? ["qr" as const] : []),
+    ...(coverSocialLinks.length ? ["socialLinks" as const] : []),
+    ...(coverCustomLinks.length ? ["customLinks" as const] : []),
+  ]);
+  const renderBrandElement = (element: GuideBrandElementType, settings: GuideBrandElementLayout) => {
+    const textAlign = settings.alignment;
+    if (element === "logo" && branding?.logoUrl) {
+      const dimensions = resolveGuideBrandLogoDimensions("cover", settings.logoScale, templateSettings?.pageFormat ?? viewModel.pageFormat);
+      return <Image src={branding.logoUrl} style={{ ...dimensions, objectFit: "contain" }} />;
+    }
+    if (element === "qr" && contact?.qrImageUrl) {
+      const size = resolveGuideBrandQrPoints("cover", settings.qrScale, templateSettings?.pageFormat ?? viewModel.pageFormat);
+      return <View style={styles.contactQrFrame}><Image src={contact.qrImageUrl} style={[styles.contactQr, { height: size, width: size }]} /></View>;
+    }
+    if (element === "socialLinks") return <View style={[styles.contactDetails, { justifyContent: textAlign === "left" ? "flex-start" : textAlign === "right" ? "flex-end" : "center" }]}>
+      {coverSocialLinks.map((link) => <View key={link.id} style={styles.contactItem}><GuideSocialIcon platform={link.platform} /><Link src={link.url} style={[styles.contactLine, { fontFamily: design.bodyFont, marginLeft: 3, marginTop: 0 }]}>{getGuideSocialLabel(link)}</Link></View>)}
+    </View>;
+    if (element === "customLinks") return <View>
+      {coverCustomLinks.map((link) => <View key={link.id} style={styles.contactItem}><GuideLinkIcon /><Link src={link.url} style={[styles.contactLine, { color: design.accentText, fontFamily: design.bodyFont, marginLeft: 3, marginTop: 0, textAlign }]}>{shortenGuideContactText(link.label, 32)}</Link></View>)}
+    </View>;
+    if (element === "brand") return <View>
+      {branding?.name ? <Text style={[styles.contactText, { color: design.accentText, fontFamily: design.bodyFont, textAlign }]}>{shortenGuideContactText(branding.name, 36)}</Text> : null}
+    </View>;
+    if (element === "cta") return <View>
+      {branding?.ctaText ? <Text style={[styles.contactCta, { fontFamily: design.bodyFont, textAlign }]}>{shortenGuideContactText(branding.ctaText, 64)}</Text> : null}
+    </View>;
+    return null;
+  };
 
   return (
     <GuidePage
@@ -134,13 +175,7 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
       style={{backgroundColor:templateSettings?.pageBackground??pdfColors.background,color:templateSettings?.textColor??pdfColors.text}}
     >
       <View>
-        {branding?.name || branding?.logoUrl ? (
-          <View style={styles.branding}>
-            {branding.logoUrl ? <Image src={branding.logoUrl} style={styles.brandLogo} /> : null}
-            {branding.name ? <Text style={[styles.brandName, { color: design.accentText, fontFamily: design.bodyFont }]}>{branding.name}</Text> : null}
-          </View>
-        ) : null}
-        <View style={branding?.name || branding?.logoUrl ? styles.titleBlock : [styles.titleBlock, { marginTop: 0 }]}>
+        <View style={[styles.titleBlock, { marginTop: 0 }]}>
           <Text style={[styles.title, { fontFamily: design.headingFont }]}>{guide.title}</Text>
           <Text style={[styles.subtitle, { fontFamily: design.bodyFont }]}>{t("guide.paintingGuide")}</Text>
         </View>
@@ -161,16 +196,10 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
             </View>
           ))}
         </View>
-        {hasContact ? <View style={styles.contactBlock}>
-          {contact?.qrImageUrl ? <View style={styles.contactQrFrame}><Image src={contact.qrImageUrl} style={styles.contactQr} /></View> : null}
-          <View style={styles.contactDetails}>
-            {contact?.websiteUrl ? <Link src={contact.websiteUrl} style={[styles.contactLine, { color: design.accentText, fontFamily: design.bodyFont }]}>{getGuideWebsiteLabel(contact.websiteUrl)}</Link> : null}
-            {coverSocialLinks.map((link) => <Link key={link.id} src={link.url} style={[styles.contactLine, { fontFamily: design.bodyFont }]}>{getGuideSocialPlatformLabel(link.type)}  {getGuideSocialLabel(link)}</Link>)}
-          </View>
-        </View> : null}
         <Text style={[styles.subtitle,{fontSize:9,marginTop:14,fontFamily:design.bodyFont}]}>{[guide.printerType,guide.material].filter(Boolean).join(" · ")}</Text>
       </View>
       <Text style={styles.coverMeta}>{[guide.author,formatLocalizedDate(exportDate,locale,{day:"numeric",month:"long",year:"numeric"}),t(`language.${locale}`)].filter(Boolean).join(" · ")}</Text>
+      {layout ? <GuideBrandLayoutLayer activeElements={activeBrandElements} layout={layout} page="cover" pageFormat={templateSettings?.pageFormat ?? viewModel.pageFormat} renderElement={renderBrandElement} /> : null}
     </GuidePage>
   );
 }
