@@ -1,4 +1,5 @@
 import type { GuidePageFormat } from "@/features/guides/types/GuidePageFormat";
+import type { GuideBrandSettings } from "@/features/guides/types/GuideBrandSettings";
 
 export type GuideTemplateCategory = "minimal" | "technical" | "editorial" | "custom";
 export type PageNumberStyle = "numeric" | "numericWithTotal";
@@ -7,6 +8,7 @@ export type PageNumberPosition = "bottomLeft" | "bottomCenter" | "bottomRight";
 import type { GuideFontId } from "@/features/guides/design/guideFontRegistry";
 
 export type GuideTemplateSettings = {
+  branding: GuideBrandSettings;
   pageFormat: GuidePageFormat;
   pageBackground: string;
   textColor: string;

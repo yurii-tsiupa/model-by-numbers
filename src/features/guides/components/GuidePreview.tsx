@@ -92,6 +92,7 @@ export function GuidePreview({
   const pendingSectionIdRef = useRef<GuideContentSectionId | null>(null);
   const templateSettings = useMemo(() => ({
     accentColor: template.settings.accentColor,
+    branding: template.settings.branding,
     bodyFont: template.settings.bodyFont,
     coverStyle: template.settings.coverStyle,
     dividerStyle: template.settings.dividerStyle,
@@ -105,6 +106,7 @@ export function GuidePreview({
     textColor: template.settings.textColor,
   }), [
     template.settings.accentColor,
+    template.settings.branding,
     template.settings.bodyFont,
     template.settings.coverStyle,
     template.settings.dividerStyle,
@@ -210,6 +212,11 @@ export function GuidePreview({
     void onTemplateSettingsChange({ monoFont: fontId }).catch(() => setSaveWarning(text("guide.pdfDesign.saveFailed")));
   }
 
+  function handleBrandingChange(branding: GuideTemplateSettings["branding"]) {
+    if (!onTemplateSettingsChange) return;
+    void onTemplateSettingsChange({ branding }).catch(() => setSaveWarning(text("guide.pdfDesign.saveFailed")));
+  }
+
   return (
     <main className="min-h-0 flex-1 bg-[var(--bg)] text-[var(--text)]">
       <GuidePreviewHeader
@@ -284,7 +291,7 @@ export function GuidePreview({
                   {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
                 </div>
                 {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
-              </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} bodyFontId={template.settings.bodyFont} disabled={isUpdatingTemplateSettings} displayFontId={template.settings.headingFont} monoFontId={template.settings.monoFont} pageFormat={template.settings.pageFormat} onAccentColorChange={handleAccentColorChange} onBodyFontChange={handleBodyFontChange} onDisplayFontChange={handleDisplayFontChange} onMonoFontChange={handleMonoFontChange} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
+              </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} brandName={template.settings.branding.name} bodyFontId={template.settings.bodyFont} disabled={isUpdatingTemplateSettings} displayFontId={template.settings.headingFont} logoUrl={template.settings.branding.logoUrl} monoFontId={template.settings.monoFont} pageFormat={template.settings.pageFormat} onAccentColorChange={handleAccentColorChange} onBodyFontChange={handleBodyFontChange} onBrandNameChange={(name) => handleBrandingChange({ ...template.settings.branding, name })} onDisplayFontChange={handleDisplayFontChange} onLogoChange={(logoUrl) => handleBrandingChange({ ...template.settings.branding, logoUrl })} onMonoFontChange={handleMonoFontChange} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
             </div>
           </div>
         </details> : null}
@@ -321,7 +328,7 @@ export function GuidePreview({
                 {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
               </div>
               {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
-            </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} bodyFontId={template.settings.bodyFont} disabled={isUpdatingTemplateSettings} displayFontId={template.settings.headingFont} monoFontId={template.settings.monoFont} pageFormat={template.settings.pageFormat} onAccentColorChange={handleAccentColorChange} onBodyFontChange={handleBodyFontChange} onDisplayFontChange={handleDisplayFontChange} onMonoFontChange={handleMonoFontChange} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
+            </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} brandName={template.settings.branding.name} bodyFontId={template.settings.bodyFont} disabled={isUpdatingTemplateSettings} displayFontId={template.settings.headingFont} logoUrl={template.settings.branding.logoUrl} monoFontId={template.settings.monoFont} pageFormat={template.settings.pageFormat} onAccentColorChange={handleAccentColorChange} onBodyFontChange={handleBodyFontChange} onBrandNameChange={(name) => handleBrandingChange({ ...template.settings.branding, name })} onDisplayFontChange={handleDisplayFontChange} onLogoChange={(logoUrl) => handleBrandingChange({ ...template.settings.branding, logoUrl })} onMonoFontChange={handleMonoFontChange} onPageFormatChange={handlePageFormatChange} t={text} /> : null}
           </div>
         </aside> : null}
       </div>

@@ -1,5 +1,6 @@
 import { DEFAULT_GUIDE_PAGE_FORMAT } from "@/features/guides/types/GuidePageFormat";
 import { normalizeGuideFontId } from "@/features/guides/design/guideFontRegistry";
+import { normalizeGuideBrandSettings } from "@/features/guides/types/GuideBrandSettings";
 import { LOCAL_DATABASE_STORES, openLocalDatabase } from "@/features/storage/lib/localDatabase";
 import type { CreateUserGuideTemplateInput, GuideTemplateCategory, GuideTemplateSettings, UserGuideTemplate } from "../types/GuideLibraryTemplate";
 
@@ -22,7 +23,7 @@ function normalizeSettings(value:unknown):GuideTemplateSettings|null {
   const headingFont = settings.headingFont === undefined ? undefined : normalizeGuideFontId(typeof settings.headingFont === "string" ? settings.headingFont : undefined);
   const bodyFont = settings.bodyFont === undefined ? undefined : normalizeGuideFontId(typeof settings.bodyFont === "string" ? settings.bodyFont : undefined);
   const monoFont = settings.monoFont === undefined ? undefined : normalizeGuideFontId(typeof settings.monoFont === "string" ? settings.monoFont : undefined);
-  return { ...settings, pageFormat, ...(headingFont ? { headingFont } : {}), ...(bodyFont ? { bodyFont } : {}), ...(monoFont ? { monoFont } : {}) } as GuideTemplateSettings;
+  return { ...settings, branding: normalizeGuideBrandSettings(settings.branding), pageFormat, ...(headingFont ? { headingFont } : {}), ...(bodyFont ? { bodyFont } : {}), ...(monoFont ? { monoFont } : {}) } as GuideTemplateSettings;
 }
 
 function normalize(value:unknown):UserGuideTemplate|null {

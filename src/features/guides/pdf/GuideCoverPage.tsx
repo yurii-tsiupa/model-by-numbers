@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/alt-text -- React PDF Image does not render DOM accessibility attributes. */
 import {
   Image,
   Text,
@@ -10,7 +11,6 @@ import {
   guidePdfStyles,
   pdfColors,
 } from "./guidePdfStyles";
-import { GuidePdfEyebrow } from "./GuidePdfEyebrow";
 import { GuidePage } from "./GuidePage";
 import { formatLocalizedDate,translate } from "@/features/i18n/lib/i18n";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
@@ -30,6 +30,21 @@ const styles = StyleSheet.create({
   },
   titleBlock: {
     marginTop: 30,
+  },
+  branding: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    minHeight: 32,
+  },
+  brandLogo: {
+    height: 32,
+    objectFit: "contain",
+    width: 80,
+  },
+  brandName: {
+    fontSize: 10,
+    fontWeight: 600,
   },
   title: {
     fontSize: 32,
@@ -75,6 +90,7 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
   const {guide,metrics,targetMode}=viewModel;
   const locale=guide.locale??"en";const t=(key:Parameters<typeof translate>[1])=>translate(locale,key);
   const design = useGuidePdfDesignTokens();
+  const branding = templateSettings?.branding;
   const coverImage=guide.images.painted??guide.images.base??guide.images.original??guide.images.numbers;
   const targetLabel=targetMode==="markers"?t("guide.metrics.paintingTargets"):targetMode==="region"?t("guide.metrics.paintedAreas"):t("guide.metrics.modelParts");
   const metadata = [[t("guide.metrics.steps"),String(metrics.stepCount)],[t("guide.usedColors"),String(metrics.usedColorCount)],[targetLabel,String(metrics.targetCount)]].filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
@@ -90,16 +106,19 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
       style={{backgroundColor:templateSettings?.pageBackground??pdfColors.background,color:templateSettings?.textColor??pdfColors.text}}
     >
       <View>
-        <GuidePdfEyebrow>{t("pdf.brand")}</GuidePdfEyebrow>
-        <View style={styles.titleBlock}>
+        {branding?.name || branding?.logoUrl ? (
+          <View style={styles.branding}>
+            {branding.logoUrl ? <Image src={branding.logoUrl} style={styles.brandLogo} /> : null}
+            {branding.name ? <Text style={[styles.brandName, { color: design.accentText, fontFamily: design.bodyFont }]}>{branding.name}</Text> : null}
+          </View>
+        ) : null}
+        <View style={branding?.name || branding?.logoUrl ? styles.titleBlock : [styles.titleBlock, { marginTop: 0 }]}>
           <Text style={[styles.title, { fontFamily: design.headingFont }]}>{guide.title}</Text>
           <Text style={[styles.subtitle, { fontFamily: design.bodyFont }]}>{t("guide.paintingGuide")}</Text>
         </View>
 
         <View style={styles.imageContainer}>
           {coverImage ? (
-            // React PDF Image does not expose an HTML alt prop.
-            // eslint-disable-next-line jsx-a11y/alt-text
             <Image src={coverImage} style={styles.image} />
           ) : (
             <Text>{t("pdf.missingPainted")}</Text>

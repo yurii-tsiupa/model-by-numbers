@@ -332,8 +332,12 @@ export default function GuidePage() {
     assemblySteps,
     templateId: guideTemplate.current.id,
     overviewViews: overviewViews ?? undefined,
-    backCover: user.displayName?.trim()
-      ? { enabled: true, brandName: user.displayName.trim() }
+    backCover: guideTemplate.current.settings.branding.name || guideTemplate.current.settings.branding.logoUrl
+      ? {
+          enabled: true,
+          brandName: guideTemplate.current.settings.branding.name,
+          logoUrl: guideTemplate.current.settings.branding.logoUrl,
+        }
       : undefined,
     sectionSettings: project.guideSectionSettings,
   });

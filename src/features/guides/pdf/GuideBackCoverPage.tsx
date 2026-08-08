@@ -2,10 +2,11 @@
 import { Image, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 import { defaultGuideDesignTokens as tokens } from "../design/guideDesignTokens";
+import { resolveGuideFontWeight } from "../design/guideFontRegistry";
 import type { GuideViewModel } from "../lib/getGuideViewModel";
 import { GuidePage } from "./GuidePage";
 import { pdfColors } from "./guidePdfStyles";
-import { useGuidePdfDesignTokens } from "./GuidePdfTemplateContext";
+import { useGuidePdfDesignTokens, useGuidePdfTemplate } from "./GuidePdfTemplateContext";
 
 const styles = StyleSheet.create({
   content: {
@@ -21,23 +22,18 @@ const styles = StyleSheet.create({
   },
   brandName: {
     color: pdfColors.text,
-    fontFamily: tokens.headingFont,
     fontSize: tokens.sizeH1,
-    fontWeight: tokens.weightBold,
     textAlign: "center",
   },
   headline: {
     color: pdfColors.secondary,
-    fontFamily: tokens.headingFont,
     fontSize: 15,
-    fontWeight: tokens.weightSemibold,
     marginTop: tokens.spacingLg,
     maxWidth: 380,
     textAlign: "center",
   },
   description: {
     color: pdfColors.muted,
-    fontFamily: tokens.bodyFont,
     fontSize: tokens.sizeBody,
     lineHeight: tokens.lineHeightBody,
     marginTop: tokens.spacingSm,
@@ -45,15 +41,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   cta: {
-    fontFamily: tokens.bodyFont,
     fontSize: tokens.sizeBody,
-    fontWeight: tokens.weightSemibold,
     marginTop: tokens.spacingXl,
     textAlign: "center",
   },
   destination: {
     color: pdfColors.muted,
-    fontFamily: tokens.monoFont,
     fontSize: tokens.sizeCaption,
     marginTop: tokens.spacingSm,
     textAlign: "center",
@@ -71,9 +64,30 @@ export function GuideBackCoverPage({
 }) {
   const { backCoverData, guide, locale } = viewModel;
   const design = useGuidePdfDesignTokens();
+  const template = useGuidePdfTemplate();
   if (!backCoverData) return null;
   const destination = backCoverData.websiteUrl ?? backCoverData.socialUrl ?? backCoverData.qrValue;
   const accentStyle = backCoverData.accentColor ? { color: backCoverData.accentColor } : undefined;
+  const brandNameStyle = {
+    fontFamily: design.headingFont,
+    fontWeight: resolveGuideFontWeight(template.headingFont, tokens.weightBold),
+  };
+  const headlineStyle = {
+    fontFamily: design.headingFont,
+    fontWeight: resolveGuideFontWeight(template.headingFont, tokens.weightSemibold),
+  };
+  const descriptionStyle = {
+    fontFamily: design.bodyFont,
+    fontWeight: resolveGuideFontWeight(template.bodyFont, 400),
+  };
+  const ctaStyle = {
+    fontFamily: design.bodyFont,
+    fontWeight: resolveGuideFontWeight(template.bodyFont, tokens.weightSemibold),
+  };
+  const destinationStyle = {
+    fontFamily: design.monoFont,
+    fontWeight: resolveGuideFontWeight(template.monoFont, 400),
+  };
 
   return (
     <GuidePage
@@ -87,11 +101,11 @@ export function GuideBackCoverPage({
     >
       <View style={{ alignItems: "center" }}>
         {backCoverData.logoUrl ? <Image src={backCoverData.logoUrl} style={styles.logo} /> : null}
-        {backCoverData.brandName ? <Text style={accentStyle ? [styles.brandName, accentStyle] : styles.brandName}>{backCoverData.brandName}</Text> : null}
-        {backCoverData.headline ? <Text style={styles.headline}>{backCoverData.headline}</Text> : null}
-        {backCoverData.description ? <Text style={styles.description}>{backCoverData.description}</Text> : null}
-        {backCoverData.ctaText ? <Text style={[styles.cta, accentStyle ?? { color: design.accentText }]}>{backCoverData.ctaText}</Text> : null}
-        {destination ? <Text style={styles.destination}>{destination}</Text> : null}
+        {backCoverData.brandName ? <Text style={[styles.brandName, brandNameStyle, accentStyle ?? {}]}>{backCoverData.brandName}</Text> : null}
+        {backCoverData.headline ? <Text style={[styles.headline, headlineStyle]}>{backCoverData.headline}</Text> : null}
+        {backCoverData.description ? <Text style={[styles.description, descriptionStyle]}>{backCoverData.description}</Text> : null}
+        {backCoverData.ctaText ? <Text style={[styles.cta, ctaStyle, accentStyle ?? { color: design.accentText }]}>{backCoverData.ctaText}</Text> : null}
+        {destination ? <Text style={[styles.destination, destinationStyle]}>{destination}</Text> : null}
       </View>
     </GuidePage>
   );

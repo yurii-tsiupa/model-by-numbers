@@ -37,6 +37,7 @@ import { normalizeGuideSectionSettings, type GuideSectionSettings } from "@/feat
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 import { normalizeGuideAccentColor } from "@/features/guides/design/guideDesignTokens";
 import { normalizeGuideFontId } from "@/features/guides/design/guideFontRegistry";
+import { normalizeGuideBrandSettings } from "@/features/guides/types/GuideBrandSettings";
 
 type CreateProjectParams = CreateProjectInput & {
   onUploadProgress?: (progress: number) => void;
@@ -56,6 +57,7 @@ function normalizeGuideTemplateSettings(value: unknown): Partial<GuideTemplateSe
   const bodyFont = value.bodyFont === undefined ? undefined : normalizeGuideFontId(typeof value.bodyFont === "string" ? value.bodyFont : undefined);
   const monoFont = value.monoFont === undefined ? undefined : normalizeGuideFontId(typeof value.monoFont === "string" ? value.monoFont : undefined);
   const nextSettings: Partial<GuideTemplateSettings> = {
+    ...(value.branding !== undefined ? { branding: normalizeGuideBrandSettings(value.branding) } : {}),
     ...(pageFormat ? { pageFormat } : {}),
     ...(accentColor ? { accentColor } : {}),
     ...(headingFont ? { headingFont } : {}),
@@ -455,7 +457,14 @@ export async function saveProjectGuideTemplateSettings(projectId: string, userId
   if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error("Unable to update this project.");
   const accentColor = settings.accentColor === undefined ? undefined : normalizeGuideAccentColor(settings.accentColor);
   if (settings.accentColor !== undefined && !accentColor) throw new Error("Invalid Guide accent color.");
-  await updateDoc(reference, { guideTemplateSettings: { ...settings, ...(accentColor ? { accentColor } : {}) }, updatedAt: serverTimestamp() });
+  await updateDoc(reference, {
+    guideTemplateSettings: {
+      ...settings,
+      ...(settings.branding ? { branding: normalizeGuideBrandSettings(settings.branding) } : {}),
+      ...(accentColor ? { accentColor } : {}),
+    },
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function saveProjectGuideSectionSettings(projectId: string, userId: string, settings: GuideSectionSettings): Promise<void> {

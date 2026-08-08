@@ -71,6 +71,7 @@ export function getGuidePreviewSectionSignature(
   addTemplate(builder, templateSettings);
 
   if (sectionId === "cover") {
+    builder.add(templateSettings.branding.name); builder.image(templateSettings.branding.logoUrl);
     builder.add(guide.title); builder.add(guide.description); builder.add(guide.author);
     builder.add(guide.printerType); builder.add(guide.material); builder.add(guide.baseColor);
     builder.image(guide.images.painted ?? guide.images.base ?? guide.images.original ?? guide.images.numbers);
