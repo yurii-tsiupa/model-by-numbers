@@ -51,10 +51,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
-      async (currentUser) => {
+      (currentUser) => {
         setUser(currentUser);
-        setProfile(currentUser?await getUserProfile(currentUser.uid).catch(()=>null):null);
+        setProfile(null);
         setIsLoading(false);
+
+        if (currentUser) {
+          void getUserProfile(currentUser.uid)
+            .then((nextProfile) => {
+              if (auth.currentUser?.uid === currentUser.uid) {
+                setProfile(nextProfile);
+              }
+            })
+            .catch(() => undefined);
+        }
       },
       (error) => {
         console.error("Failed to restore authentication state:", error);
