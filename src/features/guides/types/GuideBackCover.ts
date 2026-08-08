@@ -1,3 +1,5 @@
+import type { GuideBrandSocialLink } from "./GuideBrandSettings";
+
 export type GuideBackCover = {
   enabled: boolean;
   brandName?: string | null;
@@ -6,6 +8,7 @@ export type GuideBackCover = {
   description?: string | null;
   websiteUrl?: string | null;
   socialUrl?: string | null;
+  socialLinks?: GuideBrandSocialLink[];
   qrValue?: string | null;
   ctaText?: string | null;
   accentColor?: string | null;
@@ -20,6 +23,7 @@ export type ResolvedGuideBackCover = {
   description: string | null;
   websiteUrl: string | null;
   socialUrl: string | null;
+  socialLinks: GuideBrandSocialLink[];
   qrValue: string | null;
   qrImageUrl?: string | null;
   ctaText: string | null;

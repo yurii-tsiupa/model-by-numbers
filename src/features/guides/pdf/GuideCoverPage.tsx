@@ -1,6 +1,7 @@
 /* eslint-disable jsx-a11y/alt-text -- React PDF Image does not render DOM accessibility attributes. */
 import {
   Image,
+  Link,
   Text,
   View,
   StyleSheet,
@@ -15,6 +16,7 @@ import { GuidePage } from "./GuidePage";
 import { formatLocalizedDate,translate } from "@/features/i18n/lib/i18n";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 import { useGuidePdfDesignTokens } from "./GuidePdfTemplateContext";
+import { getGuideSocialLabel, getGuideSocialPlatformLabel, getGuideWebsiteLabel } from "../lib/guideBrandContacts";
 
 type GuideCoverPageProps = {
   viewModel: GuideViewModel;
@@ -79,6 +81,29 @@ const styles = StyleSheet.create({
     ...guidePdfStyles.card,
     width: "31.8%",
   },
+  contactBlock: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+  },
+  contactQrFrame: {
+    backgroundColor: "#FFFFFF",
+    padding: 4,
+  },
+  contactQr: {
+    height: 72,
+    objectFit: "contain",
+    width: 72,
+  },
+  contactDetails: {
+    gap: 3,
+  },
+  contactLine: {
+    color: pdfColors.muted,
+    fontSize: 8,
+    textDecoration: "none",
+  },
   coverMeta: {
     color: pdfColors.faint,
     fontSize: 8,
@@ -94,6 +119,9 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
   const coverImage=guide.images.painted??guide.images.base??guide.images.original??guide.images.numbers;
   const targetLabel=targetMode==="markers"?t("guide.metrics.paintingTargets"):targetMode==="region"?t("guide.metrics.paintedAreas"):t("guide.metrics.modelParts");
   const metadata = [[t("guide.metrics.steps"),String(metrics.stepCount)],[t("guide.usedColors"),String(metrics.usedColorCount)],[targetLabel,String(metrics.targetCount)]].filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
+  const contact = viewModel.backCoverData;
+  const coverSocialLinks = contact?.socialLinks.slice(0, 3) ?? [];
+  const hasContact = Boolean(contact?.websiteUrl || contact?.qrImageUrl || coverSocialLinks.length);
 
   return (
     <GuidePage
@@ -133,6 +161,13 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
             </View>
           ))}
         </View>
+        {hasContact ? <View style={styles.contactBlock}>
+          {contact?.qrImageUrl ? <View style={styles.contactQrFrame}><Image src={contact.qrImageUrl} style={styles.contactQr} /></View> : null}
+          <View style={styles.contactDetails}>
+            {contact?.websiteUrl ? <Link src={contact.websiteUrl} style={[styles.contactLine, { color: design.accentText, fontFamily: design.bodyFont }]}>{getGuideWebsiteLabel(contact.websiteUrl)}</Link> : null}
+            {coverSocialLinks.map((link) => <Link key={link.id} src={link.url} style={[styles.contactLine, { fontFamily: design.bodyFont }]}>{getGuideSocialPlatformLabel(link.type)}  {getGuideSocialLabel(link)}</Link>)}
+          </View>
+        </View> : null}
         <Text style={[styles.subtitle,{fontSize:9,marginTop:14,fontFamily:design.bodyFont}]}>{[guide.printerType,guide.material].filter(Boolean).join(" · ")}</Text>
       </View>
       <Text style={styles.coverMeta}>{[guide.author,formatLocalizedDate(exportDate,locale,{day:"numeric",month:"long",year:"numeric"}),t(`language.${locale}`)].filter(Boolean).join(" · ")}</Text>

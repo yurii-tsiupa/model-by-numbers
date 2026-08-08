@@ -1,12 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, ImagePlus, Pencil, Trash2, X } from "lucide-react";
+import { Check, ImagePlus, Link2, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { TranslationKey } from "@/features/i18n/locales/en";
 import { blobToDataUrl } from "../lib/blobToDataUrl";
 import { GUIDE_FONT_OPTIONS, type GuideFontId } from "../design/guideFontRegistry";
 import type { GuidePageFormat } from "../types/GuidePageFormat";
-import { normalizeGuideBrandUrl } from "../types/GuideBrandSettings";
+import { normalizeGuideBrandUrl, type GuideBrandSocialLink, type GuideBrandSocialLinkType } from "../types/GuideBrandSettings";
+import { getGuideSocialLabel, getGuideSocialPlatformLabel } from "../lib/guideBrandContacts";
 
 const PAGE_FORMATS: readonly { id: GuidePageFormat; labelKey: TranslationKey }[] = [
   { id: "a4", labelKey: "guide.pdfDesign.pageFormat.a4" },
@@ -96,6 +97,70 @@ function CompactBrandField({
   );
 }
 
+const SOCIAL_LINK_TYPES: readonly GuideBrandSocialLinkType[] = ["instagram", "tiktok", "facebook", "youtube", "other"];
+
+function SocialLinksEditor({ disabled, links, onChange, t }: { disabled: boolean; links: GuideBrandSocialLink[]; onChange: (links: GuideBrandSocialLink[]) => void; t: (key: TranslationKey) => string }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [type, setType] = useState<GuideBrandSocialLinkType>("instagram");
+  const [url, setUrl] = useState("");
+  const [label, setLabel] = useState("");
+  const [error, setError] = useState<TranslationKey | null>(null);
+
+  function edit(link?: GuideBrandSocialLink) {
+    setEditingId(link?.id ?? "new");
+    setType(link?.type ?? "instagram");
+    setUrl(link?.url ?? "");
+    setLabel(link?.label ?? "");
+    setError(null);
+  }
+
+  function cancel() {
+    setEditingId(null);
+    setError(null);
+  }
+
+  function save() {
+    const normalizedUrl = normalizeGuideBrandUrl(url);
+    if (!normalizedUrl) {
+      setError("guide.pdfDesign.branding.invalidUrl");
+      return;
+    }
+    const next: GuideBrandSocialLink = { id: editingId === "new" ? crypto.randomUUID() : editingId ?? crypto.randomUUID(), type, url: normalizedUrl, label: label.trim().slice(0, 60) || null };
+    onChange(editingId === "new" ? [...links, next] : links.map((link) => link.id === editingId ? next : link));
+    setEditingId(null);
+    setError(null);
+  }
+
+  return (
+    <div className="mt-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[9px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]">{t("guide.pdfDesign.branding.socialLinks")}</p>
+        {editingId === null && links.length < 8 ? <button type="button" title={t("guide.pdfDesign.branding.addSocial")} aria-label={t("guide.pdfDesign.branding.addSocial")} disabled={disabled} onClick={() => edit()} className={`grid size-7 place-items-center rounded-md text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--accent)]"}`}><Plus className="size-3.5" aria-hidden="true" /></button> : null}
+      </div>
+      <div className="mt-1.5 space-y-1.5">
+        {links.map((link) => editingId === link.id ? null : <div key={link.id} className="flex h-8 items-center gap-1.5 rounded-md bg-[var(--surface)] px-2">
+          <Link2 className="size-3 shrink-0 text-[var(--text-secondary)]" aria-hidden="true" />
+          <span className="min-w-0 flex-1 truncate text-[11px] text-[var(--text)]">{getGuideSocialPlatformLabel(link.type)} · {getGuideSocialLabel(link)}</span>
+          <button type="button" title={t("guide.pdfDesign.branding.editSocial")} aria-label={t("guide.pdfDesign.branding.editSocial")} disabled={disabled || editingId !== null} onClick={() => edit(link)} className={`grid size-6 shrink-0 place-items-center rounded text-[var(--text-secondary)] ${disabled || editingId !== null ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:text-[var(--accent)]"}`}><Pencil className="size-3" aria-hidden="true" /></button>
+          <button type="button" title={t("guide.pdfDesign.branding.removeSocial")} aria-label={t("guide.pdfDesign.branding.removeSocial")} disabled={disabled || editingId !== null} onClick={() => onChange(links.filter((item) => item.id !== link.id))} className={`grid size-6 shrink-0 place-items-center rounded text-[var(--text-secondary)] ${disabled || editingId !== null ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:text-[var(--accent)]"}`}><Trash2 className="size-3" aria-hidden="true" /></button>
+        </div>)}
+        {editingId !== null ? <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2">
+          <div className="grid grid-cols-2 gap-1.5">
+            <label><span className="sr-only">{t("guide.pdfDesign.branding.socialType")}</span><select value={type} disabled={disabled} onChange={(event) => setType(event.target.value as GuideBrandSocialLinkType)} className={`h-8 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-1.5 text-[11px] text-[var(--text)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>{SOCIAL_LINK_TYPES.map((item) => <option key={item} value={item}>{t(`guide.pdfDesign.branding.socialType.${item}`)}</option>)}</select></label>
+            <label><span className="sr-only">{t("guide.pdfDesign.branding.socialLabel")}</span><input value={label} maxLength={60} disabled={disabled} placeholder={t("guide.pdfDesign.branding.socialLabel")} onChange={(event) => setLabel(event.target.value)} className={`h-8 w-full min-w-0 rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-[11px] text-[var(--text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : ""}`} /></label>
+          </div>
+          <div className="mt-1.5 flex gap-1.5">
+            <label className="min-w-0 flex-1"><span className="sr-only">{t("guide.pdfDesign.branding.socialUrl")}</span><input type="url" value={url} disabled={disabled} placeholder={t("guide.pdfDesign.branding.socialUrl")} onChange={(event) => { setUrl(event.target.value); setError(null); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); save(); } if (event.key === "Escape") { event.preventDefault(); cancel(); } }} className={`h-8 w-full min-w-0 rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-[11px] text-[var(--text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : ""}`} /></label>
+            <button type="button" title={t("guide.pdfDesign.branding.save")} aria-label={t("guide.pdfDesign.branding.save")} disabled={disabled} onClick={save} className={`grid size-8 shrink-0 place-items-center rounded-md bg-[var(--accent)] text-[var(--accent-foreground)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:opacity-90"}`}><Check className="size-3.5" aria-hidden="true" /></button>
+            <button type="button" title={t("guide.pdfDesign.branding.cancel")} aria-label={t("guide.pdfDesign.branding.cancel")} disabled={disabled} onClick={cancel} className={`grid size-8 shrink-0 place-items-center rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:text-[var(--text)]"}`}><X className="size-3.5" aria-hidden="true" /></button>
+          </div>
+          {error ? <p role="alert" className="mt-1 text-[10px] text-[var(--accent)]">{t(error)}</p> : null}
+        </div> : null}
+      </div>
+    </div>
+  );
+}
+
 export function GuidePdfDesignPanel({
   accentColor,
   brandName,
@@ -106,6 +171,7 @@ export function GuidePdfDesignPanel({
   monoFontId,
   logoUrl,
   qrValue,
+  socialLinks,
   websiteUrl,
   pageFormat,
   onPageFormatChange,
@@ -117,6 +183,7 @@ export function GuidePdfDesignPanel({
   onCtaTextChange,
   onLogoChange,
   onQrValueChange,
+  onSocialLinksChange,
   onWebsiteUrlChange,
   t,
 }: {
@@ -129,6 +196,7 @@ export function GuidePdfDesignPanel({
   monoFontId: GuideFontId;
   logoUrl: string | null;
   qrValue: string | null;
+  socialLinks: GuideBrandSocialLink[];
   websiteUrl: string | null;
   pageFormat: GuidePageFormat;
   onPageFormatChange: (pageFormat: GuidePageFormat) => void;
@@ -140,6 +208,7 @@ export function GuidePdfDesignPanel({
   onCtaTextChange: (ctaText: string | null) => void;
   onLogoChange: (logoUrl: string | null) => void;
   onQrValueChange: (qrValue: string | null) => void;
+  onSocialLinksChange: (socialLinks: GuideBrandSocialLink[]) => void;
   onWebsiteUrlChange: (websiteUrl: string | null) => void;
   t: (key: TranslationKey) => string;
 }) {
@@ -282,6 +351,7 @@ export function GuidePdfDesignPanel({
           <CompactBrandField disabled={disabled} label="guide.pdfDesign.branding.link" maxLength={2048} type="url" value={websiteUrl} validate={normalizeUrlDraft} onSave={onWebsiteUrlChange} t={t} />
           <div className="col-span-2"><CompactBrandField disabled={disabled} label="guide.pdfDesign.branding.qr" maxLength={2048} type="url" value={qrValue} validate={normalizeUrlDraft} onSave={onQrValueChange} t={t} /></div>
         </div>
+        <SocialLinksEditor disabled={disabled} links={socialLinks} onChange={onSocialLinksChange} t={t} />
       </div>
     </section>
   );

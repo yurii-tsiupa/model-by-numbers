@@ -1,8 +1,18 @@
+export type GuideBrandSocialLinkType = "instagram" | "tiktok" | "facebook" | "youtube" | "other";
+
+export type GuideBrandSocialLink = {
+  id: string;
+  type: GuideBrandSocialLinkType;
+  url: string;
+  label: string | null;
+};
+
 export type GuideBrandSettings = {
   ctaText: string | null;
   name: string | null;
   logoUrl: string | null;
   qrValue: string | null;
+  socialLinks: GuideBrandSocialLink[];
   websiteUrl: string | null;
 };
 
@@ -21,7 +31,7 @@ export function normalizeGuideBrandUrl(value: string | null | undefined): string
 }
 
 export function normalizeGuideBrandSettings(value: unknown): GuideBrandSettings {
-  if (!value || typeof value !== "object") return { ctaText: null, name: null, logoUrl: null, qrValue: null, websiteUrl: null };
+  if (!value || typeof value !== "object") return { ctaText: null, name: null, logoUrl: null, qrValue: null, socialLinks: [], websiteUrl: null };
   const branding = value as Record<string, unknown>;
   const ctaText = typeof branding.ctaText === "string" ? branding.ctaText.trim().slice(0, 160) || null : null;
   const name = typeof branding.name === "string" ? branding.name.trim().slice(0, 100) || null : null;
@@ -29,6 +39,21 @@ export function normalizeGuideBrandSettings(value: unknown): GuideBrandSettings 
     ? branding.logoUrl
     : null;
   const qrValue = typeof branding.qrValue === "string" ? normalizeGuideBrandUrl(branding.qrValue) : null;
+  const socialLinks = Array.isArray(branding.socialLinks)
+    ? branding.socialLinks.slice(0, 8).flatMap((item, index): GuideBrandSocialLink[] => {
+        if (!item || typeof item !== "object") return [];
+        const link = item as Record<string, unknown>;
+        const url = typeof link.url === "string" ? normalizeGuideBrandUrl(link.url) : null;
+        if (!url) return [];
+        const type: GuideBrandSocialLinkType = link.type === "instagram" || link.type === "tiktok" || link.type === "facebook" || link.type === "youtube" ? link.type : "other";
+        return [{
+          id: typeof link.id === "string" && link.id.trim() ? link.id : `social-${index}`,
+          type,
+          url,
+          label: typeof link.label === "string" ? link.label.trim().slice(0, 60) || null : null,
+        }];
+      })
+    : [];
   const websiteUrl = typeof branding.websiteUrl === "string" ? normalizeGuideBrandUrl(branding.websiteUrl) : null;
-  return { ctaText, name, logoUrl, qrValue, websiteUrl };
+  return { ctaText, name, logoUrl, qrValue, socialLinks, websiteUrl };
 }
