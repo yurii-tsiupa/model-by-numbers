@@ -19,7 +19,7 @@ import { Loader } from "@/components/ui/Loader";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { GuidePreview } from "@/features/guides/components/GuidePreview";
 import { useDeleteGeneratedGuide } from "@/features/guides/hooks/useDeleteGeneratedGuide";
-import { useGeneratedGuide } from "@/features/guides/hooks/useGeneratedGuides";
+import { useGeneratedGuides } from "@/features/guides/hooks/useGeneratedGuides";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { useProject } from "@/features/models/hooks/useProject";
 import { useCurrentGuideTemplate } from "@/features/templates/hooks/useCurrentGuideTemplate";
@@ -43,10 +43,11 @@ export default function SavedGuidePage() {
     user?.uid,
   );
 
-  const guideQuery = useGeneratedGuide(
-    params.guideId,
+  const guidesQuery = useGeneratedGuides(
+    params.projectId,
   );
-  const guideTemplate = useCurrentGuideTemplate(projectQuery.data, user?.uid, guideQuery.data?.snapshot.templateId);
+  const guide = guidesQuery.data?.find((item) => item.id === params.guideId);
+  const guideTemplate = useCurrentGuideTemplate(projectQuery.data, user?.uid, guide?.snapshot.templateId, { savedSettings: guide?.templateSettings });
 
   const deletion = useDeleteGeneratedGuide(
     params.projectId,
@@ -73,7 +74,7 @@ export default function SavedGuidePage() {
     authLoading ||
     !user ||
     projectQuery.isLoading ||
-    guideQuery.isLoading ||
+    guidesQuery.isLoading ||
     guideTemplate.isLoading;
 
 
@@ -90,11 +91,9 @@ export default function SavedGuidePage() {
   }
 
   const project = projectQuery.data;
-  const guide = guideQuery.data;
-
   const unavailable =
     projectQuery.isError ||
-    guideQuery.isError ||
+    guidesQuery.isError ||
     !project ||
     project.userId !== user.uid ||
     !guide ||

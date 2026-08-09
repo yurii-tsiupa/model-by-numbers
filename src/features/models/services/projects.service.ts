@@ -131,6 +131,7 @@ function mapProjectDocument(
     thumbnailVersion: typeof data.thumbnailVersion === "number" ? data.thumbnailVersion : undefined,
     selectedGuideTemplateId: typeof data.selectedGuideTemplateId === "string" ? data.selectedGuideTemplateId : undefined,
     guideTemplateSettings: normalizeGuideTemplateSettings(data.guideTemplateSettings),
+    guideLocale: data.guideLocale === "uk" ? "uk" : data.guideLocale === "en" ? "en" : undefined,
     guideSectionSettings: normalizeGuideSectionSettings(data.guideSectionSettings),
 
     status: data.status,

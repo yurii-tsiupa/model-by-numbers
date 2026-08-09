@@ -3,6 +3,7 @@ import type { GeneratedGuide, SaveGeneratedGuideInput } from "../types/Generated
 import type { GuideStorage } from "./guideStorage";
 import { loadGuidePdfs, saveGuidePdf } from "@/features/storage/services/storage.service";
 import { LOCAL_DATABASE_STORES, openLocalDatabase } from "@/features/storage/lib/localDatabase";
+import { normalizeGuideTemplateSettings } from "@/features/templates/services/guideTemplateStorage";
 
 const STORE_NAME = LOCAL_DATABASE_STORES.guides;
 
@@ -24,7 +25,8 @@ function validDate(value: Date | string | number): Date {
 }
 
 function normalize(record: StoredGuide): GeneratedGuide {
-  return { ...record, snapshot: { ...record.snapshot, generatedAt: validDate(record.snapshot.generatedAt) }, createdAt: validDate(record.createdAt), updatedAt: validDate(record.updatedAt) };
+  const templateSettings = record.templateSettings ? normalizeGuideTemplateSettings(record.templateSettings) ?? undefined : undefined;
+  return { ...record, templateSettings, snapshot: { ...record.snapshot, generatedAt: validDate(record.snapshot.generatedAt) }, createdAt: validDate(record.createdAt), updatedAt: validDate(record.updatedAt) };
 }
 
 function cloneSnapshot(snapshot: ModelGuide): ModelGuide {

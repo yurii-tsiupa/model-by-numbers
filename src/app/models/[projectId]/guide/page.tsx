@@ -29,6 +29,11 @@ import { loadGuideAssetReferences } from "@/features/guides/services/assets/load
 import type { GuideAssetReference } from "@/features/guides/services/assets/types";
 import { useCurrentGuideTemplate } from "@/features/templates/hooks/useCurrentGuideTemplate";
 import { useProjectGuideSectionSettings } from "@/features/guides/hooks/useProjectGuideSectionSettings";
+import { BUILT_IN_GUIDE_TEMPLATES } from "@/features/templates/constants/builtInGuideTemplates";
+import { createGuideSettingsFromUserBrandDefaults } from "@/features/guides/lib/createGuideSettingsFromUserBrandDefaults";
+import { loadUserBrandLogo } from "@/features/auth/services/userBrandLogoStorage";
+import { saveGuideAsset } from "@/features/guides/services/assets/saveGuideAsset";
+import { loadGuideDraftSession } from "@/features/guides/storage/guideDraftSessionStorage";
 
 const EMPTY_GUIDE_IMAGES: GuideImages = {
   original: null,
@@ -170,13 +175,23 @@ export default function GuidePage() {
   const router = useRouter();
   const params = useParams<{ projectId: string }>();
 
-  const { user, isLoading: isAuthLoading } = useAuth();
+  const { user, profile, isLoading: isAuthLoading } = useAuth();
   const { locale, t } = useTranslation();
 
   const projectId = params.projectId;
+  const capturedProjectId = useGuideGenerationStore((state) => state.projectId);
+  const draftTemplateSettings = useGuideGenerationStore((state) => state.draftTemplateSettings);
+  const draftTemplateId = useGuideGenerationStore((state) => state.draftTemplateId);
+  const draftLocale = useGuideGenerationStore((state) => state.draftLocale);
+  const draftId = useGuideGenerationStore((state) => state.draftId);
+  const setDraftTemplate = useGuideGenerationStore((state) => state.setDraftTemplate);
+  const updateDraftTemplateSettings = useGuideGenerationStore((state) => state.updateDraftTemplateSettings);
+  const setDraftTemplateId = useGuideGenerationStore((state) => state.setDraftTemplateId);
+  const baseDraftTemplate = BUILT_IN_GUIDE_TEMPLATES[0];
+  const fallbackDraftSettings = profile ? createGuideSettingsFromUserBrandDefaults(baseDraftTemplate.settings, profile.brandDefaults) : structuredClone(baseDraftTemplate.settings);
 
   const projectQuery = useProject(projectId, user?.uid);
-  const guideTemplate = useCurrentGuideTemplate(projectQuery.data, user?.uid);
+  const guideTemplate = useCurrentGuideTemplate(projectQuery.data, user?.uid, undefined, { draft: { settings: draftTemplateSettings ?? fallbackDraftSettings, templateId: draftTemplateId ?? baseDraftTemplate.id, onSettingsChange: updateDraftTemplateSettings, onTemplateChange: (templateId, settings) => { setDraftTemplateId(templateId); updateDraftTemplateSettings(settings); } } });
   const guideSections = useProjectGuideSectionSettings(projectQuery.data, user?.uid);
   const referencesQuery = useReferenceImages(projectId);
 
@@ -184,10 +199,6 @@ export default function GuidePage() {
     GuideReferenceImage[] | null
   >(null);
   const [storedAssetReferences, setStoredAssetReferences] = useState<GuideAssetReference[] | null>(null);
-
-  const capturedProjectId = useGuideGenerationStore(
-    (state) => state.projectId,
-  );
 
   const capturedImages = useGuideGenerationStore(
     (state) => state.images,
@@ -211,6 +222,26 @@ export default function GuidePage() {
   const overviewViews = useGuideGenerationStore((state) => state.overviewViews);
   const setOverviewViews = useGuideGenerationStore((state) => state.setOverviewViews);
   const requestOverviewCapture = useGuideGenerationStore((state) => state.requestOverviewCapture);
+
+  useEffect(() => {
+    if (!profile || !projectQuery.data || draftTemplateSettings) return;
+    const storedDraft = loadGuideDraftSession(projectId);
+    if (storedDraft) {
+      setDraftTemplate(storedDraft.settings, storedDraft.templateId, storedDraft.locale, storedDraft.draftId, projectId);
+      return;
+    }
+    let active = true;
+    void (async () => {
+      const nextDraftId = draftId ?? crypto.randomUUID();
+      let logoAssetId: string | null = null;
+      if (profile.brandDefaults.logoAssetId) {
+        const logo = await loadUserBrandLogo(profile.brandDefaults.logoAssetId).catch(() => null);
+        if (logo) logoAssetId = (await saveGuideAsset({ projectId, kind: "branding-logo", assetId: `${nextDraftId}-profile-logo`, blob: logo })).storageKey;
+      }
+      if (active) setDraftTemplate(createGuideSettingsFromUserBrandDefaults(baseDraftTemplate.settings, profile.brandDefaults, logoAssetId), baseDraftTemplate.id, profile.brandDefaults.defaultGuideLocale, nextDraftId, projectId);
+    })();
+    return () => { active = false; };
+  }, [baseDraftTemplate.id, baseDraftTemplate.settings, capturedProjectId, draftId, draftTemplateSettings, profile, projectId, projectQuery.data, setDraftTemplate]);
 
   useEffect(() => {
     if (!isAuthLoading && !user) {
@@ -264,7 +295,7 @@ export default function GuidePage() {
   if (
     projectQuery.isLoading ||
     referencesQuery.isLoading ||
-    guideReferences === null || storedAssetReferences === null || guideTemplate.isLoading
+    guideReferences === null || storedAssetReferences === null || guideTemplate.isLoading || draftTemplateSettings === null
   ) {
     return <GuideLoadingState label={t("guide.loading")} />;
   }
@@ -288,6 +319,7 @@ export default function GuidePage() {
   }
 
   const project = projectQuery.data;
+  const guideLocale = draftLocale ?? profile?.brandDefaults.defaultGuideLocale ?? locale;
 
   if (project.userId !== user.uid) {
     return (
@@ -304,7 +336,7 @@ export default function GuidePage() {
     project,
     parts: project.parts,
     palette: project.palette,
-    locale,
+    locale: guideLocale,
   });
 
   if (!readiness.isReady) {
@@ -326,7 +358,7 @@ export default function GuidePage() {
         : EMPTY_GUIDE_IMAGES,
     author: user.displayName?.trim() || t("common.user"),
     references: guideReferences,
-    locale,
+    locale: guideLocale,
     settings: guideSettings ?? undefined,
     explodedView,
     assemblySteps,

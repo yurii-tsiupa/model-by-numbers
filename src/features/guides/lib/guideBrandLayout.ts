@@ -28,7 +28,7 @@ export const DEFAULT_COVER_BRAND_LAYOUT: GuideBrandPageLayout = {
 };
 
 export const DEFAULT_BACK_COVER_BRAND_LAYOUT: GuideBrandPageLayout = {
-  logo: { position: "top-center", size: "large", alignment: "center", logoScale: 100, qrScale: 100 },
+  logo: { position: "center", size: "large", alignment: "center", logoScale: 100, qrScale: 100 },
   brand: { position: "top-center", size: "medium", alignment: "center", logoScale: 100, qrScale: 100 },
   cta: { position: "top-center", size: "medium", alignment: "center", logoScale: 100, qrScale: 100 },
   qr: { position: "bottom-center", size: "large", alignment: "center", logoScale: 100, qrScale: 100 },

@@ -39,6 +39,7 @@ export type Project = {
   thumbnailVersion?: number;
   selectedGuideTemplateId?: string;
   guideTemplateSettings?: Partial<GuideTemplateSettings>;
+  guideLocale?: import("@/features/i18n/types/Locale").Locale;
   guideSectionSettings?: GuideSectionSettings;
 
   status: ProjectStatus;

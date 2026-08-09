@@ -29,6 +29,7 @@ import { normalizeGuideAccentColor } from "../design/guideDesignTokens";
 import type { GuideFontId } from "../design/guideFontRegistry";
 import { imageSourceToBlob, saveGuideAsset } from "../services/assets/saveGuideAsset";
 import { deleteGuideAssetByStorageKey } from "../services/assets/deleteGuideAsset";
+import { serializeGuideTemplateSettings } from "@/features/templates/lib/serializeGuideTemplateSettings";
 
 type GuidePreviewProps = {
   previewProject?: Project;
@@ -156,6 +157,7 @@ export function GuidePreview({
         const saved = await saveGuide.mutateAsync({
           projectId: guide.projectId,
           snapshot: guide,
+          templateSettings: serializeGuideTemplateSettings(templateSettings) as GuideTemplateSettings,
           pdfBlob: blob,
           fileName,
         });
@@ -235,13 +237,13 @@ export function GuidePreview({
     try {
       const nextItems = await Promise.all(backgroundItems.map(async (item) => {
         const current = template.settings.backgroundItems.find((candidate) => candidate.id === item.id);
-        if (!item.imageUrl || item.imageUrl === current?.imageUrl && item.localAssetId) return item;
-        const reference = await saveGuideAsset({ projectId: guide.projectId, kind: "pdf-background", assetId: item.id, blob: await imageSourceToBlob(item.imageUrl) });
+        if (!item.imageUrl || item.localAssetId && item.localAssetId !== current?.localAssetId || item.imageUrl === current?.imageUrl && item.localAssetId) return item;
+        const reference = await saveGuideAsset({ projectId: guide.projectId, kind: "pdf-background", assetId: crypto.randomUUID(), blob: await imageSourceToBlob(item.imageUrl) });
         return { ...item, localAssetId: reference.storageKey };
       }));
       await onTemplateSettingsChange({ backgroundItems: nextItems });
-      const activeAssetIds = new Set(nextItems.flatMap((item) => item.localAssetId ? [item.localAssetId] : []));
-      await Promise.all(template.settings.backgroundItems.flatMap((item) => item.localAssetId && !activeAssetIds.has(item.localAssetId) ? [deleteGuideAssetByStorageKey(item.localAssetId).catch(() => undefined)] : []));
+      const remainingItemIds = new Set(backgroundItems.map((item) => item.id));
+      await Promise.all(template.settings.backgroundItems.flatMap((item) => item.sourceType === "guide" && item.localAssetId && !remainingItemIds.has(item.id) ? [deleteGuideAssetByStorageKey(item.localAssetId).catch(() => undefined)] : []));
     } catch { setSaveWarning(text("guide.pdfDesign.saveFailed")); }
   }
 

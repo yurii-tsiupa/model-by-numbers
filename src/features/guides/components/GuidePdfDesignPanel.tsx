@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { AlignCenter, AlignLeft, AlignRight, Check, ChevronDown, ImagePlus, Link2, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import type { TranslationKey } from "@/features/i18n/locales/en";
 import { blobToDataUrl } from "../lib/blobToDataUrl";
@@ -13,7 +14,9 @@ import { GUIDE_SOCIAL_PLATFORM_DEFINITIONS, GUIDE_SOCIAL_PLATFORMS } from "../li
 import { DEFAULT_BACK_COVER_BRAND_LAYOUT, DEFAULT_COVER_BRAND_LAYOUT, GUIDE_BRAND_ALIGNMENTS, GUIDE_BRAND_LOGO_SCALE_MAX, GUIDE_BRAND_LOGO_SCALE_MIN, GUIDE_BRAND_POSITIONS, GUIDE_BRAND_QR_SCALE_MAX, GUIDE_BRAND_QR_SCALE_MIN } from "../lib/guideBrandLayout";
 import type { GuideBrandElementType, GuideBrandPageLayout } from "../types/GuideBrandLayout";
 import { GUIDE_SECTION_REGISTRY } from "../config/guideSectionRegistry";
-import type { GuidePdfBackgroundItems, GuidePdfBackgroundTarget } from "../types/GuidePdfBackground";
+import type { GuidePdfBackgroundItems, GuidePdfBackgroundScope, GuidePdfBackgroundSectionId, GuidePdfBackgroundTarget } from "../types/GuidePdfBackground";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useUserBrandBackgroundAssets, type ResolvedUserBrandBackgroundAsset } from "@/features/auth/hooks/useUserBrandBackgroundAssets";
 
 const PAGE_FORMATS: readonly { id: GuidePageFormat; labelKey: TranslationKey }[] = [
   { id: "a4", labelKey: "guide.pdfDesign.pageFormat.a4" },
@@ -130,7 +133,7 @@ function SocialPlatformIcon({ platform }: { platform: GuideBrandSocialPlatform }
   return <svg aria-hidden="true" className="size-3 shrink-0" viewBox="0 0 24 24">{GUIDE_SOCIAL_PLATFORM_DEFINITIONS[platform].paths.map((path) => <path key={path} d={path} fill="currentColor" />)}</svg>;
 }
 
-function SocialLinksEditor({ disabled, links, onChange, t }: { disabled: boolean; links: GuideBrandSocialLink[]; onChange: (links: GuideBrandSocialLink[]) => void; t: (key: TranslationKey) => string }) {
+export function GuideBrandSocialLinksEditor({ disabled, links, onChange, t }: { disabled: boolean; links: GuideBrandSocialLink[]; onChange: (links: GuideBrandSocialLink[]) => void; t: (key: TranslationKey) => string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [platform, setPlatform] = useState<GuideBrandSocialPlatform>("instagram");
   const [url, setUrl] = useState("");
@@ -223,11 +226,6 @@ const BACKGROUND_SECTION_TARGETS: { id: GuidePdfBackgroundTarget; label: Transla
   if (section.contentSectionId === "projectOverview" || targets.some((target) => target.id === section.contentSectionId)) return targets;
   return [...targets, { id: section.contentSectionId, label: section.titleKey }];
 }, []);
-const BACKGROUND_TARGETS: readonly { id: GuidePdfBackgroundTarget; label: TranslationKey }[] = [
-  { id: "all", label: "guide.pdfDesign.background.entirePdf" },
-  ...BACKGROUND_SECTION_TARGETS,
-];
-
 function BackgroundOpacitySlider({ disabled, onCommit, t, value }: { disabled: boolean; onCommit: (value: number) => void; t: (key: TranslationKey) => string; value: number }) {
   const [draft, setDraft] = useState(value);
   const commit = () => { if (draft !== value) onCommit(draft); };
@@ -244,69 +242,84 @@ function BackgroundOpacitySlider({ disabled, onCommit, t, value }: { disabled: b
   </div>;
 }
 
-function BackgroundEditor({ disabled, items, onChange, t }: { disabled: boolean; items: GuidePdfBackgroundItems; onChange: (items: GuidePdfBackgroundItems) => void; t: (key: TranslationKey) => string }) {
+function BackgroundScopeEditor({ disabled, onSave, scope, t }: { disabled: boolean; onSave: (scope: GuidePdfBackgroundScope) => void; scope: GuidePdfBackgroundScope; t: (key: TranslationKey) => string }) {
+  const cloneScope = (value: GuidePdfBackgroundScope): GuidePdfBackgroundScope => value.mode === "sections" ? { mode: "sections", sectionIds: [...value.sectionIds] } : { mode: value.mode };
+  const [draftScope, setDraftScope] = useState(() => cloneScope(scope));
+  const dirty = JSON.stringify(draftScope) !== JSON.stringify(scope);
+  const toggleSection = (id: GuidePdfBackgroundSectionId) => {
+    const sectionIds = draftScope.mode === "sections" ? [...draftScope.sectionIds] : [];
+    const next = sectionIds.includes(id) ? sectionIds.filter((sectionId) => sectionId !== id) : [...sectionIds, id];
+    setDraftScope(next.length ? { mode: "sections", sectionIds: [...next] } : { mode: "none" });
+  };
+  return <fieldset disabled={disabled} className="block"><legend className="mb-1 text-[9px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]">{t("guide.pdfDesign.background.applyTo")}</legend>
+    <label className={`flex min-h-7 items-center gap-2 text-[10px] text-[var(--text)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}><input type="checkbox" checked={draftScope.mode === "all"} onChange={(event) => setDraftScope(event.target.checked ? { mode: "all" } : { mode: "none" })} className="accent-[var(--accent)]" />{t("guide.pdfDesign.background.entirePdf")}</label>
+    <div className="grid grid-cols-2 gap-x-2">{BACKGROUND_SECTION_TARGETS.map((target) => <label key={target.id} className={`flex min-h-7 min-w-0 items-center gap-2 text-[10px] text-[var(--text)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}><input type="checkbox" checked={draftScope.mode === "sections" && draftScope.sectionIds.includes(target.id as GuidePdfBackgroundSectionId)} onChange={() => toggleSection(target.id as GuidePdfBackgroundSectionId)} className="shrink-0 accent-[var(--accent)]" /><span className="truncate" title={t(target.label)}>{t(target.label)}</span></label>)}</div>
+    <div className="mt-1 flex justify-end gap-1"><button type="button" title={t("guide.pdfDesign.branding.save")} aria-label={t("guide.pdfDesign.branding.save")} disabled={disabled || !dirty} onClick={() => onSave(cloneScope(draftScope))} className={`grid size-7 place-items-center rounded-md bg-[var(--accent)] text-[var(--accent-foreground)] ${disabled || !dirty ? "cursor-not-allowed opacity-45" : "cursor-pointer hover:opacity-90"}`}><Check className="size-3.5" aria-hidden="true" /></button><button type="button" title={t("guide.pdfDesign.branding.cancel")} aria-label={t("guide.pdfDesign.branding.cancel")} disabled={disabled || !dirty} onClick={() => setDraftScope(cloneScope(scope))} className={`grid size-7 place-items-center rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] ${disabled || !dirty ? "cursor-not-allowed opacity-45" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--text)]"}`}><X className="size-3.5" aria-hidden="true" /></button></div>
+  </fieldset>;
+}
+
+function BackgroundEditor({ disabled, items, library, onChange, t }: { disabled: boolean; items: GuidePdfBackgroundItems; library: ResolvedUserBrandBackgroundAsset[]; onChange: (items: GuidePdfBackgroundItems) => void; t: (key: TranslationKey) => string }) {
   const [error, setError] = useState<TranslationKey | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(items[0]?.id ?? null);
   const inputRef = useRef<HTMLInputElement>(null);
   const itemsRef = useRef(items);
-  const fileOperationRef = useRef<{ kind: "add"; target: GuidePdfBackgroundTarget } | { kind: "replace"; id: string } | null>(null);
   useEffect(() => { itemsRef.current = items; }, [items]);
-  const usedTargets = new Set(items.map((item) => item.target));
-  const firstAvailableTarget = BACKGROUND_TARGETS.find((target) => !usedTargets.has(target.id))?.id;
   const selected = items.find((item) => item.id === selectedId) ?? items[0] ?? null;
-  function openFilePicker(operation: NonNullable<typeof fileOperationRef.current>) {
-    fileOperationRef.current = operation;
+  const localItems = [...items].reverse().filter((item) => item.sourceType === "guide");
+  function addBackground() {
     setError(null);
     if (inputRef.current) inputRef.current.value = "";
     inputRef.current?.click();
   }
-  const addBackground = () => { if (firstAvailableTarget) openFilePicker({ kind: "add", target: firstAvailableTarget }); };
-  const replaceBackground = (id: string) => openFilePicker({ kind: "replace", id });
+  function chooseBackground(background: ResolvedUserBrandBackgroundAsset) {
+    const currentItems = itemsRef.current;
+    const existing = currentItems.find((item) => item.sourceType === "profile" && item.assetId === background.id);
+    if (existing) { setSelectedId(existing.id); return; }
+    const newItem = { id: crypto.randomUUID(), assetId: background.id, sourceType: "profile" as const, imageUrl: background.imageUrl, localAssetId: background.localAssetId, opacity: 20, scope: { mode: "none" } as const };
+    const nextItems = [...currentItems, newItem];
+    itemsRef.current = nextItems;
+    setSelectedId(newItem.id);
+    onChange(nextItems);
+  }
   async function upload(file: File, input: HTMLInputElement) {
-    const operation = fileOperationRef.current;
     setError(null);
-    if (!(file.type === "image/png" || file.type === "image/jpeg")) { setError("guide.pdfDesign.background.unsupported"); return; }
-    if (!file.size || file.size > 700 * 1024) { setError("guide.pdfDesign.background.tooLarge"); return; }
+    if (!(file.type === "image/png" || file.type === "image/jpeg")) { setError("guide.pdfDesign.background.unsupported"); input.value = ""; return; }
+    if (!file.size || file.size > 700 * 1024) { setError("guide.pdfDesign.background.tooLarge"); input.value = ""; return; }
     try {
       const imageUrl = await blobToDataUrl(file);
       const currentItems = itemsRef.current;
-      if (operation?.kind === "add") {
-        const target = currentItems.some((item) => item.target === operation.target)
-          ? BACKGROUND_TARGETS.find((candidate) => !currentItems.some((item) => item.target === candidate.id))?.id
-          : operation.target;
-        if (!target) return;
-        const newItem = { id: crypto.randomUUID(), imageUrl, localAssetId: null, opacity: 20, target };
+      {
+        const id = crypto.randomUUID();
+        const newItem = { id, assetId: id, sourceType: "guide" as const, imageUrl, localAssetId: null, opacity: 20, scope: { mode: "none" } as const };
         const nextItems = [...currentItems, newItem];
         itemsRef.current = nextItems;
         setSelectedId(newItem.id);
         onChange(nextItems);
-      } else if (operation?.kind === "replace") {
-        const nextItems = currentItems.map((item) => item.id === operation.id ? { ...item, imageUrl } : item);
-        itemsRef.current = nextItems;
-        onChange(nextItems);
       }
     } catch { setError("guide.pdfDesign.background.unreadable"); }
-    finally { input.value = ""; fileOperationRef.current = null; }
+    finally { input.value = ""; }
   }
-  function changeTarget(id: string, target: GuidePdfBackgroundTarget) {
-    if (items.some((item) => item.id !== id && item.target === target)) { setError("guide.pdfDesign.background.duplicateTarget"); return; }
-    setError(null); onChange(items.map((item) => item.id === id ? { ...item, target } : item));
+  function changeScope(id: string, scope: GuidePdfBackgroundScope) {
+    setError(null);
+    const itemIndex = itemsRef.current.findIndex((item) => item.id === id);
+    if (itemIndex < 0) return;
+    const nextItems = [...itemsRef.current];
+    const ownedScope: GuidePdfBackgroundScope = scope.mode === "sections"
+      ? { mode: "sections", sectionIds: [...scope.sectionIds] }
+      : { mode: scope.mode };
+    nextItems[itemIndex] = { ...nextItems[itemIndex], scope: ownedScope };
+    itemsRef.current = nextItems;
+    onChange(nextItems);
   }
   return <div>
     <div className="flex max-w-full gap-2 overflow-x-auto pb-1" role="list" aria-label={t("guide.pdfDesign.background.title")}>
-      {items.map((item) => <div key={item.id} role="listitem" className="group relative size-10 shrink-0">
-        <button type="button" aria-pressed={selected?.id === item.id} aria-label={BACKGROUND_TARGETS.find((target) => target.id === item.target) ? t(BACKGROUND_TARGETS.find((target) => target.id === item.target)!.label) : t("guide.pdfDesign.background.title")} disabled={disabled} onClick={() => setSelectedId(item.id)} className={`size-10 overflow-hidden rounded-md bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"} ${selected?.id === item.id ? "ring-2 ring-[var(--accent)] ring-offset-1 ring-offset-[var(--card)]" : "ring-1 ring-[var(--border)]"}`}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- persisted local object/data URL cannot use the Next image optimizer. */}
-          <img src={item.imageUrl ?? ""} alt="" className="size-full object-cover" />
-        </button>
-        <button type="button" title={t("guide.pdfDesign.background.replace")} aria-label={t("guide.pdfDesign.background.replace")} disabled={disabled} onClick={() => replaceBackground(item.id)} className={`absolute -bottom-1 -left-1 grid size-5 place-items-center rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] shadow-sm opacity-0 focus:opacity-100 group-hover:opacity-100 ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:text-[var(--accent)]"}`}><Pencil className="size-2.5" aria-hidden="true" /></button>
-        <button type="button" title={t("guide.pdfDesign.background.remove")} aria-label={t("guide.pdfDesign.background.remove")} disabled={disabled} onClick={() => onChange(items.filter((entry) => entry.id !== item.id))} className={`absolute -right-1 -top-1 grid size-5 place-items-center rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] shadow-sm opacity-0 focus:opacity-100 group-hover:opacity-100 ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:text-[var(--accent)]"}`}><Trash2 className="size-2.5" aria-hidden="true" /></button>
-      </div>)}
-      {firstAvailableTarget ? <button type="button" title={t("guide.pdfDesign.background.add")} aria-label={t("guide.pdfDesign.background.add")} disabled={disabled} onClick={addBackground} className={`grid size-10 shrink-0 place-items-center rounded-md border border-dashed border-[var(--border-strong)] text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-[var(--accent)] hover:text-[var(--accent)]"}`}><Plus className="size-4" aria-hidden="true" /></button> : null}
+      <button type="button" title={t("guide.pdfDesign.background.add")} aria-label={t("guide.pdfDesign.background.add")} disabled={disabled} onClick={addBackground} className={`grid size-10 shrink-0 place-items-center rounded-md border border-dashed border-[var(--border-strong)] text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-[var(--accent)] hover:text-[var(--accent)]"}`}><Plus className="size-4" aria-hidden="true" /></button>
+      {library.map((background) => { const item = items.find((candidate) => candidate.sourceType === "profile" && candidate.assetId === background.id); return <div key={background.id} role="listitem" className="group relative size-10 shrink-0"><button type="button" title={background.name ?? t("guide.pdfDesign.background.chooseMine")} aria-label={background.name ?? t("guide.pdfDesign.background.chooseMine")} aria-pressed={Boolean(item && selected?.id === item.id)} disabled={disabled} onClick={() => chooseBackground(background)} className={`size-10 overflow-hidden rounded-md bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${item && selected?.id === item.id ? "ring-2 ring-[var(--accent)] ring-offset-1 ring-offset-[var(--card)]" : "ring-1 ring-[var(--border)]"}`}><Image unoptimized src={background.imageUrl} alt="" width={40} height={40} className="size-full object-cover" /></button>{item ? <button type="button" title={t("guide.pdfDesign.background.remove")} aria-label={t("guide.pdfDesign.background.remove")} disabled={disabled} onClick={() => { const nextItems = itemsRef.current.filter((entry) => entry.id !== item.id); itemsRef.current = nextItems; onChange(nextItems); if (selected?.id === item.id) setSelectedId(nextItems[0]?.id ?? null); }} className={`absolute -right-1 -top-1 grid size-5 place-items-center rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] shadow-sm opacity-0 focus:opacity-100 group-hover:opacity-100 ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:text-[var(--accent)]"}`}><Trash2 className="size-2.5" aria-hidden="true" /></button> : null}</div>; })}
+      {localItems.map((item) => <div key={item.id} role="listitem" className="group relative size-10 shrink-0"><button type="button" aria-pressed={selected?.id === item.id} aria-label={t("guide.pdfDesign.background.title")} disabled={disabled} onClick={() => setSelectedId(item.id)} className={`size-10 overflow-hidden rounded-md bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"} ${selected?.id === item.id ? "ring-2 ring-[var(--accent)] ring-offset-1 ring-offset-[var(--card)]" : "ring-1 ring-[var(--border)]"}`}>{item.imageUrl ? <Image unoptimized src={item.imageUrl} alt="" width={40} height={40} className="size-full object-cover" /> : null}</button><button type="button" title={t("guide.pdfDesign.background.remove")} aria-label={t("guide.pdfDesign.background.remove")} disabled={disabled} onClick={() => { const nextItems = itemsRef.current.filter((entry) => entry.id !== item.id); itemsRef.current = nextItems; onChange(nextItems); if (selected?.id === item.id) setSelectedId(nextItems[0]?.id ?? null); }} className={`absolute -right-1 -top-1 grid size-5 place-items-center rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] shadow-sm opacity-0 focus:opacity-100 group-hover:opacity-100 ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:text-[var(--accent)]"}`}><Trash2 className="size-2.5" aria-hidden="true" /></button></div>)}
     </div>
     {selected ? <div className="mt-2.5">
-      <label className="block"><span className="mb-1 block text-[9px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]">{t("guide.pdfDesign.background.applyTo")}</span><select value={selected.target} disabled={disabled} onChange={(event) => changeTarget(selected.id, event.target.value as GuidePdfBackgroundTarget)} className={`h-8 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-[11px] text-[var(--text)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>{BACKGROUND_TARGETS.map((target) => <option key={target.id} value={target.id} disabled={target.id !== selected.target && usedTargets.has(target.id)}>{t(target.label)}</option>)}</select></label>
-      <BackgroundOpacitySlider key={`${selected.id}-${selected.opacity}`} disabled={disabled} value={selected.opacity} onCommit={(opacity) => onChange(items.map((entry) => entry.id === selected.id ? { ...entry, opacity } : entry))} t={t} />
+      <BackgroundScopeEditor key={selected.id} disabled={disabled} scope={selected.scope} onSave={(scope) => changeScope(selected.id, scope)} t={t} />
+      <BackgroundOpacitySlider key={`${selected.id}-${selected.opacity}`} disabled={disabled} value={selected.opacity} onCommit={(opacity) => { const nextItems = itemsRef.current.map((entry) => entry.id === selected.id ? { ...entry, opacity } : entry); itemsRef.current = nextItems; onChange(nextItems); }} t={t} />
     </div> : <p className="py-1 text-[10px] text-[var(--text-secondary)]">{t("guide.pdfDesign.background.none")}</p>}
     <input ref={inputRef} hidden type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file, event.currentTarget); else event.currentTarget.value = ""; }} />
     {error ? <p role="alert" className="mt-1 text-[10px] text-[var(--accent)]">{t(error)}</p> : null}
@@ -456,6 +469,8 @@ export function GuidePdfDesignPanel({
   onBackgroundItemsChange: (items: GuidePdfBackgroundItems) => void;
   t: (key: TranslationKey) => string;
 }) {
+  const { profile } = useAuth();
+  const profileBackgrounds = useUserBrandBackgroundAssets(profile?.brandAssets.backgrounds ?? []);
   const [nameDraft, setNameDraft] = useState(brandName ?? "");
   const [previousBrandName, setPreviousBrandName] = useState(brandName);
   const [isEditingBrandName, setIsEditingBrandName] = useState(false);
@@ -510,7 +525,7 @@ export function GuidePdfDesignPanel({
       setLogoError("guide.pdfDesign.branding.logoUnreadable");
     }
   }
-  const backgroundSummaryUrl = backgroundItems.find((item) => item.target === "all")?.imageUrl ?? backgroundItems[0]?.imageUrl;
+  const backgroundSummaryUrl = backgroundItems.find((item) => item.scope.mode === "all")?.imageUrl ?? backgroundItems.find((item) => item.scope.mode === "sections")?.imageUrl;
 
   return (
     <section className="guide-side-panel rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
@@ -529,7 +544,7 @@ export function GuidePdfDesignPanel({
           {/* eslint-disable-next-line @next/next/no-img-element -- local runtime URL cannot use the Next image optimizer. */}
           <img src={backgroundSummaryUrl} alt="" className="size-full object-cover" />
         </span> : t("guide.pdfDesign.background.none")}>
-          <BackgroundEditor disabled={disabled} items={backgroundItems} onChange={onBackgroundItemsChange} t={t} />
+          <BackgroundEditor disabled={disabled} items={backgroundItems} library={profileBackgrounds} onChange={onBackgroundItemsChange} t={t} />
         </PdfDesignAccordionSection>
 
         <PdfDesignAccordionSection id="typography" title={t("guide.pdfDesign.typography.label")} expanded={expandedSections.includes("typography")} onToggle={toggleAccordionSection} summary={<span className="size-3 rounded-full" style={{ backgroundColor: accentColor }} />}>
@@ -605,7 +620,7 @@ export function GuidePdfDesignPanel({
           <CompactBrandField disabled={disabled} label="guide.pdfDesign.branding.cta" maxLength={160} value={ctaText} onSave={onCtaTextChange} t={t} />
           <div className="col-span-2"><CompactBrandField disabled={disabled} label="guide.pdfDesign.branding.qr" maxLength={2048} type="url" value={qrValue} validate={normalizeUrlDraft} validateOnBlur onSave={onQrValueChange} t={t} /></div>
         </div>
-        <SocialLinksEditor disabled={disabled} links={socialLinks} onChange={onSocialLinksChange} t={t} />
+        <GuideBrandSocialLinksEditor disabled={disabled} links={socialLinks} onChange={onSocialLinksChange} t={t} />
         <CustomLinksEditor disabled={disabled} links={customLinks} onChange={onCustomLinksChange} t={t} />
         </PdfDesignAccordionSection>
 

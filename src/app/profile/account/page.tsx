@@ -8,6 +8,7 @@ import { normalizeDisplayName } from "@/features/auth/lib/displayName";
 import { validateDisplayName } from "@/features/auth/services/auth-validation";
 import { normalizeProfileUpdateError } from "@/features/auth/services/profile-errors";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
+import Link from "next/link";
 
 export default function ProfileAccountPage() {
   const { user, displayName, updateDisplayName } = useAuth();
@@ -50,6 +51,7 @@ export default function ProfileAccountPage() {
 
   return (
     <>
+      <Link href="/profile" className="mb-4 inline-flex cursor-pointer text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">{t("profile.back")}</Link>
       <ProfileSectionHeader title={t("profile.account.title")} description={t("profile.account.description")} />
       <section className="mt-6 max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
         <h2 className="text-base font-semibold">{t("profile.account.identity.title")}</h2>

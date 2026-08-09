@@ -20,8 +20,10 @@ import {
   signInWithGoogle,
   signOutUser,
 } from "@/lib/firebase/auth";
-import { getUserProfile, updateUserDisplayName } from "@/features/auth/services/user.service";
+import { getUserProfile, updateUserBrandAssets, updateUserBrandDefaults, updateUserDisplayName } from "@/features/auth/services/user.service";
 import type { UserProfile } from "@/features/auth/types/UserProfile";
+import type { UserBrandDefaults } from "@/features/auth/types/UserBrandDefaults";
+import type { UserBrandAssets } from "@/features/auth/types/UserBrandAssets";
 import { getUserDisplayName } from "@/features/auth/lib/displayName";
 
 export type AuthContextValue = {
@@ -34,6 +36,8 @@ export type AuthContextValue = {
   registerWithEmail: (input: {displayName:string;email:string;password:string}) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   updateDisplayName: (displayName:string)=>Promise<void>;
+  updateBrandDefaults: (defaults: UserBrandDefaults) => Promise<void>;
+  updateBrandAssets: (assets: UserBrandAssets) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -99,6 +103,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await sendPasswordReset(email);
       },
       updateDisplayName:async(displayName)=>{if(!user)throw new Error("Not authenticated");const next=await updateUserDisplayName(user,displayName);setUser(auth.currentUser);setProfile(next);},
+      updateBrandDefaults:async(defaults)=>{if(!user)throw new Error("Not authenticated");setProfile(await updateUserBrandDefaults(user.uid,defaults));},
+      updateBrandAssets:async(assets)=>{if(!user)throw new Error("Not authenticated");setProfile(await updateUserBrandAssets(user.uid,assets));},
       signOut: async () => {
         await signOutUser();
       },

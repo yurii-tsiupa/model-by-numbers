@@ -233,7 +233,7 @@ export function GeneratedGuidesSection({
               <div className="mt-4 flex items-center gap-2">
                 <Link
                   aria-label={`${t("common.open")} ${versionLabel}`}
-                  href={`/models/${projectId}/guides/${guide.id}`}
+                  href={`/models/${guide.projectId}/guides/${guide.id}`}
                   className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-full border border-[var(--border)] px-4 text-xs font-medium text-[var(--text)] transition-colors hover:bg-[var(--bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                 >
                   <ExternalLink

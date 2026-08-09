@@ -15,7 +15,7 @@ type StoredTemplate = Omit<UserGuideTemplate,"createdAt"|"updatedAt"|"settings">
 const STORE=LOCAL_DATABASE_STORES.guideTemplates;
 const categories:readonly GuideTemplateCategory[]=["minimal","technical","editorial","custom"];
 
-function normalizeSettings(value:unknown):GuideTemplateSettings|null {
+export function normalizeGuideTemplateSettings(value:unknown):GuideTemplateSettings|null {
   if (!value || typeof value !== "object") return null;
   const settings = value as StoredTemplate["settings"];
   if (typeof settings.pageBackground !== "string" || typeof settings.textColor !== "string" || typeof settings.accentColor !== "string") return null;
@@ -34,7 +34,7 @@ function normalizeSettings(value:unknown):GuideTemplateSettings|null {
 function normalize(value:unknown):UserGuideTemplate|null {
   if(!value||typeof value!=="object")return null;
   const raw=value as Partial<StoredTemplate>;
-  const settings=normalizeSettings(raw.settings);
+  const settings=normalizeGuideTemplateSettings(raw.settings);
   if(typeof raw.id!=="string"||raw.source!=="user"||typeof raw.userId!=="string"||typeof raw.name!=="string"||!categories.includes(raw.category as GuideTemplateCategory)||!settings)return null;
   const createdAt=new Date(raw.createdAt??0),updatedAt=new Date(raw.updatedAt??0);
   if(Number.isNaN(createdAt.getTime())||Number.isNaN(updatedAt.getTime()))return null;

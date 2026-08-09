@@ -72,8 +72,9 @@ export function getGuidePreviewSectionSignature(
   const contentSectionId = GUIDE_SECTION_REGISTRY.find((section) => section.id === sectionId)?.contentSectionId;
   const relevantBackgroundIds = sectionId === "cover" ? (["cover"] as const) : contentSectionId ? [contentSectionId] : [];
   templateSettings.backgroundItems.forEach((background) => {
-    if (background.target !== "all" && !relevantBackgroundIds.includes(background.target as never)) return;
-    builder.add(background.id); builder.add(background.target); builder.add(background.opacity); builder.image(background.imageUrl);
+    if (background.scope.mode === "none") return;
+    if (background.scope.mode === "sections" && !background.scope.sectionIds.some((id) => relevantBackgroundIds.includes(id as never))) return;
+    builder.add(background.id); builder.add(background.scope.mode); builder.add(background.scope.mode === "sections" ? background.scope.sectionIds.join(",") : "all"); builder.add(background.opacity); builder.image(background.imageUrl);
   });
 
   if (sectionId === "cover") {
