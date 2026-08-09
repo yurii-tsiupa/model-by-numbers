@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { formatLocalizedDate } from "@/features/i18n/lib/i18n";
@@ -10,14 +11,13 @@ export function GuideLibraryCard({ item }: { item: SavedGuide }) {
   const { t, locale } = useTranslation();
   const guideTitle = t("guides.card.guideTitle", { version: item.guide.version });
   const guideLocale = item.guide.snapshot.locale ?? locale;
+  const localeCode = guideLocale === "uk" ? "UA" : "EN";
   return (
-    <article className="flex min-w-0 flex-col rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0"><h3 className="truncate font-[family-name:var(--font-display)] text-sm font-semibold text-[var(--text)]">{guideTitle}</h3><p className="mt-1 text-xs text-[var(--text-secondary)]">{t("guides.card.locale", { locale: t(`language.${guideLocale}`) })}</p></div>
-        <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${item.status === "ready" ? "border-[var(--accent-2)] text-[var(--accent-2)]" : "border-[var(--border)] text-[var(--text-secondary)]"}`}>{t(`guides.status.${item.status}`)}</span>
-      </div>
-      <dl className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--border)] pt-3 text-xs text-[var(--text-secondary)]"><dt>{t("guides.card.updated")}</dt><dd>{formatLocalizedDate(item.guide.updatedAt, locale, { day: "2-digit", month: "short", year: "numeric" })}</dd></dl>
-      <Link href={guideRoutes.savedGuide(item.project.id,item.guide.id)} aria-label={t("guides.accessibility.openGuide",{title:guideTitle})} className="mt-4 inline-flex min-h-10 items-center justify-center rounded-[10px] bg-[var(--accent)] px-3 text-sm font-medium text-[var(--accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">{t("guides.card.openGuide")}</Link>
-    </article>
+    <Link href={guideRoutes.savedGuide(item.project.id,item.guide.id)} aria-label={t("guides.accessibility.openGuide",{title:guideTitle})} className="grid min-h-11 cursor-pointer grid-cols-[minmax(6.5rem,auto)_auto_minmax(0,1fr)_1.75rem] items-center gap-3 px-3 py-2 transition-colors hover:bg-[var(--surface-hover)] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--accent)]">
+      <h3 className="truncate font-[family-name:var(--font-display)] text-xs font-semibold text-[var(--text)]">{guideTitle}</h3>
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${item.status === "ready" ? "bg-[var(--success-soft)] text-[var(--success)]" : "bg-[var(--danger-soft)] text-[var(--danger)]"}`}>{t(`guides.status.${item.status}`)}</span>
+      <span className="truncate text-right text-[11px] text-[var(--text-secondary)]">{localeCode} · {formatLocalizedDate(item.guide.updatedAt, locale, { day: "2-digit", month: "short", year: "numeric" })}</span>
+      <span className="grid size-7 place-items-center rounded-md text-[var(--text-muted)]" aria-hidden="true"><ChevronRight className="size-4" /></span>
+    </Link>
   );
 }
