@@ -1,9 +1,12 @@
 "use client";
 
 import { useTranslation } from "../hooks/useTranslation";
+import type { Locale } from "../types/Locale";
 
-export function LanguageSwitcher() {
-  const { locale, setLocale, t } = useTranslation();
+export function LanguageSwitcher({ locale: controlledLocale, onLocaleChange }: { locale?: Locale; onLocaleChange?: (locale: Locale) => void } = {}) {
+  const { locale: applicationLocale, setLocale, t } = useTranslation();
+  const locale = controlledLocale ?? applicationLocale;
+  const changeLocale = onLocaleChange ?? setLocale;
 
   return (
     <div
@@ -18,11 +21,11 @@ export function LanguageSwitcher() {
           <button
             key={item}
             type="button"
-            onClick={() => setLocale(item)}
+            onClick={() => changeLocale(item)}
             aria-pressed={active}
             className={[
               "flex h-8 min-w-10 items-center justify-center rounded-[8px] px-3",
-              "text-xs font-medium transition-colors",
+              "cursor-pointer text-xs font-medium transition-colors",
               active
                 ? "bg-[var(--accent)] text-white"
                 : "text-[var(--text-secondary)] hover:text-[var(--text)]",

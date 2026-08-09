@@ -58,6 +58,7 @@ type GuideGenerationState = {
   setDraftTemplate:(settings: GuideTemplateSettings, templateId: string, locale: Locale, draftId?: string, projectId?: string)=>void;
   updateDraftTemplateSettings:(settings: Partial<GuideTemplateSettings>)=>void;
   setDraftTemplateId:(templateId:string)=>void;
+  setDraftLocale:(locale:Locale)=>void;
   setError: (message: string) => void;
   reset: () => void;
 };
@@ -131,6 +132,7 @@ export const useGuideGenerationStore =
     setDraftTemplate:(draftTemplateSettings,draftTemplateId,draftLocale,nextDraftId,nextProjectId)=>set(state=>{const draftId=nextDraftId??state.draftId??crypto.randomUUID(),projectId=nextProjectId??state.projectId;if(projectId)saveGuideDraftSession({projectId,draftId,templateId:draftTemplateId,locale:draftLocale,settings:draftTemplateSettings});return{draftTemplateSettings:structuredClone(draftTemplateSettings),draftTemplateId,draftLocale,draftId,projectId}}),
     updateDraftTemplateSettings:(settings)=>set(state=>{if(!state.draftTemplateSettings)return{};const draftTemplateSettings={...state.draftTemplateSettings,...structuredClone(settings)};if(state.projectId&&state.draftId&&state.draftTemplateId&&state.draftLocale)saveGuideDraftSession({projectId:state.projectId,draftId:state.draftId,templateId:state.draftTemplateId,locale:state.draftLocale,settings:draftTemplateSettings});return{draftTemplateSettings}}),
     setDraftTemplateId:(draftTemplateId)=>set(state=>{if(state.projectId&&state.draftId&&state.draftLocale&&state.draftTemplateSettings)saveGuideDraftSession({projectId:state.projectId,draftId:state.draftId,templateId:draftTemplateId,locale:state.draftLocale,settings:state.draftTemplateSettings});return{draftTemplateId}}),
+    setDraftLocale:(draftLocale)=>set(state=>{if(state.projectId&&state.draftId&&state.draftTemplateId&&state.draftTemplateSettings)saveGuideDraftSession({projectId:state.projectId,draftId:state.draftId,templateId:state.draftTemplateId,locale:draftLocale,settings:state.draftTemplateSettings});return{draftLocale}}),
 
     setError: (error) => {
       set({

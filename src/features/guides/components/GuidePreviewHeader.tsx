@@ -25,6 +25,7 @@ type Props = {
   onReset: () => void;
   onDelete?: () => void;
   locale: Locale;
+  onLocaleChange?: (locale: Locale) => void;
 };
 
 export function GuidePreviewHeader({
@@ -41,6 +42,7 @@ export function GuidePreviewHeader({
   onReset,
   onDelete,
   locale,
+  onLocaleChange,
 }: Props) {
   const t = (
     key: Parameters<typeof translate>[1],
@@ -72,7 +74,7 @@ export function GuidePreviewHeader({
 
   return (
     <>
-      <AppHeader variant="guide" showNavigation={false} className="print:hidden" />
+      <AppHeader variant="guide" showNavigation={false} className="print:hidden" languageLocale={onLocaleChange ? locale : undefined} onLanguageLocaleChange={onLocaleChange} />
 
       <section
         data-guide-controls

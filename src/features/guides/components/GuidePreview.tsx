@@ -54,6 +54,7 @@ type GuidePreviewProps = {
   onCaptureOverview?: (viewId:string|null,type:GuideOverviewView["type"])=>void;
   onSectionSettingsChange?: (settings: GuideSectionSettings) => Promise<void>;
   isUpdatingSectionSettings?: boolean;
+  onLocaleChange?: (locale: import("@/features/i18n/types/Locale").Locale) => void;
 };
 
 export function GuidePreview({
@@ -75,6 +76,7 @@ export function GuidePreview({
   onCaptureOverview,
   onSectionSettingsChange,
   isUpdatingSectionSettings = false,
+  onLocaleChange,
 }: GuidePreviewProps) {
   const { profile } = useAuth();
   const resolvedGuide = useResolvedGuideAssets(guide, previewProject);
@@ -308,6 +310,7 @@ export function GuidePreview({
         onReset={pdfExport.resetExport}
         onDelete={onDelete}
         locale={locale}
+        onLocaleChange={onLocaleChange}
       />
 
       {pdfExport.isExporting ? (

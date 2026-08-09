@@ -187,6 +187,7 @@ export default function GuidePage() {
   const setDraftTemplate = useGuideGenerationStore((state) => state.setDraftTemplate);
   const updateDraftTemplateSettings = useGuideGenerationStore((state) => state.updateDraftTemplateSettings);
   const setDraftTemplateId = useGuideGenerationStore((state) => state.setDraftTemplateId);
+  const setDraftLocale = useGuideGenerationStore((state) => state.setDraftLocale);
   const baseDraftTemplate = BUILT_IN_GUIDE_TEMPLATES[0];
   const fallbackDraftSettings = profile ? createGuideSettingsFromUserBrandDefaults(baseDraftTemplate.settings, profile.brandDefaults) : structuredClone(baseDraftTemplate.settings);
 
@@ -383,5 +384,5 @@ export default function GuidePage() {
   });
   guide.assetReferences = capturedProjectId === projectId && assetReferences.length > 0 ? assetReferences : storedAssetReferences;
 
-  return <GuidePreview previewProject={project} guide={guide} template={guideTemplate.current} userTemplates={guideTemplate.templates} isSelectingTemplate={guideTemplate.isSelecting} onSelectTemplate={async id => { await guideTemplate.select(id); }} onTemplateSettingsChange={async settings => { await guideTemplate.updateSettings(settings); }} isUpdatingTemplateSettings={guideTemplate.isUpdatingSettings} onSectionSettingsChange={async settings => { await guideSections.mutateAsync(settings); }} isUpdatingSectionSettings={guideSections.isPending} onReferencesChange={(references) => { setGuideReferences(references); setDraftGuideReferences(projectId, references); }} onOverviewViewsChange={setOverviewViews} onCaptureOverview={(viewId,type)=>{requestOverviewCapture({projectId,viewId,type});}} />;
+  return <GuidePreview previewProject={project} guide={guide} template={guideTemplate.current} userTemplates={guideTemplate.templates} isSelectingTemplate={guideTemplate.isSelecting} onSelectTemplate={async id => { await guideTemplate.select(id); }} onTemplateSettingsChange={async settings => { await guideTemplate.updateSettings(settings); }} isUpdatingTemplateSettings={guideTemplate.isUpdatingSettings} onSectionSettingsChange={async settings => { await guideSections.mutateAsync(settings); }} isUpdatingSectionSettings={guideSections.isPending} onLocaleChange={setDraftLocale} onReferencesChange={(references) => { setGuideReferences(references); setDraftGuideReferences(projectId, references); }} onOverviewViewsChange={setOverviewViews} onCaptureOverview={(viewId,type)=>{requestOverviewCapture({projectId,viewId,type});}} />;
 }
