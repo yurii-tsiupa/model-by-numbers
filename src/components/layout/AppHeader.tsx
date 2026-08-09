@@ -11,9 +11,9 @@ import { LanguageSwitcher } from "@/features/i18n/components/LanguageSwitcher";
 import { useTranslation } from "@/features/i18n/hooks/useTranslation";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { MobileNavigation } from "./MobileNavigation";
+import { isNavigationItemActive, type NavigationItem } from "./navigationMatch";
 
 export type AppHeaderVariant = "public" | "application" | "editor" | "guide";
-type NavigationItem = { id: "models" | "guides" | "templates" | "howItWorks" | "guidePreview"; href: string; labelKey: "header.nav.models" | "header.nav.guides" | "header.nav.templates" | "header.nav.howItWorks" | "header.nav.guidePreview" };
 const PUBLIC_NAVIGATION: readonly NavigationItem[] = [{ id: "howItWorks", href: "/#how-it-works", labelKey: "header.nav.howItWorks" }, { id: "guidePreview", href: "/#guide-preview", labelKey: "header.nav.guidePreview" }];
 const APPLICATION_NAVIGATION: readonly NavigationItem[] = [{ id: "models", href: "/models", labelKey: "header.nav.models" }, { id: "guides", href: "/guides", labelKey: "header.nav.guides" }, { id: "templates", href: "/templates", labelKey: "header.nav.templates" }];
 
@@ -35,9 +35,9 @@ export function AppHeader({ variant, contextualStart, contextualActions, showNav
   return <>
     <header data-platform-header className={`sticky top-0 z-50 shrink-0 border-b border-[var(--border)] bg-[var(--bg)] ${className}`}>
       <div className="flex min-h-16 w-full items-center gap-3 px-4 sm:px-6 lg:px-8">
-        {contextualStart ?? <Link href={user ? "/models" : "/"} className="inline-flex shrink-0 items-center gap-2.5 font-[family-name:var(--font-display)] text-sm font-semibold text-[var(--text)]" aria-label={t("header.homeLabel")}><span className="grid size-9 place-items-center rounded-[10px] border border-[var(--border)] bg-[var(--card)]" aria-hidden="true"><Box className="size-[18px] text-[var(--accent)]"/></span><span className="hidden sm:inline">Model by Numbers</span></Link>}
+        {contextualStart ?? <Link href={user ? "/models" : "/"} aria-current={!user && pathname === "/" ? "page" : undefined} className="inline-flex shrink-0 items-center gap-2.5 font-[family-name:var(--font-display)] text-sm font-semibold text-[var(--text)]" aria-label={t("header.homeLabel")}><span className="grid size-9 place-items-center rounded-[10px] border border-[var(--border)] bg-[var(--card)]" aria-hidden="true"><Box className="size-[18px] text-[var(--accent)]"/></span><span className="hidden sm:inline">Model by Numbers</span></Link>}
 
-        {showNavigation ? <nav aria-label={t("header.primaryNavigation")} className="ml-4 hidden items-center gap-1 md:flex">{navigation.map(item => { const active = item.href.startsWith("/") && !item.href.startsWith("/#") && pathname.startsWith(item.href); return <Link key={item.id} href={item.href} aria-current={active ? "page" : undefined} className={`rounded-lg px-3 py-2 font-[family-name:var(--font-body)] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${active ? "text-[var(--accent)]" : "text-[var(--text-secondary)] hover:text-[var(--text)]"}`}>{t(item.labelKey)}</Link>; })}</nav> : null}
+        {showNavigation ? <nav aria-label={t("header.primaryNavigation")} className="ml-4 hidden items-center gap-1 md:flex">{navigation.map(item => { const active = isNavigationItemActive(item, pathname); return <Link key={item.id} href={item.href} aria-current={active ? "page" : undefined} className={`rounded-lg px-3 py-2 font-[family-name:var(--font-body)] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${active ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "text-[var(--text-secondary)] hover:text-[var(--text)]"}`}>{t(item.labelKey)}</Link>; })}</nav> : null}
 
         <div className="ml-auto flex min-w-0 items-center gap-2">
           <div className="hidden items-center gap-2 md:flex"><LanguageSwitcher/><ThemeToggle/>{user ? <UserMenu/> : <><Link href="/login" className="inline-flex min-h-10 items-center rounded-[10px] px-3 font-[family-name:var(--font-body)] text-sm font-medium text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">{t("header.login")}</Link>{variant === "public" ? <Link href="/register" className="inline-flex min-h-10 items-center rounded-[10px] bg-[var(--accent)] px-4 font-[family-name:var(--font-body)] text-sm font-medium text-[var(--accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">{t("header.registration")}</Link> : null}</>}</div>
@@ -50,4 +50,4 @@ export function AppHeader({ variant, contextualStart, contextualActions, showNav
   </>;
 }
 
-export type { NavigationItem };
+export type { NavigationItem } from "./navigationMatch";
