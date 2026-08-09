@@ -1,4 +1,4 @@
-import { deleteDoc, doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, writeBatch } from "firebase/firestore";
 
 import { db } from "@/lib/firebase/client";
 import type { GeneratedGuide } from "../types/GeneratedGuide";
@@ -31,6 +31,15 @@ export const generatedGuidesFirestoreService = {
   async delete(ownerUid: string, projectId: string, guideId: string): Promise<void> {
     await assertProjectOwner(projectId, ownerUid);
     await deleteDoc(doc(db, "projects", projectId, "generatedGuides", guideId));
+  },
+
+  async deleteByProjectId(ownerUid: string, projectId: string): Promise<void> {
+    await assertProjectOwner(projectId, ownerUid);
+    const guides = await getDocs(collection(db, "projects", projectId, "generatedGuides"));
+    if (guides.empty) return;
+    const batch = writeBatch(db);
+    guides.docs.forEach((guide) => batch.delete(guide.ref));
+    await batch.commit();
   },
 };
 
