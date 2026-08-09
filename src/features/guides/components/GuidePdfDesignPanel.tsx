@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import { AlignCenter, AlignLeft, AlignRight, Check, ChevronDown, Eye, EyeOff, ImagePlus, Link2, Palette, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
@@ -11,9 +11,9 @@ import type { GuidePageFormat } from "../types/GuidePageFormat";
 import { normalizeGuideBrandUrl, type GuideBrandCustomLink, type GuideBrandSocialLink, type GuideBrandSocialPlatform } from "../types/GuideBrandSettings";
 import { getGuideSocialLabel, getGuideSocialPlatformLabel } from "../lib/guideBrandContacts";
 import { GUIDE_SOCIAL_PLATFORM_DEFINITIONS, GUIDE_SOCIAL_PLATFORMS } from "../lib/guideSocialPlatforms";
-import { DEFAULT_BACK_COVER_BRAND_LAYOUT, DEFAULT_CONTENT_PAGES_BRAND_LAYOUT, DEFAULT_COVER_BRAND_LAYOUT, GUIDE_BRAND_ALIGNMENTS, GUIDE_BRAND_LOGO_SCALE_MAX, GUIDE_BRAND_LOGO_SCALE_MIN, GUIDE_BRAND_POSITIONS, GUIDE_BRAND_QR_SCALE_MAX, GUIDE_BRAND_QR_SCALE_MIN } from "../lib/guideBrandLayout";
-import type { GuideBrandContentElementType, GuideBrandContentPageLayout, GuideBrandElementType, GuideBrandPageLayout } from "../types/GuideBrandLayout";
-import { GUIDE_SECTION_REGISTRY } from "../config/guideSectionRegistry";
+import { DEFAULT_BACK_COVER_BRAND_LAYOUT, DEFAULT_CONTENT_PAGES_BRAND_LAYOUT, DEFAULT_COVER_BRAND_LAYOUT, GUIDE_BRAND_ALIGNMENTS, GUIDE_BRAND_CONTENT_QR_SCALE_MAX, GUIDE_BRAND_CONTENT_QR_SCALE_MIN, GUIDE_BRAND_LOGO_SCALE_MAX, GUIDE_BRAND_LOGO_SCALE_MIN, GUIDE_BRAND_POSITIONS, GUIDE_BRAND_QR_SCALE_MAX, GUIDE_BRAND_QR_SCALE_MIN } from "../lib/guideBrandLayout";
+import type { GuideBrandContentElementLayout, GuideBrandContentElementType, GuideBrandContentPageLayout, GuideBrandElementType, GuideBrandPageLayout } from "../types/GuideBrandLayout";
+import { GUIDE_SECTION_REGISTRY, type GuideContentSectionId } from "../config/guideSectionRegistry";
 import type { GuidePdfBackgroundItems, GuidePdfBackgroundScope, GuidePdfBackgroundSectionId, GuidePdfBackgroundTarget } from "../types/GuidePdfBackground";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useUserBrandBackgroundAssets, type ResolvedUserBrandBackgroundAsset } from "@/features/auth/hooks/useUserBrandBackgroundAssets";
@@ -25,6 +25,11 @@ const PAGE_FORMATS: readonly { id: GuidePageFormat; labelKey: TranslationKey }[]
 
 type PdfDesignAccordionId = "background" | "typography" | "branding" | "layout";
 const PDF_DESIGN_ACCORDION_CONFIG = { allowMultiple: false } as const;
+const GuidePdfDesignSectionsContext = createContext<readonly GuideContentSectionId[]>([]);
+
+export function GuidePdfDesignSectionsProvider({ children, sectionIds }: { children: ReactNode; sectionIds: readonly GuideContentSectionId[] }) {
+  return <GuidePdfDesignSectionsContext.Provider value={sectionIds}>{children}</GuidePdfDesignSectionsContext.Provider>;
+}
 
 function PdfDesignAccordionSection<Id extends string>({ action, children, expanded, id, leading, onToggle, summary, title }: { action?: ReactNode; children: ReactNode; expanded: boolean; id: Id; leading?: ReactNode; onToggle: (id: Id) => void; summary?: ReactNode; title: string }) {
   const bodyId = `pdf-design-${id}-body`;
@@ -35,7 +40,7 @@ function PdfDesignAccordionSection<Id extends string>({ action, children, expand
       {!expanded && summary !== undefined ? <span className="flex min-w-0 items-center text-[10px] text-[var(--text-secondary)]">{summary}</span> : null}
       <ChevronDown aria-hidden="true" className={`size-4 shrink-0 text-[var(--text-secondary)] transition-transform motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`} />
     </button>{action}</div>
-    {expanded ? <div id={bodyId} className="pb-3">{children}</div> : null}
+    {expanded ? <div id={bodyId} className={`pb-3 ${id === "layout" ? "[&_.mt-2.grid-cols-3>button]:h-auto [&_.mt-2.grid-cols-3>button]:min-h-9 [&_.mt-2.grid-cols-3>button]:px-1 [&_.mt-2.grid-cols-3>button]:py-1 [&_.mt-2.grid-cols-3>button]:text-[10px] [&_.mt-2.grid-cols-3>button]:leading-tight" : ""}`}>{children}</div> : null}
   </div>;
 }
 
@@ -363,14 +368,30 @@ function BrandVisibilityButton({ disabled, element, onClick, t, visible }: { dis
   return <button type="button" title={`${action}: ${label}`} aria-label={`${action}: ${label}`} aria-pressed={visible} disabled={disabled} onClick={onClick} className={`grid size-7 shrink-0 place-items-center rounded-md ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)]"} ${visible ? "text-[var(--accent)]" : "text-[var(--text-muted)]"}`}>{visible ? <Eye className="size-3.5" aria-hidden="true" /> : <EyeOff className="size-3.5" aria-hidden="true" />}</button>;
 }
 
+function LayoutContextTabs({ disabled, page, setPage, t, tabs }: { disabled: boolean; page: "cover" | "backCover" | "contentPages"; setPage: (page: "cover" | "backCover" | "contentPages") => void; t: (key: TranslationKey) => string; tabs: readonly ("cover" | "backCover" | "contentPages")[] }) {
+  return <div className="mt-2 flex gap-0.5 rounded-lg bg-[var(--surface)] p-0.5">{tabs.map(item => <button key={item} type="button" disabled={disabled} aria-pressed={page === item} onClick={() => setPage(item)} className={`min-h-9 min-w-0 flex-1 rounded-md px-1 py-1 text-[10px] font-medium leading-tight ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"} ${page === item ? "bg-[var(--card)] text-[var(--accent)] shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text)]"}`}>{t(`guide.pdfDesign.branding.layout.page.${item}`)}</button>)}</div>;
+}
+
+function ContentPagePlacementControl({ disabled, element, onChange, pageFormat, settings, t }: { disabled: boolean; element: GuideBrandContentElementType; onChange: (settings: GuideBrandContentElementLayout) => void; pageFormat: GuidePageFormat; settings: GuideBrandContentElementLayout; t: (key: TranslationKey) => string }) {
+  const position = <BrandPositionMiniMap disabled={disabled} pageFormat={pageFormat} value={settings.position} onChange={value => onChange({ ...settings, position: value })} t={t}/>;
+  if (element !== "logo" && element !== "qr") return position;
+  return <div className="grid grid-cols-[2.75rem_1fr] gap-3">{position}<div>{element === "logo" ? <BrandScaleSlider key={`content-logo-${settings.logoScale}`} disabled={disabled} label="guide.pdfDesign.branding.layout.logoSize" min={GUIDE_BRAND_LOGO_SCALE_MIN} max={GUIDE_BRAND_LOGO_SCALE_MAX} value={settings.logoScale} onCommit={logoScale => onChange({ ...settings, logoScale })} t={t}/> : <BrandScaleSlider key={`content-qr-${settings.qrScale}`} disabled={disabled} label="guide.pdfDesign.branding.layout.qrSize" min={GUIDE_BRAND_CONTENT_QR_SCALE_MIN} max={GUIDE_BRAND_CONTENT_QR_SCALE_MAX} value={settings.qrScale} onCommit={qrScale => onChange({ ...settings, qrScale })} t={t}/>}</div></div>;
+}
+
 function BrandLayoutEditor({ backCoverLayout, contentPagesLayout, coverLayout, customLinkCount, disabled, onBackCoverLayoutChange, onContentPagesLayoutChange, onCoverLayoutChange, pageFormat, socialLinkCount, t }: { backCoverLayout: GuideBrandPageLayout; contentPagesLayout: GuideBrandContentPageLayout; coverLayout: GuideBrandPageLayout; customLinkCount: number; disabled: boolean; onBackCoverLayoutChange: (layout: GuideBrandPageLayout) => void; onContentPagesLayoutChange: (layout: GuideBrandContentPageLayout) => void; onCoverLayoutChange: (layout: GuideBrandPageLayout) => void; pageFormat: GuidePageFormat; socialLinkCount: number; t: (key: TranslationKey) => string }) {
+  const renderedContentSectionIds = useContext(GuidePdfDesignSectionsContext);
   const [page, setPage] = useState<"cover" | "backCover" | "contentPages">("cover");
+  const contentPageSections: readonly { id: GuideContentSectionId | "all"; title: string }[] = [{ id: "all", title: t("guide.pdfDesign.branding.layout.section.all") }, ...GUIDE_SECTION_REGISTRY.filter(section => renderedContentSectionIds.includes(section.contentSectionId) && section.id !== "cover" && section.id !== "back-cover" && section.titleKey).filter((section, index, sections) => sections.findIndex(candidate => candidate.contentSectionId === section.contentSectionId) === index).map(section => ({ id: section.contentSectionId, title: t(section.titleKey!) }))];
+  const [contentSectionId, setContentSectionId] = useState<GuideContentSectionId | "all">("all");
   const [expandedElement, setExpandedElement] = useState<GuideBrandElementType | GuideBrandContentElementType | null>(null);
   const toggleElement = (element: GuideBrandElementType | GuideBrandContentElementType) => setExpandedElement(current => current === element ? null : element);
   const tabs = ["cover", "backCover", "contentPages"] as const;
   if (page === "contentPages") {
     const elements: readonly GuideBrandContentElementType[] = ["logo", "brand", "socialLinks", "qr"];
-    return <div><div className="flex items-center justify-end"><button type="button" title={t("guide.pdfDesign.branding.layout.reset")} aria-label={t("guide.pdfDesign.branding.layout.reset")} disabled={disabled} onClick={() => onContentPagesLayoutChange(DEFAULT_CONTENT_PAGES_BRAND_LAYOUT)} className={`grid size-7 place-items-center rounded-md text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--accent)]"}`}><RotateCcw className="size-3.5" /></button></div><div className="mt-2 grid grid-cols-3 gap-0.5 rounded-lg bg-[var(--surface)] p-0.5">{tabs.map(item => <button key={item} type="button" disabled={disabled} aria-pressed={page === item} onClick={() => setPage(item)} className={`h-7 rounded-md text-[9px] font-medium ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"} ${page === item ? "bg-[var(--card)] text-[var(--accent)] shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text)]"}`}>{t(`guide.pdfDesign.branding.layout.page.${item}`)}</button>)}</div><div className="mt-2">{elements.map(element => { const settings = contentPagesLayout[element]; return <PdfDesignAccordionSection key={element} id={element} title={t(`guide.pdfDesign.branding.layout.element.${element}`)} expanded={expandedElement === element} onToggle={toggleElement} leading={<span className={`size-[7px] rounded-full ${settings.visible ? "bg-[var(--accent)]" : "bg-[var(--text-muted)]"}`} />} action={<BrandVisibilityButton disabled={disabled} element={element} visible={settings.visible} onClick={() => onContentPagesLayoutChange({ ...contentPagesLayout, [element]: { ...settings, visible: !settings.visible } })} t={t} />}><div className={`pl-[17px] transition-opacity ${settings.visible ? "opacity-100" : "opacity-40"}`}><BrandPositionMiniMap disabled={disabled || !settings.visible} pageFormat={pageFormat} value={settings.position} onChange={position => onContentPagesLayoutChange({ ...contentPagesLayout, [element]: { ...settings, position } })} t={t} /></div></PdfDesignAccordionSection>; })}</div></div>;
+    const selectedSectionId = contentPageSections.some(section => section.id === contentSectionId) ? contentSectionId : "all";
+    const layout = selectedSectionId === "all" ? contentPagesLayout : contentPagesLayout.sections?.[selectedSectionId] ?? contentPagesLayout;
+    const update = (next: GuideBrandContentPageLayout) => onContentPagesLayoutChange(selectedSectionId === "all" ? { ...next, sections: contentPagesLayout.sections } : { ...contentPagesLayout, sections: { ...contentPagesLayout.sections, [selectedSectionId]: next } });
+    return <div><div className="flex items-center justify-end"><button type="button" title={t("guide.pdfDesign.branding.layout.reset")} aria-label={t("guide.pdfDesign.branding.layout.reset")} disabled={disabled} onClick={() => update(DEFAULT_CONTENT_PAGES_BRAND_LAYOUT)} className={`grid size-7 place-items-center rounded-md text-[var(--text-secondary)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[var(--surface-hover)] hover:text-[var(--accent)]"}`}><RotateCcw className="size-3.5" /></button></div><LayoutContextTabs disabled={disabled} page={page} setPage={setPage} t={t} tabs={tabs}/><label className="mt-2 block text-[10px] font-medium text-[var(--text-secondary)]">{t("guide.pdfDesign.branding.layout.section")}<select value={selectedSectionId} disabled={disabled} onChange={event => { setContentSectionId(event.target.value as GuideContentSectionId | "all"); setExpandedElement(null); }} className={`mt-1 h-8 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-xs text-[var(--text)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>{contentPageSections.map(section => <option key={section.id} value={section.id}>{section.title}</option>)}</select></label><div className="mt-2">{elements.map(element => { const settings = layout[element]; return <PdfDesignAccordionSection key={element} id={element} title={t(`guide.pdfDesign.branding.layout.element.${element}`)} expanded={expandedElement === element} onToggle={toggleElement} leading={<span className={`size-[7px] rounded-full ${settings.visible ? "bg-[var(--accent)]" : "bg-[var(--text-muted)]"}`} />} action={<BrandVisibilityButton disabled={disabled} element={element} visible={settings.visible} onClick={() => update({ ...layout, [element]: { ...settings, visible: !settings.visible } })} t={t} />}><div className={`pl-[17px] transition-opacity ${settings.visible ? "opacity-100" : "opacity-40"}`}><ContentPagePlacementControl disabled={disabled || !settings.visible} element={element} pageFormat={pageFormat} settings={settings} onChange={next => update({ ...layout, [element]: next })} t={t}/></div></PdfDesignAccordionSection>; })}</div></div>;
   }
   const layout = page === "cover" ? coverLayout : backCoverLayout;
   const update = page === "cover" ? onCoverLayoutChange : onBackCoverLayoutChange;

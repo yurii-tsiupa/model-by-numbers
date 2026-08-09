@@ -421,6 +421,8 @@ export const uk:TranslationDictionary={
  "guide.pdfDesign.branding.layout.page.contentPages":"Інші сторінки",
  "guide.pdfDesign.branding.visibility.show":"Показувати",
  "guide.pdfDesign.branding.visibility.hide":"Приховати",
+ "guide.pdfDesign.branding.layout.section":"Розділ гайду",
+ "guide.pdfDesign.branding.layout.section.all":"Усі інші сторінки",
  "guide.pdfDesign.branding.layout.element.logo":"Логотип",
  "guide.pdfDesign.branding.layout.element.qr":"QR",
  "guide.pdfDesign.branding.layout.element.socialLinks":"Соцмережі",

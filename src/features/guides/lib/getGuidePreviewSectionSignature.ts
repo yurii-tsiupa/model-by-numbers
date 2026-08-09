@@ -79,7 +79,7 @@ function addPageBrandLayout(builder: SignatureBuilder, layout: GuideBrandPageLay
 // Kept as a typed boundary so adding another content-page element cannot silently
 // disappear from preview cache invalidation.
 function addContentPageBrandLayout(builder: SignatureBuilder, layout: GuideBrandContentPageLayout): void {
-  for (const settings of Object.values(layout)) { builder.add(settings.visible); builder.add(settings.position); }
+  for (const element of ["logo", "brand", "socialLinks", "qr"] as const) { const settings = layout[element]; builder.add(settings.visible); builder.add(settings.position); builder.add(settings.logoScale); builder.add(settings.qrScale); }
 }
 
 export function getGuidePreviewSectionSignature(
@@ -94,6 +94,7 @@ export function getGuidePreviewSectionSignature(
   addTemplate(builder, templateSettings);
   addContentPageBrandLayout(builder, templateSettings.branding.contentPagesLayout);
   const contentSectionId = GUIDE_SECTION_REGISTRY.find((section) => section.id === sectionId)?.contentSectionId;
+  if (contentSectionId && contentSectionId !== "backCover") addContentPageBrandLayout(builder, templateSettings.branding.contentPagesLayout.sections?.[contentSectionId] ?? templateSettings.branding.contentPagesLayout);
   const relevantBackgroundIds = sectionId === "cover" ? (["cover"] as const) : contentSectionId ? [contentSectionId] : [];
   templateSettings.backgroundItems.forEach((background) => {
     if (background.scope.mode === "none") return;

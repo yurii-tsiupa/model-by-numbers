@@ -420,6 +420,8 @@ export const en={
   "guide.pdfDesign.branding.layout.page.contentPages":"Other pages",
   "guide.pdfDesign.branding.visibility.show":"Show",
   "guide.pdfDesign.branding.visibility.hide":"Hide",
+  "guide.pdfDesign.branding.layout.section":"Guide section",
+  "guide.pdfDesign.branding.layout.section.all":"All other pages",
   "guide.pdfDesign.branding.layout.element.logo":"Logo",
   "guide.pdfDesign.branding.layout.element.qr":"QR",
   "guide.pdfDesign.branding.layout.element.socialLinks":"Social links",

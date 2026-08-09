@@ -93,14 +93,29 @@ export function normalizeGuideBrandSettings(value: unknown): GuideBrandSettings 
   const enabled = typeof branding.enabled === "boolean" ? branding.enabled : hasBranding;
   return { enabled, backCoverLayout, contentPagesLayout, coverLayout, ctaText, customLinks, name, logoAssetId, logoUrl, qrValue, socialLinks };
 }
-import { DEFAULT_BACK_COVER_BRAND_LAYOUT, DEFAULT_CONTENT_PAGES_BRAND_LAYOUT, DEFAULT_COVER_BRAND_LAYOUT, GUIDE_BRAND_POSITIONS, normalizeGuideBrandPageLayout } from "../lib/guideBrandLayout";
-import type { GuideBrandContentPageLayout, GuideBrandPageLayout } from "./GuideBrandLayout";
+import { DEFAULT_BACK_COVER_BRAND_LAYOUT, DEFAULT_CONTENT_PAGES_BRAND_LAYOUT, DEFAULT_COVER_BRAND_LAYOUT, GUIDE_BRAND_CONTENT_QR_SCALE_MAX, GUIDE_BRAND_CONTENT_QR_SCALE_MIN, GUIDE_BRAND_LOGO_SCALE_MAX, GUIDE_BRAND_LOGO_SCALE_MIN, GUIDE_BRAND_POSITIONS, normalizeGuideBrandPageLayout } from "../lib/guideBrandLayout";
+import type { GuideBrandContentElementType, GuideBrandContentPageLayout, GuideBrandPageLayout } from "./GuideBrandLayout";
 
 function normalizeGuideBrandContentPageLayout(value: unknown): GuideBrandContentPageLayout {
   const source = value && typeof value === "object" ? value as Record<string, unknown> : {};
-  return Object.fromEntries((Object.keys(DEFAULT_CONTENT_PAGES_BRAND_LAYOUT) as Array<keyof GuideBrandContentPageLayout>).map(element => {
+  const layout = Object.fromEntries((Object.keys(DEFAULT_CONTENT_PAGES_BRAND_LAYOUT) as GuideBrandContentElementType[]).map(element => {
     const raw = source[element] && typeof source[element] === "object" ? source[element] as Record<string, unknown> : {};
     const fallback = DEFAULT_CONTENT_PAGES_BRAND_LAYOUT[element];
-    return [element, { visible: typeof raw.visible === "boolean" ? raw.visible : fallback.visible, position: typeof raw.position === "string" && GUIDE_BRAND_POSITIONS.includes(raw.position as typeof fallback.position) ? raw.position as typeof fallback.position : fallback.position }];
-  })) as GuideBrandContentPageLayout;
+    return [element, {
+      visible: typeof raw.visible === "boolean" ? raw.visible : fallback.visible,
+      position: typeof raw.position === "string" && GUIDE_BRAND_POSITIONS.includes(raw.position as typeof fallback.position) ? raw.position as typeof fallback.position : fallback.position,
+      logoScale: typeof raw.logoScale === "number" && Number.isFinite(raw.logoScale) ? Math.min(GUIDE_BRAND_LOGO_SCALE_MAX, Math.max(GUIDE_BRAND_LOGO_SCALE_MIN, Math.round(raw.logoScale))) : fallback.logoScale,
+      qrScale: typeof raw.qrScale === "number" && Number.isFinite(raw.qrScale) ? Math.min(GUIDE_BRAND_CONTENT_QR_SCALE_MAX, Math.max(GUIDE_BRAND_CONTENT_QR_SCALE_MIN, Math.round(raw.qrScale))) : fallback.qrScale,
+    }];
+  })) as unknown as GuideBrandContentPageLayout;
+  const sections = normalizeGuideBrandContentPageLayouts(source.sections);
+  return Object.keys(sections).length ? { ...layout, sections } : layout;
+}
+
+const CONTENT_SECTION_IDS = ["projectOverview", "legend", "kit", "palette", "modelOverview", "explodedView", "assembly", "references", "partsOverview", "paintingInstructions", "finishing", "troubleshooting"] as const;
+
+function normalizeGuideBrandContentPageLayouts(value: unknown): NonNullable<GuideBrandContentPageLayout["sections"]> {
+  if (!value || typeof value !== "object") return {};
+  const source = value as Record<string, unknown>;
+  return Object.fromEntries(CONTENT_SECTION_IDS.flatMap(sectionId => source[sectionId] ? [[sectionId, normalizeGuideBrandContentPageLayout(source[sectionId])]] : []));
 }

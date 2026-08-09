@@ -15,6 +15,8 @@ export const GUIDE_BRAND_LOGO_SCALE_DEFAULT = 100;
 export const GUIDE_BRAND_QR_SCALE_MIN = 85;
 export const GUIDE_BRAND_QR_SCALE_MAX = 200;
 export const GUIDE_BRAND_QR_SCALE_DEFAULT = 100;
+export const GUIDE_BRAND_CONTENT_QR_SCALE_MIN = 70;
+export const GUIDE_BRAND_CONTENT_QR_SCALE_MAX = 200;
 export const GUIDE_BRAND_SIZES: readonly GuideBrandElementSize[] = ["small", "medium", "large"];
 export const GUIDE_BRAND_ALIGNMENTS: readonly GuideBrandTextAlignment[] = ["left", "center", "right"];
 
@@ -37,10 +39,10 @@ export const DEFAULT_BACK_COVER_BRAND_LAYOUT: GuideBrandPageLayout = {
 };
 
 export const DEFAULT_CONTENT_PAGES_BRAND_LAYOUT: GuideBrandContentPageLayout = {
-  logo: { visible: false, position: "bottom-left" },
-  brand: { visible: false, position: "bottom-left" },
-  socialLinks: { visible: false, position: "bottom-center" },
-  qr: { visible: false, position: "bottom-right" },
+  logo: { visible: false, position: "bottom-left", logoScale: 100, qrScale: 100 },
+  brand: { visible: false, position: "bottom-left", logoScale: 100, qrScale: 100 },
+  socialLinks: { visible: false, position: "bottom-center", logoScale: 100, qrScale: 100 },
+  qr: { visible: false, position: "bottom-right", logoScale: 100, qrScale: 100 },
 };
 
 function isPosition(value: unknown): value is GuideBrandElementPosition { return typeof value === "string" && GUIDE_BRAND_POSITIONS.includes(value as GuideBrandElementPosition); }

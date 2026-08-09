@@ -23,7 +23,7 @@ import type { GuideLibraryTemplate, GuideTemplateSettings, UserGuideTemplate } f
 import { GUIDE_SECTION_REGISTRY, type GuideContentSectionId } from "../config/guideSectionRegistry";
 import type { GuideSectionSettings } from "../types/GuideSectionSettings";
 import { GuideSectionManager } from "./GuideSectionManager";
-import { GuidePdfDesignPanel } from "./GuidePdfDesignPanel";
+import { GuidePdfDesignPanel, GuidePdfDesignSectionsProvider } from "./GuidePdfDesignPanel";
 import { GuideSidebarPanelSwitcher, type GuideSidebarPanel } from "./GuideSidebarPanelSwitcher";
 import { normalizeGuideAccentColor } from "../design/guideDesignTokens";
 import type { GuideFontId } from "../design/guideFontRegistry";
@@ -295,7 +295,7 @@ export function GuidePreview({
   }
 
   return (
-    <main className="min-h-0 flex-1 bg-[var(--bg)] text-[var(--text)]">
+    <GuidePdfDesignSectionsProvider sectionIds={sections.map(section => section.id)}><main className="min-h-0 flex-1 bg-[var(--bg)] text-[var(--text)]">
       <GuidePreviewHeader
         projectId={resolvedGuide.projectId}
         title={resolvedGuide.title}
@@ -414,6 +414,6 @@ export function GuidePreview({
           </div>
         </aside> : null}
       </div>
-    </main>
+    </main></GuidePdfDesignSectionsProvider>
   );
 }

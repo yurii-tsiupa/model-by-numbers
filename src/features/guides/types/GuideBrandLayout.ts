@@ -14,5 +14,7 @@ export type GuideBrandElementLayout = {
 
 export type GuideBrandPageLayout = Record<GuideBrandElementType, GuideBrandElementLayout>;
 export type GuideBrandContentElementType = "logo" | "brand" | "socialLinks" | "qr";
-export type GuideBrandContentElementLayout = { visible: boolean; position: GuideBrandElementPosition };
-export type GuideBrandContentPageLayout = Record<GuideBrandContentElementType, GuideBrandContentElementLayout>;
+export type GuideBrandContentElementLayout = { visible: boolean; position: GuideBrandElementPosition; logoScale: number; qrScale: number };
+export type GuideBrandContentPageLayout = Record<GuideBrandContentElementType, GuideBrandContentElementLayout> & {
+  sections?: Partial<Record<import("../config/guideSectionRegistry").GuideContentSectionId, GuideBrandContentPageLayout>>;
+};

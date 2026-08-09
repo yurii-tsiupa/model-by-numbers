@@ -11,7 +11,7 @@ import { GuidePageHeader } from "./GuidePageHeader";
 import { useGuidePdfTemplate } from "./GuidePdfTemplateContext";
 import { useGuidePdfRenderMode } from "./GuidePdfRenderModeContext";
 import { resolveGuidePdfBackground } from "../lib/resolveGuidePdfBackground";
-import type { GuidePdfSectionId } from "../config/guideSectionRegistry";
+import type { GuideContentSectionId, GuidePdfSectionId } from "../config/guideSectionRegistry";
 import type { GuidePdfBackgroundTarget } from "../types/GuidePdfBackground";
 import { GuideContentPageBranding } from "./GuideContentPageBranding";
 
@@ -58,7 +58,7 @@ export function GuidePage({backgroundSectionId, children, id, locale, pageNumber
       {background?.imageUrl ? <Image fixed src={background.imageUrl} style={{ height: geometry.pageHeight, left: 0, objectFit: "cover", objectPosition: "center", opacity: background.opacity / 100, position: "absolute", top: 0, width: geometry.pageWidth }} /> : null}
       <View style={[guidePdfStyles.pageHeader, { height: geometry.headerHeight, ...horizontalPadding }]}><GuidePageHeader projectName={projectName}/></View>
       <View style={contentStyles}>{children}</View>
-      {showsContentPageBranding ? <GuideContentPageBranding geometry={geometry}/> : null}
+      {showsContentPageBranding && semanticPageId ? <GuideContentPageBranding geometry={geometry} sectionId={semanticPageId as GuideContentSectionId}/> : null}
       {showFooter && renderMode === "export" ? <GuidePageFooter locale={locale} pageNumber={pageNumber} totalPages={totalPages} geometry={geometry}/> : <View style={[guidePdfStyles.pageFooter, { height: geometry.footerHeight, ...horizontalPadding }]}/>}
     </Page>
   );
