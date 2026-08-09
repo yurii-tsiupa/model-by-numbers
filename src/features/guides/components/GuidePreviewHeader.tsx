@@ -18,6 +18,7 @@ type Props = {
   exportProgress: number;
   exportError: PdfExportError | null;
   onDownload: () => void;
+  onBack?: () => void;
   onSaveDraft?: () => void;
   isSavingDraft?: boolean;
   onRetry: () => void;
@@ -33,6 +34,7 @@ export function GuidePreviewHeader({
   exportProgress,
   exportError,
   onDownload,
+  onBack,
   onSaveDraft,
   isSavingDraft = false,
   onRetry,
@@ -78,7 +80,14 @@ export function GuidePreviewHeader({
       >
         <div className="relative mx-auto flex w-full max-w-[100rem] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-              <Link
+              {onBack ? <button
+                type="button"
+                onClick={onBack}
+                className="guide-back-action inline-flex min-h-9 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg px-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+              >
+                <ArrowLeft className="h-4 w-4 text-inherit" strokeWidth={2} />
+                {t("guide.back")}
+              </button> : <Link
                 href={`/models/${projectId}`}
                 className="guide-back-action inline-flex min-h-9 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg px-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
               >
@@ -87,7 +96,7 @@ export function GuidePreviewHeader({
                   strokeWidth={2}
                 />
                 {t("guide.backEditor")}
-              </Link>
+              </Link>}
 
               <span className="hidden h-9 w-px shrink-0 bg-[var(--border)] sm:block" aria-hidden="true" />
 

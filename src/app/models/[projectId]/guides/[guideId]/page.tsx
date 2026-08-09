@@ -160,6 +160,10 @@ export default function SavedGuidePage() {
         }
         savedPdfBlob={guide.pdfBlob}
         skipSave
+        onBack={() => {
+          if (window.history.length > 1) router.back();
+          else router.push("/guides");
+        }}
         onDelete={() => {
           setConfirmDelete(true);
         }}

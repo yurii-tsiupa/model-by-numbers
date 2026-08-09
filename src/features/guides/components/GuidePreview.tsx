@@ -39,6 +39,7 @@ type GuidePreviewProps = {
   savedPdfBlob?: Blob | null;
   skipSave?: boolean;
   onDelete?: () => void;
+  onBack?: () => void;
   template: GuideLibraryTemplate;
   userTemplates?: readonly UserGuideTemplate[];
   isSelectingTemplate?: boolean;
@@ -59,6 +60,7 @@ export function GuidePreview({
   savedPdfBlob,
   skipSave = false,
   onDelete,
+  onBack,
   template,
   userTemplates = [],
   isSelectingTemplate = false,
@@ -280,6 +282,7 @@ export function GuidePreview({
         exportProgress={pdfExport.progress}
         exportError={pdfExport.error}
         onDownload={handleDownload}
+        onBack={onBack}
         onSaveDraft={skipSave ? undefined : handleSaveDraft}
         isSavingDraft={saveGuide.isPending}
         onRetry={handleRetry}
