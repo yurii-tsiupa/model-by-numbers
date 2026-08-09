@@ -1,13 +1,14 @@
 import type { ModelGuide } from "./ModelGuide";
 import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibraryTemplate";
 
-export type GeneratedGuideStatus = "ready" | "failed";
+export type GeneratedGuideStatus = "draft" | "ready";
 
 export type GeneratedGuide = {
   id: string;
   projectId: string;
   version: number;
   status: GeneratedGuideStatus;
+  changedAfterDownload?: boolean;
   fileName: string;
   snapshot: ModelGuide;
   templateSettings?: GuideTemplateSettings;
@@ -18,5 +19,5 @@ export type GeneratedGuide = {
 
 export type SaveGeneratedGuideInput = Pick<
   GeneratedGuide,
-  "projectId" | "snapshot" | "templateSettings" | "pdfBlob" | "fileName"
->;
+  "projectId" | "snapshot" | "templateSettings" | "pdfBlob" | "fileName" | "status"
+> & { id?: string; changedAfterDownload?: boolean };

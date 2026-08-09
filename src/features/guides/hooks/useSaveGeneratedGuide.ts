@@ -6,5 +6,5 @@ import { generatedGuidesKey } from "./useGeneratedGuides";
 
 export function useSaveGeneratedGuide() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: (input: SaveGeneratedGuideInput) => generatedGuidesService.save(input), onSuccess: (guide) => { queryClient.setQueryData(generatedGuidesKey(guide.projectId), (current: GeneratedGuide[] | undefined) => [guide, ...(current ?? [])]); } });
+  return useMutation({ mutationFn: (input: SaveGeneratedGuideInput) => generatedGuidesService.save(input), onSuccess: (guide) => { queryClient.setQueryData(generatedGuidesKey(guide.projectId), (current: GeneratedGuide[] | undefined) => [guide, ...(current ?? []).filter((item) => item.id !== guide.id)]); void queryClient.invalidateQueries({ queryKey: ["saved-guides-library"] }); } });
 }

@@ -1,9 +1,10 @@
 import type { ModelGuide } from "../types/ModelGuide";
 import type { GeneratedGuide, SaveGeneratedGuideInput } from "../types/GeneratedGuide";
 import type { GuideStorage } from "./guideStorage";
-import { loadGuidePdfs, saveGuidePdf } from "@/features/storage/services/storage.service";
+import { deleteGuidePdf, loadGuidePdfs, saveGuidePdf } from "@/features/storage/services/storage.service";
 import { LOCAL_DATABASE_STORES, openLocalDatabase } from "@/features/storage/lib/localDatabase";
 import { normalizeGuideTemplateSettings } from "@/features/templates/services/guideTemplateStorage";
+import { applyGuideStorageKeys, validateGuideStorageRecord } from "./validateGuideStorageRecord";
 
 const STORE_NAME = LOCAL_DATABASE_STORES.guides;
 
@@ -26,7 +27,8 @@ function validDate(value: Date | string | number): Date {
 
 function normalize(record: StoredGuide): GeneratedGuide {
   const templateSettings = record.templateSettings ? normalizeGuideTemplateSettings(record.templateSettings) ?? undefined : undefined;
-  return { ...record, templateSettings, snapshot: { ...record.snapshot, generatedAt: validDate(record.snapshot.generatedAt) }, createdAt: validDate(record.createdAt), updatedAt: validDate(record.updatedAt) };
+  const status = record.status === "ready" ? "ready" : "draft";
+  return { ...record, status, templateSettings, snapshot: { ...record.snapshot, generatedAt: validDate(record.snapshot.generatedAt) }, createdAt: validDate(record.createdAt), updatedAt: validDate(record.updatedAt) };
 }
 
 function cloneSnapshot(snapshot: ModelGuide): ModelGuide {
@@ -81,19 +83,29 @@ class IndexedDbGuideStorage implements GuideStorage {
       const store = transaction.objectStore(STORE_NAME);
       const index = store.index("projectId");
       let saved: GeneratedGuide | null = null;
+      let writeError: Error | null = null;
       const request = index.getAll(input.projectId) as IDBRequest<StoredGuide[]>;
       request.onsuccess = () => {
-        const version = request.result.reduce((latest, guide) => Math.max(latest, guide.version), 0) + 1;
-        const now = new Date();
-        saved = { id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`, version, status: "ready", createdAt: now, updatedAt: now, ...input, snapshot: cloneSnapshot(input.snapshot) };
-        store.add({...saved,pdfBlob:null});
+        try {
+          const existing = input.id ? request.result.find((guide) => guide.id === input.id) : undefined;
+          const version = existing?.version ?? request.result.reduce((latest, guide) => Math.max(latest, guide.version), 0) + 1;
+          const now = new Date();
+          saved = { ...applyGuideStorageKeys(input, { id: existing?.id ?? input.id ?? globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`, version, createdAt: existing ? validDate(existing.createdAt) : now, updatedAt: now }), snapshot: cloneSnapshot(input.snapshot) };
+          const persistedRecord = {...saved,pdfBlob:null};
+          validateGuideStorageRecord(persistedRecord);
+          store.put(persistedRecord);
+        } catch (error) {
+          writeError = error instanceof Error ? error : new Error("Cannot save guide: invalid storage record");
+          transaction.abort();
+        }
       };
       request.onerror = () => transaction.abort();
       transaction.oncomplete = () => { if (saved) resolve(saved); else reject(new Error("We could not save this guide in your browser.")); };
       transaction.onerror = () => { reject(friendlyStorageError(transaction.error)); };
-      transaction.onabort = () => { reject(friendlyStorageError(transaction.error)); };
+      transaction.onabort = () => { reject(writeError ?? friendlyStorageError(transaction.error)); };
     });
     if(saved.pdfBlob)await saveGuidePdf({id:saved.id,entity:"guide",entityId:saved.projectId,fileName:saved.fileName,mimeType:saved.pdfBlob.type||"application/pdf",blob:saved.pdfBlob,size:saved.pdfBlob.size,createdAt:saved.createdAt,updatedAt:saved.updatedAt,metadata:saved});
+    else await deleteGuidePdf(saved.id).catch(() => undefined);
     return saved;
   }
 
@@ -102,6 +114,7 @@ class IndexedDbGuideStorage implements GuideStorage {
       const transaction = database.transaction(STORE_NAME, "readwrite");
       transaction.objectStore(STORE_NAME).delete(guideId);
       await new Promise<void>((resolve, reject) => { transaction.oncomplete = () => resolve(); transaction.onerror = () => reject(friendlyStorageError(transaction.error)); transaction.onabort = () => reject(friendlyStorageError(transaction.error)); });
+      await deleteGuidePdf(guideId).catch(() => undefined);
   }
 
   async deleteByProjectId(projectId: string): Promise<void> {

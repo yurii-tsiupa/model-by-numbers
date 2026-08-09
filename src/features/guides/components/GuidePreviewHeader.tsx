@@ -1,4 +1,4 @@
-import { ArrowLeft, CircleAlert, Download, LoaderCircle } from "lucide-react";
+import { ArrowLeft, CircleAlert, Download, LoaderCircle, Save } from "lucide-react";
 import Link from "next/link";
 
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -18,6 +18,8 @@ type Props = {
   exportProgress: number;
   exportError: PdfExportError | null;
   onDownload: () => void;
+  onSaveDraft?: () => void;
+  isSavingDraft?: boolean;
   onRetry: () => void;
   onReset: () => void;
   onDelete?: () => void;
@@ -31,6 +33,8 @@ export function GuidePreviewHeader({
   exportProgress,
   exportError,
   onDownload,
+  onSaveDraft,
+  isSavingDraft = false,
   onRetry,
   onReset,
   onDelete,
@@ -93,7 +97,7 @@ export function GuidePreviewHeader({
               </div>
           </div>
 
-              <div className="ml-auto flex shrink-0 items-center justify-end gap-2"><button
+              <div className="ml-auto flex shrink-0 items-center justify-end gap-2">{onSaveDraft ? <button type="button" disabled={isExporting || isSavingDraft} onClick={onSaveDraft} className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 text-sm font-medium text-[var(--text)] hover:bg-[var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50">{isSavingDraft ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <Save className="size-4" aria-hidden="true" />}{t("guide.saveDraft")}</button> : null}<button
                 type="button"
                 disabled={isExporting}
                 onClick={onDownload}

@@ -9,6 +9,6 @@ export function selectSavedGuides(projects: readonly Project[], guides: readonly
   return guides.flatMap(guide => {
     const project = projectsById.get(guide.projectId);
     if (!project) return [];
-    return [{ guide, project, thumbnail: thumbnailsByProjectId.get(project.id) ?? null, status: guide.status === "ready" ? "ready" as const : "incomplete" as const }];
+    return [{ guide, project, thumbnail: thumbnailsByProjectId.get(project.id) ?? null, status: guide.status === "ready" ? "ready" as const : "draft" as const }];
   });
 }

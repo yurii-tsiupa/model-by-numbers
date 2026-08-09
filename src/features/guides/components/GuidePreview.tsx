@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronDown, CircleAlert, FileText, SlidersHorizontal } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { ChevronDown, CircleAlert, FileText, SlidersHorizontal, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { translate } from "@/features/i18n/lib/i18n";
 
@@ -30,6 +30,7 @@ import type { GuideFontId } from "../design/guideFontRegistry";
 import { imageSourceToBlob, saveGuideAsset } from "../services/assets/saveGuideAsset";
 import { deleteGuideAssetByStorageKey } from "../services/assets/deleteGuideAsset";
 import { serializeGuideTemplateSettings } from "@/features/templates/lib/serializeGuideTemplateSettings";
+import { generateGuidePdfFileName } from "../services/pdf/generateGuidePdfFileName";
 
 type GuidePreviewProps = {
   previewProject?: Project;
@@ -133,12 +134,38 @@ export function GuidePreview({
   const hasGuideTools = Boolean(onSelectTemplate || onTemplateSettingsChange || onSectionSettingsChange || (onOverviewViewsChange && onCaptureOverview) || onReferencesChange);
 
   const savedGuideIdRef = useRef<string | null>(null);
+  const downloadedSignatureRef = useRef<string | null>(null);
 
   const saveGuide = useSaveGeneratedGuide();
 
   const [saveWarning, setSaveWarning] = useState<string | null>(
     null,
   );
+  const contentSignature = useMemo(() => JSON.stringify({ guide, templateSettings }), [guide, templateSettings]);
+  const fileName = savedFileName ?? generateGuidePdfFileName({ projectName: guide.title, modelName: guide.paintingSummary?.modelName, locale });
+
+  async function persistGuide(status: "draft" | "ready", pdfBlob: Blob | null, changedAfterDownload = false) {
+    const saved = await saveGuide.mutateAsync({
+      id: savedGuideIdRef.current ?? undefined,
+      projectId: guide.projectId,
+      snapshot: guide,
+      templateSettings: serializeGuideTemplateSettings(templateSettings) as GuideTemplateSettings,
+      pdfBlob,
+      fileName,
+      status,
+      changedAfterDownload,
+    });
+    savedGuideIdRef.current = saved.id;
+    return saved;
+  }
+
+  useEffect(() => {
+    if (!downloadedSignatureRef.current || downloadedSignatureRef.current === contentSignature || !savedGuideIdRef.current || skipSave) return;
+    downloadedSignatureRef.current = null;
+    void persistGuide("draft", null, true).catch(() => setSaveWarning(text("guide.saveWarning")));
+  // persistGuide intentionally resolves the current render snapshot when its signature changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentSignature, skipSave]);
 
   const pdfExport = useGuidePdfExport({
     viewModel,
@@ -148,21 +175,14 @@ export function GuidePreview({
     onImageWarning: (warning) => {
       setSaveWarning(warning.code === "LOW_RESOLUTION_IMAGE" ? text("guide.pdfExport.warnings.lowResolutionImage", { count: warning.count }) : text("guide.pdfExport.imageWarning"));
     },
-    beforeDownload: async ({ blob, fileName }) => {
-      if (skipSave || savedGuideIdRef.current) {
+    beforeDownload: async ({ blob }) => {
+      if (skipSave) {
         return;
       }
 
       try {
-        const saved = await saveGuide.mutateAsync({
-          projectId: guide.projectId,
-          snapshot: guide,
-          templateSettings: serializeGuideTemplateSettings(templateSettings) as GuideTemplateSettings,
-          pdfBlob: blob,
-          fileName,
-        });
-
-        savedGuideIdRef.current = saved.id;
+        await persistGuide("ready", blob);
+        downloadedSignatureRef.current = contentSignature;
       } catch {
         setSaveWarning(text("guide.saveWarning"));
       }
@@ -218,6 +238,10 @@ export function GuidePreview({
     void onTemplateSettingsChange({ monoFont: fontId }).catch(() => setSaveWarning(text("guide.pdfDesign.saveFailed")));
   }
 
+  function handleSaveDraft() {
+    void persistGuide("draft", null).then(() => { downloadedSignatureRef.current = null; setSaveWarning(text("guide.draftSaved")); }).catch(() => setSaveWarning(text("guide.saveWarning")));
+  }
+
   async function handleBrandingChange(branding: GuideTemplateSettings["branding"]) {
     if (!onTemplateSettingsChange) return;
     try {
@@ -256,6 +280,8 @@ export function GuidePreview({
         exportProgress={pdfExport.progress}
         exportError={pdfExport.error}
         onDownload={handleDownload}
+        onSaveDraft={skipSave ? undefined : handleSaveDraft}
+        isSavingDraft={saveGuide.isPending}
         onRetry={handleRetry}
         onReset={pdfExport.resetExport}
         onDelete={onDelete}
@@ -288,9 +314,10 @@ export function GuidePreview({
               />
             </div>
 
-            <p className="pt-1 text-sm leading-6 text-[var(--text-secondary)]">
+            <p className="min-w-0 flex-1 pt-1 text-sm leading-6 text-[var(--text-secondary)]">
               {saveWarning}
             </p>
+            <button type="button" onClick={() => setSaveWarning(null)} aria-label={text("common.close")} title={text("common.close")} className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"><X className="size-4" aria-hidden="true" /></button>
           </div>
         </div>
       ) : null}
