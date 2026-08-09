@@ -2,6 +2,7 @@ import type { GuideTemplateSettings } from "@/features/templates/types/GuideLibr
 
 import { GUIDE_SECTION_REGISTRY, type GuideSectionId } from "../config/guideSectionRegistry";
 import type { GuideViewModel } from "./getGuideViewModel";
+import type { GuideBrandContentPageLayout, GuideBrandPageLayout } from "../types/GuideBrandLayout";
 
 const sourceFingerprintCache = new Map<string, string>();
 const SOURCE_FINGERPRINT_CACHE_LIMIT = 96;
@@ -57,6 +58,28 @@ function addTemplate(builder: SignatureBuilder, settings: GuideTemplateSettings)
   builder.add(settings.dividerStyle);
   builder.add(settings.coverStyle);
   builder.add(settings.spacing);
+  builder.add(settings.branding.enabled);
+  builder.add(settings.branding.name);
+  builder.image(settings.branding.logoUrl);
+  builder.add(settings.branding.qrValue);
+  for (const link of settings.branding.socialLinks) { builder.add(link.id); builder.add(link.platform); builder.add(link.url); builder.add(link.handle); }
+}
+
+function addPageBrandLayout(builder: SignatureBuilder, layout: GuideBrandPageLayout): void {
+  for (const settings of Object.values(layout)) {
+    builder.add(settings.visible);
+    builder.add(settings.position);
+    builder.add(settings.size);
+    builder.add(settings.alignment);
+    builder.add(settings.logoScale);
+    builder.add(settings.qrScale);
+  }
+}
+
+// Kept as a typed boundary so adding another content-page element cannot silently
+// disappear from preview cache invalidation.
+function addContentPageBrandLayout(builder: SignatureBuilder, layout: GuideBrandContentPageLayout): void {
+  for (const settings of Object.values(layout)) { builder.add(settings.visible); builder.add(settings.position); }
 }
 
 export function getGuidePreviewSectionSignature(
@@ -69,6 +92,7 @@ export function getGuidePreviewSectionSignature(
   builder.add(sectionId);
   builder.add(viewModel.locale);
   addTemplate(builder, templateSettings);
+  addContentPageBrandLayout(builder, templateSettings.branding.contentPagesLayout);
   const contentSectionId = GUIDE_SECTION_REGISTRY.find((section) => section.id === sectionId)?.contentSectionId;
   const relevantBackgroundIds = sectionId === "cover" ? (["cover"] as const) : contentSectionId ? [contentSectionId] : [];
   templateSettings.backgroundItems.forEach((background) => {
@@ -78,11 +102,10 @@ export function getGuidePreviewSectionSignature(
   });
 
   if (sectionId === "cover") {
-    builder.add(templateSettings.branding.name); builder.image(templateSettings.branding.logoUrl);
-    builder.add(templateSettings.branding.qrValue);
+    builder.add(templateSettings.branding.ctaText);
     for (const link of templateSettings.branding.socialLinks) { builder.add(link.id); builder.add(link.platform); builder.add(link.url); builder.add(link.handle); }
     for (const link of templateSettings.branding.customLinks) { builder.add(link.id); builder.add(link.label); builder.add(link.url); }
-    for (const settings of Object.values(templateSettings.branding.coverLayout)) { builder.add(settings.position); builder.add(settings.size); builder.add(settings.alignment); builder.add(settings.logoScale); builder.add(settings.qrScale); }
+    addPageBrandLayout(builder, templateSettings.branding.coverLayout);
     builder.add(guide.title); builder.add(guide.description); builder.add(guide.author);
     builder.add(guide.printerType); builder.add(guide.material); builder.add(guide.baseColor);
     builder.image(guide.images.painted ?? guide.images.base ?? guide.images.original ?? guide.images.numbers);
@@ -136,7 +159,7 @@ export function getGuidePreviewSectionSignature(
     builder.add(data?.websiteUrl); builder.add(data?.socialUrl); builder.add(data?.qrValue); builder.add(data?.ctaText); builder.add(data?.accentColor);
     for (const link of data?.socialLinks ?? []) { builder.add(link.id); builder.add(link.platform); builder.add(link.url); builder.add(link.handle); }
     for (const link of data?.customLinks ?? []) { builder.add(link.id); builder.add(link.label); builder.add(link.url); }
-    for (const settings of Object.values(templateSettings.branding.backCoverLayout)) { builder.add(settings.position); builder.add(settings.size); builder.add(settings.alignment); builder.add(settings.logoScale); builder.add(settings.qrScale); }
+    addPageBrandLayout(builder, templateSettings.branding.backCoverLayout);
   }
   return builder.value();
 }

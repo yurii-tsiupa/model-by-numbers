@@ -61,8 +61,11 @@ export async function generateGuidePdf(
   const backCoverData = resolvedBackCover
     ? { ...resolvedBackCover, qrImageUrl: await generateGuideQrDataUrl(resolvedBackCover.qrValue) }
     : null;
+  const brandQrImageUrl = templateSettings.branding.enabled
+    ? await generateGuideQrDataUrl(templateSettings.branding.qrValue)
+    : null;
   let renderer;
-  try{renderer=pdf(<ModelGuideDocument renderMode={renderMode} sectionSelection={sectionSelection} templateSettings={templateSettings} viewModel={{...preparedSteps.viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts},modelViews:preparedModelViews,assemblyData:resolveGuideAssemblyData(prepared.guide,preparedSteps.viewModel.settings),backCoverData}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
+  try{renderer=pdf(<ModelGuideDocument brandQrImageUrl={brandQrImageUrl} renderMode={renderMode} sectionSelection={sectionSelection} templateSettings={templateSettings} viewModel={{...preparedSteps.viewModel,guide:prepared.guide,workflowGuide:{...prepared.guide,parts:prepared.guide.workflowParts??prepared.guide.parts},modelViews:preparedModelViews,assemblyData:resolveGuideAssemblyData(prepared.guide,preparedSteps.viewModel.settings),backCoverData}} />);}catch(error){throw new PdfExportError("RENDER_FAILED",error);}
   onProgress?.({status:"generating",progress:85});
   let blob:Blob;try{blob=await renderer.toBlob();}catch(error){throw new PdfExportError("PDF_GENERATION_FAILED",error);}
 

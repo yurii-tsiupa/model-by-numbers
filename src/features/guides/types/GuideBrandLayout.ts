@@ -4,6 +4,7 @@ export type GuideBrandTextAlignment = "left" | "center" | "right";
 export type GuideBrandElementType = "logo" | "brand" | "cta" | "socialLinks" | "customLinks" | "qr";
 
 export type GuideBrandElementLayout = {
+  visible: boolean;
   position: GuideBrandElementPosition;
   size: GuideBrandElementSize;
   alignment: GuideBrandTextAlignment;
@@ -12,3 +13,6 @@ export type GuideBrandElementLayout = {
 };
 
 export type GuideBrandPageLayout = Record<GuideBrandElementType, GuideBrandElementLayout>;
+export type GuideBrandContentElementType = "logo" | "brand" | "socialLinks" | "qr";
+export type GuideBrandContentElementLayout = { visible: boolean; position: GuideBrandElementPosition };
+export type GuideBrandContentPageLayout = Record<GuideBrandContentElementType, GuideBrandContentElementLayout>;

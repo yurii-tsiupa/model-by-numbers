@@ -16,6 +16,7 @@ export type GuideBrandCustomLink = {
 export type GuideBrandSettings = {
   enabled: boolean;
   backCoverLayout: GuideBrandPageLayout;
+  contentPagesLayout: GuideBrandContentPageLayout;
   coverLayout: GuideBrandPageLayout;
   ctaText: string | null;
   name: string | null;
@@ -43,11 +44,12 @@ export function normalizeGuideBrandUrl(value: string | null | undefined): string
 const SOCIAL_PLATFORMS: readonly GuideBrandSocialPlatform[] = ["instagram", "tiktok", "telegram", "facebook", "youtube", "x", "linkedin"];
 
 export function normalizeGuideBrandSettings(value: unknown): GuideBrandSettings {
-  if (!value || typeof value !== "object") return { enabled: false, backCoverLayout: DEFAULT_BACK_COVER_BRAND_LAYOUT, coverLayout: DEFAULT_COVER_BRAND_LAYOUT, ctaText: null, customLinks: [], name: null, logoAssetId: null, logoUrl: null, qrValue: null, socialLinks: [] };
+  if (!value || typeof value !== "object") return { enabled: false, backCoverLayout: DEFAULT_BACK_COVER_BRAND_LAYOUT, contentPagesLayout: DEFAULT_CONTENT_PAGES_BRAND_LAYOUT, coverLayout: DEFAULT_COVER_BRAND_LAYOUT, ctaText: null, customLinks: [], name: null, logoAssetId: null, logoUrl: null, qrValue: null, socialLinks: [] };
   const branding = value as Record<string, unknown>;
   const ctaText = typeof branding.ctaText === "string" ? branding.ctaText.trim().slice(0, 160) || null : null;
   const backCoverLayout = normalizeGuideBrandPageLayout(branding.backCoverLayout, DEFAULT_BACK_COVER_BRAND_LAYOUT);
   const coverLayout = normalizeGuideBrandPageLayout(branding.coverLayout, DEFAULT_COVER_BRAND_LAYOUT);
+  const contentPagesLayout = normalizeGuideBrandContentPageLayout(branding.contentPagesLayout);
   const name = typeof branding.name === "string" ? branding.name.trim().slice(0, 100) || null : null;
   const logoAssetId = typeof branding.logoAssetId === "string" && branding.logoAssetId.startsWith("guide-asset:") ? branding.logoAssetId : null;
   const logoUrl = typeof branding.logoUrl === "string" && (/^data:image\/(png|jpeg);base64,/.test(branding.logoUrl) || branding.logoUrl.startsWith("blob:"))
@@ -89,7 +91,16 @@ export function normalizeGuideBrandSettings(value: unknown): GuideBrandSettings 
   });
   const hasBranding = Boolean(name || logoAssetId || logoUrl || ctaText || qrValue || socialLinks.length || customLinks.length);
   const enabled = typeof branding.enabled === "boolean" ? branding.enabled : hasBranding;
-  return { enabled, backCoverLayout, coverLayout, ctaText, customLinks, name, logoAssetId, logoUrl, qrValue, socialLinks };
+  return { enabled, backCoverLayout, contentPagesLayout, coverLayout, ctaText, customLinks, name, logoAssetId, logoUrl, qrValue, socialLinks };
 }
-import { DEFAULT_BACK_COVER_BRAND_LAYOUT, DEFAULT_COVER_BRAND_LAYOUT, normalizeGuideBrandPageLayout } from "../lib/guideBrandLayout";
-import type { GuideBrandPageLayout } from "./GuideBrandLayout";
+import { DEFAULT_BACK_COVER_BRAND_LAYOUT, DEFAULT_CONTENT_PAGES_BRAND_LAYOUT, DEFAULT_COVER_BRAND_LAYOUT, GUIDE_BRAND_POSITIONS, normalizeGuideBrandPageLayout } from "../lib/guideBrandLayout";
+import type { GuideBrandContentPageLayout, GuideBrandPageLayout } from "./GuideBrandLayout";
+
+function normalizeGuideBrandContentPageLayout(value: unknown): GuideBrandContentPageLayout {
+  const source = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  return Object.fromEntries((Object.keys(DEFAULT_CONTENT_PAGES_BRAND_LAYOUT) as Array<keyof GuideBrandContentPageLayout>).map(element => {
+    const raw = source[element] && typeof source[element] === "object" ? source[element] as Record<string, unknown> : {};
+    const fallback = DEFAULT_CONTENT_PAGES_BRAND_LAYOUT[element];
+    return [element, { visible: typeof raw.visible === "boolean" ? raw.visible : fallback.visible, position: typeof raw.position === "string" && GUIDE_BRAND_POSITIONS.includes(raw.position as typeof fallback.position) ? raw.position as typeof fallback.position : fallback.position }];
+  })) as GuideBrandContentPageLayout;
+}

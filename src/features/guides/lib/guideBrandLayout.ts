@@ -1,6 +1,6 @@
 import { getGuidePageGeometry } from "../pdf/printPageConstants";
 import type { GuidePageFormat } from "../types/GuidePageFormat";
-import type { GuideBrandElementLayout, GuideBrandElementPosition, GuideBrandElementSize, GuideBrandElementType, GuideBrandPageLayout, GuideBrandTextAlignment } from "../types/GuideBrandLayout";
+import type { GuideBrandContentPageLayout, GuideBrandElementLayout, GuideBrandElementPosition, GuideBrandElementSize, GuideBrandElementType, GuideBrandPageLayout, GuideBrandTextAlignment } from "../types/GuideBrandLayout";
 
 export type GuideBrandPageType = "cover" | "backCover";
 
@@ -19,21 +19,28 @@ export const GUIDE_BRAND_SIZES: readonly GuideBrandElementSize[] = ["small", "me
 export const GUIDE_BRAND_ALIGNMENTS: readonly GuideBrandTextAlignment[] = ["left", "center", "right"];
 
 export const DEFAULT_COVER_BRAND_LAYOUT: GuideBrandPageLayout = {
-  logo: { position: "top-left", size: "medium", alignment: "left", logoScale: 100, qrScale: 100 },
-  brand: { position: "top-left", size: "medium", alignment: "left", logoScale: 100, qrScale: 100 },
-  cta: { position: "top-left", size: "medium", alignment: "left", logoScale: 100, qrScale: 100 },
-  qr: { position: "bottom-left", size: "medium", alignment: "left", logoScale: 100, qrScale: 100 },
-  socialLinks: { position: "bottom-left", size: "medium", alignment: "left", logoScale: 100, qrScale: 100 },
-  customLinks: { position: "bottom-left", size: "medium", alignment: "left", logoScale: 100, qrScale: 100 },
+  logo: { visible: true, position: "top-left", size: "medium", alignment: "left", logoScale: 100, qrScale: 100 },
+  brand: { visible: true, position: "top-left", size: "medium", alignment: "left", logoScale: 100, qrScale: 100 },
+  cta: { visible: true, position: "top-left", size: "medium", alignment: "left", logoScale: 100, qrScale: 100 },
+  qr: { visible: true, position: "bottom-left", size: "medium", alignment: "left", logoScale: 100, qrScale: 100 },
+  socialLinks: { visible: true, position: "bottom-left", size: "medium", alignment: "left", logoScale: 100, qrScale: 100 },
+  customLinks: { visible: true, position: "bottom-left", size: "medium", alignment: "left", logoScale: 100, qrScale: 100 },
 };
 
 export const DEFAULT_BACK_COVER_BRAND_LAYOUT: GuideBrandPageLayout = {
-  logo: { position: "center", size: "large", alignment: "center", logoScale: 100, qrScale: 100 },
-  brand: { position: "top-center", size: "medium", alignment: "center", logoScale: 100, qrScale: 100 },
-  cta: { position: "top-center", size: "medium", alignment: "center", logoScale: 100, qrScale: 100 },
-  qr: { position: "bottom-center", size: "large", alignment: "center", logoScale: 100, qrScale: 100 },
-  socialLinks: { position: "bottom-center", size: "medium", alignment: "center", logoScale: 100, qrScale: 100 },
-  customLinks: { position: "bottom-center", size: "medium", alignment: "center", logoScale: 100, qrScale: 100 },
+  logo: { visible: true, position: "center", size: "large", alignment: "center", logoScale: 100, qrScale: 100 },
+  brand: { visible: true, position: "top-center", size: "medium", alignment: "center", logoScale: 100, qrScale: 100 },
+  cta: { visible: true, position: "top-center", size: "medium", alignment: "center", logoScale: 100, qrScale: 100 },
+  qr: { visible: true, position: "bottom-center", size: "large", alignment: "center", logoScale: 100, qrScale: 100 },
+  socialLinks: { visible: true, position: "bottom-center", size: "medium", alignment: "center", logoScale: 100, qrScale: 100 },
+  customLinks: { visible: true, position: "bottom-center", size: "medium", alignment: "center", logoScale: 100, qrScale: 100 },
+};
+
+export const DEFAULT_CONTENT_PAGES_BRAND_LAYOUT: GuideBrandContentPageLayout = {
+  logo: { visible: false, position: "bottom-left" },
+  brand: { visible: false, position: "bottom-left" },
+  socialLinks: { visible: false, position: "bottom-center" },
+  qr: { visible: false, position: "bottom-right" },
 };
 
 function isPosition(value: unknown): value is GuideBrandElementPosition { return typeof value === "string" && GUIDE_BRAND_POSITIONS.includes(value as GuideBrandElementPosition); }
@@ -60,6 +67,7 @@ export function normalizeGuideBrandPageLayout(value: unknown, defaults: GuideBra
         : { small: 71, medium: 86, large: 100 }[legacySize]
       : GUIDE_BRAND_QR_SCALE_DEFAULT;
     return [element, {
+      visible: typeof raw.visible === "boolean" ? raw.visible : fallback.visible,
       position: isPosition(raw.position) ? raw.position : fallback.position,
       size: legacySize,
       alignment: isAlignment(raw.alignment) ? raw.alignment : fallback.alignment,

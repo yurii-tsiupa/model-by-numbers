@@ -50,8 +50,10 @@ import { Fragment } from "react";
 import type { GuidePdfSectionSelection } from "../../pdf/ModelGuideDocument";
 import { DEFAULT_GUIDE_PAGE_FORMAT } from "../../types/GuidePageFormat";
 import { paginateGuideSteps } from "../../lib/paginateGuideSteps";
+import { GuidePdfBrandAssetsProvider } from "../../pdf/GuidePdfBrandAssetsContext";
 
 type ClassicGuideDocumentProps = {
+  brandQrImageUrl?: string | null;
   guide: ModelGuide;
   viewModel?: GuideViewModel;
   templateSettings?: GuideTemplateSettings;
@@ -60,6 +62,7 @@ type ClassicGuideDocumentProps = {
 };
 
 export function ClassicGuideDocument({
+  brandQrImageUrl,
   guide,
   viewModel,
   templateSettings,
@@ -82,7 +85,7 @@ export function ClassicGuideDocument({
     <GuideDocument
       {...metadata}
     >
-      <GuidePdfRenderModeProvider value={renderMode}><GuidePdfTemplateProvider settings={templateSettings}>
+      <GuidePdfRenderModeProvider value={renderMode}><GuidePdfTemplateProvider settings={templateSettings}><GuidePdfBrandAssetsProvider qrImageUrl={brandQrImageUrl ?? model.backCoverData?.qrImageUrl ?? null}>
       {renderedSections.map((section) => {
         const pageRange = pagePlan.sections[section.id];
         if (!pageRange) return null;
@@ -220,7 +223,7 @@ export function ClassicGuideDocument({
             return null;
         }
       })}
-      </GuidePdfTemplateProvider></GuidePdfRenderModeProvider>
+      </GuidePdfBrandAssetsProvider></GuidePdfTemplateProvider></GuidePdfRenderModeProvider>
     </GuideDocument>
   );
 }

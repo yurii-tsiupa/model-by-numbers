@@ -10,6 +10,7 @@ export type GuidePdfSectionSelection = {
 };
 
 export type ModelGuideDocumentProps = {
+  brandQrImageUrl?: string | null;
   viewModel: GuideViewModel;
   templateSettings: GuideTemplateSettings;
   renderMode?: GuidePdfRenderMode;
@@ -17,11 +18,12 @@ export type ModelGuideDocumentProps = {
 };
 
 export function ModelGuideDocument({
+  brandQrImageUrl,
   viewModel,
   templateSettings,
   renderMode = "export",
   sectionSelection,
 }: ModelGuideDocumentProps) {
   const PdfDocument=defaultGuideTemplate.PdfDocument;
-  return <PdfDocument guide={viewModel.guide} viewModel={viewModel} templateSettings={templateSettings} renderMode={renderMode} sectionSelection={sectionSelection}/>;
+  return <PdfDocument brandQrImageUrl={brandQrImageUrl} guide={viewModel.guide} viewModel={viewModel} templateSettings={templateSettings} renderMode={renderMode} sectionSelection={sectionSelection}/>;
 }

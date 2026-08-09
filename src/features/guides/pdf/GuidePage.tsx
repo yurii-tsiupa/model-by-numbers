@@ -13,6 +13,7 @@ import { useGuidePdfRenderMode } from "./GuidePdfRenderModeContext";
 import { resolveGuidePdfBackground } from "../lib/resolveGuidePdfBackground";
 import type { GuidePdfSectionId } from "../config/guideSectionRegistry";
 import type { GuidePdfBackgroundTarget } from "../types/GuidePdfBackground";
+import { GuideContentPageBranding } from "./GuideContentPageBranding";
 
 type GuidePageProps = Omit<ComponentProps<typeof Page>, "children" | "size"> & {
   backgroundSectionId?: Exclude<GuidePdfBackgroundTarget, "all">;
@@ -31,6 +32,8 @@ export function GuidePage({backgroundSectionId, children, id, locale, pageNumber
   const pageFormat=template.pageFormat ?? DEFAULT_GUIDE_PAGE_FORMAT;
   const geometry=getGuidePageGeometry(pageFormat);
   const background=resolveGuidePdfBackground(backgroundSectionId ?? id as GuidePdfSectionId | undefined,template.backgroundItems);
+  const semanticPageId = backgroundSectionId ?? id;
+  const showsContentPageBranding = semanticPageId !== "cover" && semanticPageId !== "backCover" && semanticPageId !== "back-cover" && semanticPageId !== "toc";
   const pageStyle = Array.isArray(style)
     ? [guidePdfStyles.page, {backgroundColor:template.pageBackground,color:template.textColor}, ...style]
     : style
@@ -55,6 +58,7 @@ export function GuidePage({backgroundSectionId, children, id, locale, pageNumber
       {background?.imageUrl ? <Image fixed src={background.imageUrl} style={{ height: geometry.pageHeight, left: 0, objectFit: "cover", objectPosition: "center", opacity: background.opacity / 100, position: "absolute", top: 0, width: geometry.pageWidth }} /> : null}
       <View style={[guidePdfStyles.pageHeader, { height: geometry.headerHeight, ...horizontalPadding }]}><GuidePageHeader projectName={projectName}/></View>
       <View style={contentStyles}>{children}</View>
+      {showsContentPageBranding ? <GuideContentPageBranding geometry={geometry}/> : null}
       {showFooter && renderMode === "export" ? <GuidePageFooter locale={locale} pageNumber={pageNumber} totalPages={totalPages} geometry={geometry}/> : <View style={[guidePdfStyles.pageFooter, { height: geometry.footerHeight, ...horizontalPadding }]}/>}
     </Page>
   );

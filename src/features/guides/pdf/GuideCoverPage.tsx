@@ -132,12 +132,12 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
   const coverCustomLinks = branding?.customLinks.slice(0, 3) ?? [];
   const layout = branding?.coverLayout;
   const activeBrandElements = new Set<GuideBrandElementType>([
-    ...(branding?.logoUrl ? ["logo" as const] : []),
-    ...(branding?.name ? ["brand" as const] : []),
-    ...(branding?.ctaText ? ["cta" as const] : []),
-    ...(contact?.qrImageUrl ? ["qr" as const] : []),
-    ...(coverSocialLinks.length ? ["socialLinks" as const] : []),
-    ...(coverCustomLinks.length ? ["customLinks" as const] : []),
+    ...(layout?.logo.visible && branding?.logoUrl ? ["logo" as const] : []),
+    ...(layout?.brand.visible && branding?.name ? ["brand" as const] : []),
+    ...(layout?.cta.visible && branding?.ctaText ? ["cta" as const] : []),
+    ...(layout?.qr.visible && contact?.qrImageUrl ? ["qr" as const] : []),
+    ...(layout?.socialLinks.visible && coverSocialLinks.length ? ["socialLinks" as const] : []),
+    ...(layout?.customLinks.visible && coverCustomLinks.length ? ["customLinks" as const] : []),
   ]);
   const renderBrandElement = (element: GuideBrandElementType, settings: GuideBrandElementLayout) => {
     const textAlign = settings.alignment;

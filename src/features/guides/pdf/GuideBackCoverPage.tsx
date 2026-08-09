@@ -117,12 +117,12 @@ export function GuideBackCoverPage({
     ...(backCoverData.socialUrl ? [{ id: "legacy-social", label: getGuideWebsiteLabel(backCoverData.socialUrl), url: backCoverData.socialUrl }] : []),
   ];
   const activeBrandElements = new Set<GuideBrandElementType>([
-    ...(backCoverData.logoUrl ? ["logo" as const] : []),
-    ...(backCoverData.brandName ? ["brand" as const] : []),
-    ...(backCoverData.headline || backCoverData.description || backCoverData.ctaText ? ["cta" as const] : []),
-    ...(backCoverData.qrImageUrl ? ["qr" as const] : []),
-    ...(socialLinks.length ? ["socialLinks" as const] : []),
-    ...(customLinks.length || fallbackDestination ? ["customLinks" as const] : []),
+    ...(layout.logo.visible && backCoverData.logoUrl ? ["logo" as const] : []),
+    ...(layout.brand.visible && backCoverData.brandName ? ["brand" as const] : []),
+    ...(layout.cta.visible && (backCoverData.headline || backCoverData.description || backCoverData.ctaText) ? ["cta" as const] : []),
+    ...(layout.qr.visible && backCoverData.qrImageUrl ? ["qr" as const] : []),
+    ...(layout.socialLinks.visible && socialLinks.length ? ["socialLinks" as const] : []),
+    ...(layout.customLinks.visible && (customLinks.length || fallbackDestination) ? ["customLinks" as const] : []),
   ]);
   const renderBrandElement = (element: GuideBrandElementType, settings: GuideBrandElementLayout) => {
     const textAlign = settings.alignment;
