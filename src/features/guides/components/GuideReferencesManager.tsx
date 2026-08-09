@@ -95,17 +95,17 @@ export function GuideReferencesManager({ projectId, locale, references, onChange
       <p className="shrink-0 text-right text-[11px] text-[var(--text-secondary)]">{t("guide.references.count", { available: ordered.length, included: included.length })}</p>
     </div>
 
-    {ordered.length ? <div className="mt-3 space-y-2">
+    {ordered.length ? <div className="mt-2 space-y-1.5">
       {ordered.map((reference) => {
         const isIncluded = reference.includedInGuide !== false;
         const includedIndex = included.findIndex((item) => item.id === reference.id);
         const isEditing = editingId === reference.id;
         const referenceLabel = t(reference.source === "guide" ? "guide.references.guideOnly" : "guide.references.project");
-        return <article key={reference.id} className="grid min-w-0 grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] p-2.5">
+        return <article key={reference.id} className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-2 rounded-[7px] bg-[var(--surface)] p-1.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={reference.dataUrl} alt="" className="size-14 shrink-0 rounded-lg bg-white object-cover" />
+          <img src={reference.dataUrl} alt="" className="size-8 shrink-0 rounded-md bg-white object-cover" />
           <div className="min-w-0">
-            <p className="truncate text-[13px] font-semibold">{referenceLabel}</p>
+            <p className="truncate text-xs font-semibold">{referenceLabel}</p>
             {isEditing ? <div className="mt-1.5">
               <input autoFocus aria-label={t("guide.references.captionFor", { name: t("guide.references.item") })} value={captionDraft} onChange={(event) => setCaptionDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") saveCaption(reference.id); if (event.key === "Escape") setEditingId(null); }} placeholder={t("guide.references.caption")} className="h-8 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-2 text-xs outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]" />
               <div className="mt-1.5 flex gap-1.5">
@@ -113,12 +113,12 @@ export function GuideReferencesManager({ projectId, locale, references, onChange
                 <button type="button" onClick={() => setEditingId(null)} className="inline-flex min-h-7 cursor-pointer items-center rounded-md px-2 text-[11px] font-medium leading-none text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">{t("guide.references.cancelCaption")}</button>
               </div>
             </div> : <>
-              <p className="mt-0.5 truncate text-[11px] text-[var(--text-secondary)]">{reference.caption?.trim() || t("guide.references.noCaption")}</p>
+              <p className="truncate text-[10px] leading-3.5 text-[var(--text-secondary)]">{reference.caption?.trim() || t("guide.references.noCaption")}</p>
             </>}
           </div>
-          {!isEditing ? <div className="flex flex-col items-end gap-1">
+          {!isEditing ? <div className="flex flex-wrap items-center justify-end gap-0.5">
             <button type="button" aria-pressed={isIncluded} onClick={() => update(reference.id, { includedInGuide: !isIncluded })} className="guide-row-text-action inline-flex min-h-7 cursor-pointer items-center px-1.5">{t(isIncluded ? "guide.references.excludeShort" : "guide.references.includeShort")}</button>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               <button type="button" title={t("guide.references.editCaption")} aria-label={t("guide.references.editCaption")} onClick={() => beginCaptionEdit(reference)} className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"><Pencil className="size-3.5" aria-hidden="true" /></button>
               {isIncluded && includedIndex > 0 ? <button type="button" title={t("guide.references.moveUp", { name: referenceLabel })} aria-label={t("guide.references.moveUp", { name: referenceLabel })} onClick={() => moveIncluded(reference.id, -1)} className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"><ChevronUp className="size-3.5" aria-hidden="true" /></button> : null}
               {isIncluded && includedIndex < included.length - 1 ? <button type="button" title={t("guide.references.moveDown", { name: referenceLabel })} aria-label={t("guide.references.moveDown", { name: referenceLabel })} onClick={() => moveIncluded(reference.id, 1)} className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"><ChevronDown className="size-3.5" aria-hidden="true" /></button> : null}
@@ -128,7 +128,7 @@ export function GuideReferencesManager({ projectId, locale, references, onChange
         </article>;
       })}
     </div> : <p className="mt-4 text-xs text-[var(--text-secondary)]">{t("guide.references.none")}</p>}
-    <button type="button" onClick={() => inputRef.current?.click()} className="guide-add-action mt-2.5 inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-1.5 px-3">
+    <button type="button" onClick={() => inputRef.current?.click()} className="guide-add-action mt-2 inline-flex min-h-9 w-full cursor-pointer items-center justify-center gap-1.5 px-3">
       <Plus className="size-3.5" aria-hidden="true" />{t("guide.references.add")}
     </button>
     <input ref={inputRef} hidden multiple type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={(event) => { if (event.target.files) void upload(event.target.files); event.target.value = ""; }} />
