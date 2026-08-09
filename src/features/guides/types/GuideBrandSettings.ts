@@ -14,6 +14,7 @@ export type GuideBrandCustomLink = {
 };
 
 export type GuideBrandSettings = {
+  enabled: boolean;
   backCoverLayout: GuideBrandPageLayout;
   coverLayout: GuideBrandPageLayout;
   ctaText: string | null;
@@ -42,7 +43,7 @@ export function normalizeGuideBrandUrl(value: string | null | undefined): string
 const SOCIAL_PLATFORMS: readonly GuideBrandSocialPlatform[] = ["instagram", "tiktok", "telegram", "facebook", "youtube", "x", "linkedin"];
 
 export function normalizeGuideBrandSettings(value: unknown): GuideBrandSettings {
-  if (!value || typeof value !== "object") return { backCoverLayout: DEFAULT_BACK_COVER_BRAND_LAYOUT, coverLayout: DEFAULT_COVER_BRAND_LAYOUT, ctaText: null, customLinks: [], name: null, logoAssetId: null, logoUrl: null, qrValue: null, socialLinks: [] };
+  if (!value || typeof value !== "object") return { enabled: false, backCoverLayout: DEFAULT_BACK_COVER_BRAND_LAYOUT, coverLayout: DEFAULT_COVER_BRAND_LAYOUT, ctaText: null, customLinks: [], name: null, logoAssetId: null, logoUrl: null, qrValue: null, socialLinks: [] };
   const branding = value as Record<string, unknown>;
   const ctaText = typeof branding.ctaText === "string" ? branding.ctaText.trim().slice(0, 160) || null : null;
   const backCoverLayout = normalizeGuideBrandPageLayout(branding.backCoverLayout, DEFAULT_BACK_COVER_BRAND_LAYOUT);
@@ -86,7 +87,9 @@ export function normalizeGuideBrandSettings(value: unknown): GuideBrandSettings 
     if (!url || !label) return [];
     return [{ id: typeof link.id === "string" && link.id.trim() ? link.id : `custom-${index}`, label, url }];
   });
-  return { backCoverLayout, coverLayout, ctaText, customLinks, name, logoAssetId, logoUrl, qrValue, socialLinks };
+  const hasBranding = Boolean(name || logoAssetId || logoUrl || ctaText || qrValue || socialLinks.length || customLinks.length);
+  const enabled = typeof branding.enabled === "boolean" ? branding.enabled : hasBranding;
+  return { enabled, backCoverLayout, coverLayout, ctaText, customLinks, name, logoAssetId, logoUrl, qrValue, socialLinks };
 }
 import { DEFAULT_BACK_COVER_BRAND_LAYOUT, DEFAULT_COVER_BRAND_LAYOUT, normalizeGuideBrandPageLayout } from "../lib/guideBrandLayout";
 import type { GuideBrandPageLayout } from "./GuideBrandLayout";

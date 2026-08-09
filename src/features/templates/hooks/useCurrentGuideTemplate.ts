@@ -14,6 +14,7 @@ import { useResolvedGuideTemplateAssets } from "./useResolvedGuideTemplateAssets
 import { imageSourceToBlob, saveGuideAsset } from "@/features/guides/services/assets/saveGuideAsset";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { createGuideSettingsFromUserBrandDefaults } from "@/features/guides/lib/createGuideSettingsFromUserBrandDefaults";
+import { normalizeGuideBrandSettings } from "@/features/guides/types/GuideBrandSettings";
 
 type CurrentGuideTemplateOptions = {
   draft?: { settings: GuideTemplateSettings; templateId: string; onSettingsChange: (settings: Partial<GuideTemplateSettings>) => void; onTemplateChange: (templateId: string, settings: GuideTemplateSettings) => void };
@@ -37,6 +38,7 @@ export function useCurrentGuideTemplate(project: Project | undefined, userId: st
       ...resolvedTemplate.settings,
       ...profileSeededSettings,
       ...persistedSettings,
+      branding: normalizeGuideBrandSettings(persistedSettings?.branding ?? profileSeededSettings?.branding ?? resolvedTemplate.settings.branding),
       accentColor: persistedSettings?.accentColor ?? profileSeededSettings?.accentColor ?? defaultGuideDesignTokens.accentColor,
     },
   } as typeof resolvedTemplate;

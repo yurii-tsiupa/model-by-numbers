@@ -87,7 +87,7 @@ export function GuideBackCoverPage({
   const { backCoverData, guide, locale } = viewModel;
   const design = useGuidePdfDesignTokens();
   const template = useGuidePdfTemplate();
-  if (!backCoverData) return null;
+  if (!backCoverData || !template.branding.enabled) return null;
   const fallbackDestination = !backCoverData.websiteUrl && !backCoverData.socialUrl && !backCoverData.socialLinks.length ? backCoverData.qrValue : null;
   const accentStyle = backCoverData.accentColor ? { color: backCoverData.accentColor } : undefined;
   const brandNameStyle = {

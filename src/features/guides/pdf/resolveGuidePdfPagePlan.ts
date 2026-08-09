@@ -48,7 +48,7 @@ export type GuideResolvedPdfPage = {
   sourceSectionId?: GuideSectionId;
 };
 
-function sectionPageCount(viewModel: GuideViewModel, sectionId: GuideSectionId, capacity: GuidePdfPageCapacity): number {
+function sectionPageCount(viewModel: GuideViewModel, sectionId: GuideSectionId, capacity: GuidePdfPageCapacity, brandingEnabled: boolean): number {
   switch (sectionId) {
     case "model-views":
       return viewModel.modelViews.length;
@@ -67,7 +67,7 @@ function sectionPageCount(viewModel: GuideViewModel, sectionId: GuideSectionId, 
     case "troubleshooting":
       return viewModel.troubleshootingData ? 1 : 0;
     case "back-cover":
-      return viewModel.backCoverData ? 1 : 0;
+      return brandingEnabled && viewModel.backCoverData ? 1 : 0;
     case "kit":
       return Math.max(1, Math.ceil(viewModel.kitItems.length / capacity.kitItems));
     case "cover":
@@ -78,7 +78,7 @@ function sectionPageCount(viewModel: GuideViewModel, sectionId: GuideSectionId, 
   }
 }
 
-export function resolveGuidePdfPagePlan(viewModel: GuideViewModel, pageFormat: GuidePageFormat = viewModel.pageFormat): GuidePdfPagePlan {
+export function resolveGuidePdfPagePlan(viewModel: GuideViewModel, pageFormat: GuidePageFormat = viewModel.pageFormat, options: { brandingEnabled: boolean } = { brandingEnabled: false }): GuidePdfPagePlan {
   const capacity = getGuidePdfPageCapacity(pageFormat);
   let nextPage = 1;
   let tableOfContents: number | null = null;
@@ -88,7 +88,7 @@ export function resolveGuidePdfPagePlan(viewModel: GuideViewModel, pageFormat: G
   const startedContentSections = new Set<GuideContentSectionId>();
 
   for (const section of viewModel.documentSections) {
-    const count = sectionPageCount(viewModel, section.id, capacity);
+    const count = sectionPageCount(viewModel, section.id, capacity, options.brandingEnabled);
     sections[section.id] = { count, start: nextPage };
     for (let sectionPageIndex = 0; sectionPageIndex < count; sectionPageIndex += 1) {
       const isSectionStart = !startedContentSections.has(section.contentSectionId);

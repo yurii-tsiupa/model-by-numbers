@@ -73,7 +73,7 @@ export function ClassicGuideDocument({
     : { ...sourceModel, pageFormat, paintingPages: paginateGuideSteps(sourceModel.paintingSteps, pageFormat) };
   const exportDate = new Date();
   const metadata = createPdfDocumentMetadata(guide, exportDate);
-  const pagePlan = resolveGuidePdfPagePlan(model, pageFormat);
+  const pagePlan = resolveGuidePdfPagePlan(model, pageFormat, { brandingEnabled: templateSettings?.branding.enabled ?? false });
   const renderedSections = sectionSelection
     ? model.documentSections.filter((section) => sectionSelection.sectionIds.includes(section.id))
     : model.documentSections;

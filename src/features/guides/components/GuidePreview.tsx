@@ -31,6 +31,9 @@ import { imageSourceToBlob, saveGuideAsset } from "../services/assets/saveGuideA
 import { deleteGuideAssetByStorageKey } from "../services/assets/deleteGuideAsset";
 import { serializeGuideTemplateSettings } from "@/features/templates/lib/serializeGuideTemplateSettings";
 import { generateGuidePdfFileName } from "../services/pdf/generateGuidePdfFileName";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { loadUserBrandLogo } from "@/features/auth/services/userBrandLogoStorage";
+import { createGuideBrandingFromUserDefaults } from "../lib/createGuideSettingsFromUserBrandDefaults";
 
 type GuidePreviewProps = {
   previewProject?: Project;
@@ -73,6 +76,7 @@ export function GuidePreview({
   onSectionSettingsChange,
   isUpdatingSectionSettings = false,
 }: GuidePreviewProps) {
+  const { profile } = useAuth();
   const resolvedGuide = useResolvedGuideAssets(guide, previewProject);
   const viewModel = useGuideViewModel(resolvedGuide, template.settings.pageFormat);
 
@@ -258,6 +262,21 @@ export function GuidePreview({
     } catch { setSaveWarning(text("guide.pdfDesign.saveFailed")); }
   }
 
+  async function handleEnableBranding() {
+    if (!onTemplateSettingsChange || template.settings.branding.enabled) return;
+    try {
+      let logoAssetId: string | null = null;
+      if (profile?.brandDefaults.logoAssetId) {
+        const logo = await loadUserBrandLogo(profile.brandDefaults.logoAssetId);
+        if (logo) logoAssetId = (await saveGuideAsset({ projectId: guide.projectId, kind: "branding-logo", assetId: crypto.randomUUID(), blob: logo })).storageKey;
+      }
+      const branding = profile
+        ? createGuideBrandingFromUserDefaults(template.settings.branding, profile.brandDefaults, logoAssetId)
+        : { ...template.settings.branding, enabled: true };
+      await onTemplateSettingsChange({ branding });
+    } catch { setSaveWarning(text("guide.pdfDesign.saveFailed")); }
+  }
+
   async function handleBackgroundItemsChange(backgroundItems: GuideTemplateSettings["backgroundItems"]) {
     if (!onTemplateSettingsChange) return;
     try {
@@ -351,7 +370,7 @@ export function GuidePreview({
                   {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
                 </div>
                 {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
-              </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} backgroundItems={template.settings.backgroundItems} backCoverLayout={template.settings.branding.backCoverLayout} brandName={template.settings.branding.name} bodyFontId={template.settings.bodyFont} ctaText={template.settings.branding.ctaText} coverLayout={template.settings.branding.coverLayout} customLinks={template.settings.branding.customLinks} disabled={isUpdatingTemplateSettings} displayFontId={template.settings.headingFont} logoUrl={template.settings.branding.logoUrl} monoFontId={template.settings.monoFont} pageFormat={template.settings.pageFormat} qrValue={template.settings.branding.qrValue} socialLinks={template.settings.branding.socialLinks} onAccentColorChange={handleAccentColorChange} onBackgroundItemsChange={handleBackgroundItemsChange} onBackCoverLayoutChange={(backCoverLayout) => handleBrandingChange({ ...template.settings.branding, backCoverLayout })} onBodyFontChange={handleBodyFontChange} onBrandNameChange={(name) => handleBrandingChange({ ...template.settings.branding, name })} onCtaTextChange={(ctaText) => handleBrandingChange({ ...template.settings.branding, ctaText })} onCoverLayoutChange={(coverLayout) => handleBrandingChange({ ...template.settings.branding, coverLayout })} onCustomLinksChange={(customLinks) => handleBrandingChange({ ...template.settings.branding, customLinks })} onDisplayFontChange={handleDisplayFontChange} onLogoChange={(logoUrl) => handleBrandingChange({ ...template.settings.branding, logoUrl })} onMonoFontChange={handleMonoFontChange} onPageFormatChange={handlePageFormatChange} onQrValueChange={(qrValue) => handleBrandingChange({ ...template.settings.branding, qrValue })} onSocialLinksChange={(socialLinks) => handleBrandingChange({ ...template.settings.branding, socialLinks })} t={text} /> : null}
+              </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} brandingEnabled={template.settings.branding.enabled} backgroundItems={template.settings.backgroundItems} backCoverLayout={template.settings.branding.backCoverLayout} brandName={template.settings.branding.name} bodyFontId={template.settings.bodyFont} ctaText={template.settings.branding.ctaText} coverLayout={template.settings.branding.coverLayout} customLinks={template.settings.branding.customLinks} disabled={isUpdatingTemplateSettings} displayFontId={template.settings.headingFont} logoUrl={template.settings.branding.logoUrl} monoFontId={template.settings.monoFont} pageFormat={template.settings.pageFormat} qrValue={template.settings.branding.qrValue} socialLinks={template.settings.branding.socialLinks} onAccentColorChange={handleAccentColorChange} onBackgroundItemsChange={handleBackgroundItemsChange} onBrandingEnabledChange={() => void handleEnableBranding()} onBackCoverLayoutChange={(backCoverLayout) => handleBrandingChange({ ...template.settings.branding, backCoverLayout })} onBodyFontChange={handleBodyFontChange} onBrandNameChange={(name) => handleBrandingChange({ ...template.settings.branding, name })} onCtaTextChange={(ctaText) => handleBrandingChange({ ...template.settings.branding, ctaText })} onCoverLayoutChange={(coverLayout) => handleBrandingChange({ ...template.settings.branding, coverLayout })} onCustomLinksChange={(customLinks) => handleBrandingChange({ ...template.settings.branding, customLinks })} onDisplayFontChange={handleDisplayFontChange} onLogoChange={(logoUrl) => handleBrandingChange({ ...template.settings.branding, logoUrl })} onMonoFontChange={handleMonoFontChange} onPageFormatChange={handlePageFormatChange} onQrValueChange={(qrValue) => handleBrandingChange({ ...template.settings.branding, qrValue })} onSocialLinksChange={(socialLinks) => handleBrandingChange({ ...template.settings.branding, socialLinks })} t={text} /> : null}
             </div>
           </div>
         </details> : null}
@@ -388,7 +407,7 @@ export function GuidePreview({
                 {onOverviewViewsChange&&onCaptureOverview?<GuideModelOverviewManager locale={locale} targetMode={viewModel.targetMode} views={overviewDraftViews} editorHref={`/models/${guide.projectId}`} onChange={onOverviewViewsChange} onCapture={(viewId,type)=>{if(!guide.overviewViews)onOverviewViewsChange(overviewDraftViews);onCaptureOverview(viewId,type)}}/>:null}
               </div>
               {onReferencesChange ? <GuideReferencesManager projectId={guide.projectId} locale={locale} references={guide.references ?? []} onChange={onReferencesChange} /> : null}
-            </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} backgroundItems={template.settings.backgroundItems} backCoverLayout={template.settings.branding.backCoverLayout} brandName={template.settings.branding.name} bodyFontId={template.settings.bodyFont} ctaText={template.settings.branding.ctaText} coverLayout={template.settings.branding.coverLayout} customLinks={template.settings.branding.customLinks} disabled={isUpdatingTemplateSettings} displayFontId={template.settings.headingFont} logoUrl={template.settings.branding.logoUrl} monoFontId={template.settings.monoFont} pageFormat={template.settings.pageFormat} qrValue={template.settings.branding.qrValue} socialLinks={template.settings.branding.socialLinks} onAccentColorChange={handleAccentColorChange} onBackgroundItemsChange={handleBackgroundItemsChange} onBackCoverLayoutChange={(backCoverLayout) => handleBrandingChange({ ...template.settings.branding, backCoverLayout })} onBodyFontChange={handleBodyFontChange} onBrandNameChange={(name) => handleBrandingChange({ ...template.settings.branding, name })} onCtaTextChange={(ctaText) => handleBrandingChange({ ...template.settings.branding, ctaText })} onCoverLayoutChange={(coverLayout) => handleBrandingChange({ ...template.settings.branding, coverLayout })} onCustomLinksChange={(customLinks) => handleBrandingChange({ ...template.settings.branding, customLinks })} onDisplayFontChange={handleDisplayFontChange} onLogoChange={(logoUrl) => handleBrandingChange({ ...template.settings.branding, logoUrl })} onMonoFontChange={handleMonoFontChange} onPageFormatChange={handlePageFormatChange} onQrValueChange={(qrValue) => handleBrandingChange({ ...template.settings.branding, qrValue })} onSocialLinksChange={(socialLinks) => handleBrandingChange({ ...template.settings.branding, socialLinks })} t={text} /> : null}
+            </> : onTemplateSettingsChange ? <GuidePdfDesignPanel accentColor={template.settings.accentColor} brandingEnabled={template.settings.branding.enabled} backgroundItems={template.settings.backgroundItems} backCoverLayout={template.settings.branding.backCoverLayout} brandName={template.settings.branding.name} bodyFontId={template.settings.bodyFont} ctaText={template.settings.branding.ctaText} coverLayout={template.settings.branding.coverLayout} customLinks={template.settings.branding.customLinks} disabled={isUpdatingTemplateSettings} displayFontId={template.settings.headingFont} logoUrl={template.settings.branding.logoUrl} monoFontId={template.settings.monoFont} pageFormat={template.settings.pageFormat} qrValue={template.settings.branding.qrValue} socialLinks={template.settings.branding.socialLinks} onAccentColorChange={handleAccentColorChange} onBackgroundItemsChange={handleBackgroundItemsChange} onBrandingEnabledChange={() => void handleEnableBranding()} onBackCoverLayoutChange={(backCoverLayout) => handleBrandingChange({ ...template.settings.branding, backCoverLayout })} onBodyFontChange={handleBodyFontChange} onBrandNameChange={(name) => handleBrandingChange({ ...template.settings.branding, name })} onCtaTextChange={(ctaText) => handleBrandingChange({ ...template.settings.branding, ctaText })} onCoverLayoutChange={(coverLayout) => handleBrandingChange({ ...template.settings.branding, coverLayout })} onCustomLinksChange={(customLinks) => handleBrandingChange({ ...template.settings.branding, customLinks })} onDisplayFontChange={handleDisplayFontChange} onLogoChange={(logoUrl) => handleBrandingChange({ ...template.settings.branding, logoUrl })} onMonoFontChange={handleMonoFontChange} onPageFormatChange={handlePageFormatChange} onQrValueChange={(qrValue) => handleBrandingChange({ ...template.settings.branding, qrValue })} onSocialLinksChange={(socialLinks) => handleBrandingChange({ ...template.settings.branding, socialLinks })} t={text} /> : null}
           </div>
         </aside> : null}
       </div>

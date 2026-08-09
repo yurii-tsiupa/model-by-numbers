@@ -70,7 +70,7 @@ function resolveSectionGroups(
   viewModel: GuideViewModel,
   templateSettings: GuideTemplateSettings,
 ): { groups: SectionPageGroup[]; totalPages: number } {
-  const pagePlan = resolveGuidePdfPagePlan(viewModel, templateSettings.pageFormat);
+  const pagePlan = resolveGuidePdfPagePlan(viewModel, templateSettings.pageFormat, { brandingEnabled: templateSettings.branding.enabled });
   const groups = viewModel.documentSections.flatMap((section) => {
     const metadata = pagePlan.pages.filter((page) => page.sourceSectionId === section.id || (section.id === "cover" && page.sectionId === "toc"));
     if (!metadata.length) return [];

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import Image from "next/image";
-import { AlignCenter, AlignLeft, AlignRight, Check, ChevronDown, ImagePlus, Link2, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Check, ChevronDown, ImagePlus, Link2, Palette, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import type { TranslationKey } from "@/features/i18n/locales/en";
 import { blobToDataUrl } from "../lib/blobToDataUrl";
 import { GUIDE_FONT_OPTIONS, type GuideFontId } from "../design/guideFontRegistry";
@@ -408,6 +408,7 @@ function BrandLayoutEditor({ backCoverLayout, coverLayout, customLinkCount, disa
 
 export function GuidePdfDesignPanel({
   accentColor,
+  brandingEnabled,
   backCoverLayout,
   brandName,
   ctaText,
@@ -429,6 +430,7 @@ export function GuidePdfDesignPanel({
   onDisplayFontChange,
   onMonoFontChange,
   onBrandNameChange,
+  onBrandingEnabledChange,
   onCtaTextChange,
   onCoverLayoutChange,
   onLogoChange,
@@ -439,6 +441,7 @@ export function GuidePdfDesignPanel({
   t,
 }: {
   accentColor: string;
+  brandingEnabled: boolean;
   backCoverLayout: GuideBrandPageLayout;
   brandName: string | null;
   ctaText: string | null;
@@ -460,6 +463,7 @@ export function GuidePdfDesignPanel({
   onDisplayFontChange: (fontId: GuideFontId) => void;
   onMonoFontChange: (fontId: GuideFontId) => void;
   onBrandNameChange: (name: string | null) => void;
+  onBrandingEnabledChange: () => void;
   onCtaTextChange: (ctaText: string | null) => void;
   onCoverLayoutChange: (layout: GuideBrandPageLayout) => void;
   onLogoChange: (logoUrl: string | null) => void;
@@ -573,6 +577,7 @@ export function GuidePdfDesignPanel({
         </div>
         </PdfDesignAccordionSection>
 
+        {!brandingEnabled ? <div className="mt-3 rounded-xl bg-[var(--surface)] p-3"><div className="flex items-start gap-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]"><Palette className="size-4" aria-hidden="true" /></span><div className="min-w-0 flex-1"><p className="text-xs font-semibold text-[var(--text)]">{t("guide.pdfDesign.branding.add")}</p><p className="mt-1 text-[10px] leading-4 text-[var(--text-secondary)]">{t("guide.pdfDesign.branding.addDescription")}</p></div></div><button type="button" disabled={disabled} onClick={onBrandingEnabledChange} className={`mt-3 h-8 rounded-lg bg-[var(--accent)] px-3 text-xs font-medium text-[var(--accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:opacity-90"}`}>{t("guide.pdfDesign.branding.add")}</button></div> : <>
         <PdfDesignAccordionSection id="branding" title={t("guide.pdfDesign.branding.title")} expanded={expandedSections.includes("branding")} onToggle={toggleAccordionSection} summary={<span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[9px] font-medium text-[var(--accent)]">{socialLinks.length + customLinks.length} {t("guide.pdfDesign.branding.linksSummary")}</span>}>
         <div className="flex items-start gap-2.5">
           <div className="relative size-12 shrink-0">
@@ -627,6 +632,7 @@ export function GuidePdfDesignPanel({
         <PdfDesignAccordionSection id="layout" title={t("guide.pdfDesign.branding.layout.title")} expanded={expandedSections.includes("layout")} onToggle={toggleAccordionSection}>
           <BrandLayoutEditor backCoverLayout={backCoverLayout} coverLayout={coverLayout} customLinkCount={customLinks.length} disabled={disabled} onBackCoverLayoutChange={onBackCoverLayoutChange} onCoverLayoutChange={onCoverLayoutChange} pageFormat={pageFormat} socialLinkCount={socialLinks.length} t={t} />
         </PdfDesignAccordionSection>
+        </>}
       </div>
     </section>
   );

@@ -31,7 +31,6 @@ import { useCurrentGuideTemplate } from "@/features/templates/hooks/useCurrentGu
 import { useProjectGuideSectionSettings } from "@/features/guides/hooks/useProjectGuideSectionSettings";
 import { BUILT_IN_GUIDE_TEMPLATES } from "@/features/templates/constants/builtInGuideTemplates";
 import { createGuideSettingsFromUserBrandDefaults } from "@/features/guides/lib/createGuideSettingsFromUserBrandDefaults";
-import { loadUserBrandLogo } from "@/features/auth/services/userBrandLogoStorage";
 import { saveGuideAsset } from "@/features/guides/services/assets/saveGuideAsset";
 import { loadGuideDraftSession } from "@/features/guides/storage/guideDraftSessionStorage";
 import { loadUserBrandBackground } from "@/features/auth/services/userBrandBackgroundStorage";
@@ -234,16 +233,11 @@ export default function GuidePage() {
     let active = true;
     void (async () => {
       const nextDraftId = draftId ?? crypto.randomUUID();
-      let logoAssetId: string | null = null;
-      if (profile.brandDefaults.logoAssetId) {
-        const logo = await loadUserBrandLogo(profile.brandDefaults.logoAssetId).catch(() => null);
-        if (logo) logoAssetId = (await saveGuideAsset({ projectId, kind: "branding-logo", assetId: `${nextDraftId}-profile-logo`, blob: logo })).storageKey;
-      }
       const defaultBackground = profile.brandAssets.backgrounds.find((item) => item.id === profile.brandAssets.defaultBackgroundId);
       const backgroundBlob = defaultBackground ? await loadUserBrandBackground(defaultBackground.localAssetId).catch(() => null) : null;
       const backgroundAssetId = backgroundBlob ? (await saveGuideAsset({ projectId, kind: "pdf-background", assetId: `${nextDraftId}-profile-background`, blob: backgroundBlob })).storageKey : null;
       const seededBackground = backgroundAssetId ? { id: `${nextDraftId}-profile-background`, assetId: `${nextDraftId}-profile-background`, sourceType: "guide" as const, imageUrl: null, localAssetId: backgroundAssetId, opacity: 20, scope: { mode: "all" as const } } : undefined;
-      if (active) setDraftTemplate(createGuideSettingsFromUserBrandDefaults(baseDraftTemplate.settings, profile.brandDefaults, logoAssetId, seededBackground), baseDraftTemplate.id, profile.brandDefaults.defaultGuideLocale, nextDraftId, projectId);
+      if (active) setDraftTemplate(createGuideSettingsFromUserBrandDefaults(baseDraftTemplate.settings, profile.brandDefaults, seededBackground), baseDraftTemplate.id, profile.brandDefaults.defaultGuideLocale, nextDraftId, projectId);
     })();
     return () => { active = false; };
   }, [baseDraftTemplate.id, baseDraftTemplate.settings, capturedProjectId, draftId, draftTemplateSettings, profile, projectId, projectQuery.data, setDraftTemplate]);
@@ -369,12 +363,12 @@ export default function GuidePage() {
     assemblySteps,
     templateId: guideTemplate.current.id,
     overviewViews: overviewViews ?? undefined,
-    backCover: guideTemplate.current.settings.branding.name
+    backCover: guideTemplate.current.settings.branding.enabled && (guideTemplate.current.settings.branding.name
       || guideTemplate.current.settings.branding.logoUrl
       || guideTemplate.current.settings.branding.ctaText
       || guideTemplate.current.settings.branding.customLinks.length
       || guideTemplate.current.settings.branding.qrValue
-      || guideTemplate.current.settings.branding.socialLinks.length
+      || guideTemplate.current.settings.branding.socialLinks.length)
       ? {
           enabled: true,
           brandName: guideTemplate.current.settings.branding.name,

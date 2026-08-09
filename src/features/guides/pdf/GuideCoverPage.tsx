@@ -200,7 +200,7 @@ export function GuideCoverPage({ viewModel, exportDate, pageNumber, templateSett
         <Text style={[styles.subtitle,{fontSize:9,marginTop:14,fontFamily:design.bodyFont}]}>{[guide.printerType,guide.material].filter(Boolean).join(" · ")}</Text>
       </View>
       <Text style={styles.coverMeta}>{[guide.author,formatLocalizedDate(exportDate,locale,{day:"numeric",month:"long",year:"numeric"}),t(`language.${locale}`)].filter(Boolean).join(" · ")}</Text>
-      {layout ? <GuideBrandLayoutLayer activeElements={activeBrandElements} layout={layout} page="cover" pageFormat={templateSettings?.pageFormat ?? viewModel.pageFormat} renderElement={renderBrandElement} /> : null}
+      {branding?.enabled && layout ? <GuideBrandLayoutLayer activeElements={activeBrandElements} layout={layout} page="cover" pageFormat={templateSettings?.pageFormat ?? viewModel.pageFormat} renderElement={renderBrandElement} /> : null}
     </GuidePage>
   );
 }
