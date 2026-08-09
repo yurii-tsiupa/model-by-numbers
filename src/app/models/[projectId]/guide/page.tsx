@@ -34,6 +34,7 @@ import { createGuideSettingsFromUserBrandDefaults } from "@/features/guides/lib/
 import { loadUserBrandLogo } from "@/features/auth/services/userBrandLogoStorage";
 import { saveGuideAsset } from "@/features/guides/services/assets/saveGuideAsset";
 import { loadGuideDraftSession } from "@/features/guides/storage/guideDraftSessionStorage";
+import { loadUserBrandBackground } from "@/features/auth/services/userBrandBackgroundStorage";
 
 const EMPTY_GUIDE_IMAGES: GuideImages = {
   original: null,
@@ -238,7 +239,11 @@ export default function GuidePage() {
         const logo = await loadUserBrandLogo(profile.brandDefaults.logoAssetId).catch(() => null);
         if (logo) logoAssetId = (await saveGuideAsset({ projectId, kind: "branding-logo", assetId: `${nextDraftId}-profile-logo`, blob: logo })).storageKey;
       }
-      if (active) setDraftTemplate(createGuideSettingsFromUserBrandDefaults(baseDraftTemplate.settings, profile.brandDefaults, logoAssetId), baseDraftTemplate.id, profile.brandDefaults.defaultGuideLocale, nextDraftId, projectId);
+      const defaultBackground = profile.brandAssets.backgrounds.find((item) => item.id === profile.brandAssets.defaultBackgroundId);
+      const backgroundBlob = defaultBackground ? await loadUserBrandBackground(defaultBackground.localAssetId).catch(() => null) : null;
+      const backgroundAssetId = backgroundBlob ? (await saveGuideAsset({ projectId, kind: "pdf-background", assetId: `${nextDraftId}-profile-background`, blob: backgroundBlob })).storageKey : null;
+      const seededBackground = backgroundAssetId ? { id: `${nextDraftId}-profile-background`, assetId: `${nextDraftId}-profile-background`, sourceType: "guide" as const, imageUrl: null, localAssetId: backgroundAssetId, opacity: 20, scope: { mode: "all" as const } } : undefined;
+      if (active) setDraftTemplate(createGuideSettingsFromUserBrandDefaults(baseDraftTemplate.settings, profile.brandDefaults, logoAssetId, seededBackground), baseDraftTemplate.id, profile.brandDefaults.defaultGuideLocale, nextDraftId, projectId);
     })();
     return () => { active = false; };
   }, [baseDraftTemplate.id, baseDraftTemplate.settings, capturedProjectId, draftId, draftTemplateSettings, profile, projectId, projectQuery.data, setDraftTemplate]);
